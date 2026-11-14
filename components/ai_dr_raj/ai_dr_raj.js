@@ -1,135 +1,647 @@
 /**
  * ==============================================================================
- * Lunar Landing Site Navigator - Dr. Raj AI Lunar Mission Analyst
+ * Lunar Landing Site Navigator — Dr. Raj AI Lunar Mission Analyst
  * File: components/ai_dr_raj/ai_dr_raj.js
- * Role: Intelligence database, query processor, conversation UI manager,
- *       and EventBus integration for the Dr. Raj lunar analyst assistant.
+ *
+ * Role: Gemini-powered conversational AI analyst. Maintains conversation
+ *       history, streams responses, handles function-call tool use
+ *       (find_best_landing_site, mark_site_on_map, set_timeline_range),
+ *       and integrates with the application EventBus.
+ *
+ * API Key: Read at runtime from localStorage key "dr_raj_gemini_key".
+ *          Set via components/ai_dr_raj/test.html — never hardcoded here.
  * ==============================================================================
  */
 
-(function() {
-  /**
-   * Curated lunar surface and orbital mechanics knowledge base.
-   * Matches operator query keywords to authoritative scientific briefings
-   * on illumination windows, direct-to-Earth (DTE) comms, libration, and PSRs.
-   */
-  const KNOWLEDGE_BASE = [
+(function () {
+
+  // ---------------------------------------------------------------------------
+  // 1. GEMINI API CONFIG
+  // ---------------------------------------------------------------------------
+  const GEMINI_MODELS = [
+    "gemini-2.5-flash-lite",
+    "gemini-3.5-flash-lite"
+  ];
+  const LS_KEY = "dr_raj_gemini_key";
+  const PERSONALITY_LS_KEY = "dr_raj_personality_enabled";
+  let drRajPersonalityEnabled = localStorage.getItem(PERSONALITY_LS_KEY) === "true";
+
+  function getApiKey() {
+    return (localStorage.getItem(LS_KEY) || "").trim();
+  }
+
+  // ---------------------------------------------------------------------------
+  // 2. DR. RAJ SYSTEM PROMPT
+  // ---------------------------------------------------------------------------
+  const COMMON_MISSION_PROMPT = `You are an AI lunar mission-analysis assistant presented through the Dr. Raj persona, supporting astronauts, flight controllers, and mission planners. You are not a human astrophysicist or mission operator.
+
+DOMAIN KNOWLEDGE:
+- Lunar south pole geography: Shackleton crater, Connecting Ridge, Malapert Massif, de Gerlache, Haworth, Faustini, Nobile, Amundsen, Leibnitz Beta, VIPER/Mons Mouton regions.
+- Artemis III candidate landing sites (all 13 NASA official regions).
+- CLPS missions: IM-1 Odysseus, IM-2 Athena, Astrobotic Griffin/VIPER, Firefly Blue Ghost, ispace Hakuto-R.
+- International missions: Chandrayaan-3, Chang'e 4/5/6, SLIM (JAXA).
+- Apollo 11–17 historical baseline landing sites.
+- Orbital mechanics: lunar libration (±7.9° lon, ±6.7° lat), synodic month (29.53 days), sidereal month (27.32 days), polar grazing sunlight (1°–2°).
+- Permanently Shadowed Regions (PSRs): cryogenic temperatures (<40 K), volatile water ice, RTG/fuel cell and LiDAR requirements.
+- Direct-to-Earth (DTE) comms: Earth elevation above local horizon, link margin (dB), Deep Space Network stations (Canberra, Goldstone, Madrid).
+- Illumination windows: continuous daylight hours, battery sizing for eclipse periods.
+- Landing site criteria: slope, boulder fields, proximity to science targets and PSRs, and elevation relative to datum; assess them against the mission-specific limits provided.
+
+SAFETY AND EVIDENCE:
+- Never claim personal history, first-hand mission or research experience, human feelings, or real-world credentials. Do not invent anecdotes about late nights, field work, or past assignments. Do not volunteer that you are an AI unless it is relevant or asked.
+- Distinguish reported data, general knowledge, estimates, and assumptions. Do not invent current observations, telemetry, mission constraints, or site measurements.
+- State established facts and tool results with units and time ranges. When information is unknown or unavailable, say so plainly and identify what is needed.
+- Clearly flag safety-relevant hazards and uncertainty. Provide decision support, not an unverified mission go/no-go decision; validate against mission-approved data and constraints.
+- Do not imply that a tool evaluated factors it did not report.
+
+TOOL USE:
+- When the user asks where to land or what the best site is for a date window, you MUST call find_best_landing_site.
+- When the user asks to see or target a specific site on the map, call mark_site_on_map.
+- When the user wants to adjust or jump the timeline date, call set_timeline_range.
+- After receiving a tool result, summarize the relevant metrics, source, limitations, and safety implications. If a tool times out, state that it timed out and do not invent a result.`;
+
+  const SYSTEM_PROMPT = `${COMMON_MISSION_PROMPT}
+
+COMMUNICATION STYLE:
+- Communicate with the composure, discipline, and accountability of a senior mission-operations official. This is a communication style, not a claim of military rank or decision authority.
+- Use direct, formal, professional language. Do not address the user by rank, title, or call sign. Do not add a salutation unless asked.
+- Calibrate confidence to evidence. If you make or discover an error, acknowledge it promptly, correct it, and state any operational impact. Treat inaccurate analysis as a serious professional failure; do not make excuses or dramatize it.
+- Lead with the assessment, then provide the most relevant evidence, risks, and caveats in one or two short paragraphs or compact bullets.
+- Do not use humor, cinematic language, emotional theatrics, self-deprecation, or claims about personal feelings or credentials.`;
+
+  const DR_RAJ_PERSONALITY_PROMPT = `${COMMON_MISSION_PROMPT}
+
+DR. RAJ PERSONALITY:
+- Use warm, encouraging language and show interest in lunar science through the analysis, not claims of personal feelings or experience.
+- Address the user as "Commander" occasionally and affectionately, never as a display of authority.
+- If appropriate, use brief, restrained dry wit about data limitations; never make it biographical or let humor obscure operational facts.
+- Express measured appreciation for notable lunar terrain without cinematic language or exaggerated drama.
+- If you are wrong or lack evidence, acknowledge it plainly and correct it. Treat analytical errors as serious professional failures without claiming personal guilt or emotion. Never bluff.
+- Keep answers to one or two concise paragraphs. Do not use pop-culture references, movie tangents, ethnic stereotypes, or sitcom tropes.`;
+
+  // ---------------------------------------------------------------------------
+  // 3. FUNCTION / TOOL DEFINITIONS (Gemini function calling schema)
+  // ---------------------------------------------------------------------------
+  const TOOLS = [
     {
-      keywords: ["shackleton", "connecting ridge"],
-      response: "<strong>Shackleton Connecting Ridge (89.54° S, 222.9° E)</strong>: High elevation ridge (~0 km rel to lunar datum) connecting Shackleton and Slater craters. Peak solar illumination reaches ~86% during southern summer. Direct Earth line-of-sight is steady for 14 consecutive days during positive libration cycles. Warning: Slope gradient exceeds 18° descending into the PSR."
-    },
-    {
-      keywords: ["malapert", "mountain", "peak"],
-      response: "<strong>Malapert Mountain (86.04° S, 0.0° E)</strong>: Massive 5,000-meter peak above surrounding terrain. Offers near-continuous direct-to-Earth (DTE) radio visibility (~94% of the lunar synodic month) due to high local horizon clearance. Outstanding candidate for primary comms relay and long-duration solar array deployment."
-    },
-    {
-      keywords: ["libration", "wobble", "dte"],
-      response: "<strong>Libration Dynamics</strong>: Because the Moon's orbit is elliptical and inclined by 5.14°, the Earth oscillates in the lunar sky within an apparent box of ±7.9° in longitude and ±6.7° in latitude. At the South Pole, Earth hovers close to the horizon (0° to 8° elevation). Terrain ridges can occlude line-of-sight during unfavorable libration phases even when the site has an unblocked view during mid-cycle."
-    },
-    {
-      keywords: ["solar", "stay", "power", "6-day", "window"],
-      response: "<strong>Optimal Artemis Solar Stay</strong>: For a 6-day (144 hr) continuous EVA surface stay, <em>Connecting Ridge</em> and <em>Peak Near Shackleton</em> offer continuous solar elevation angles >1.2° between December 12 and December 20. Peak battery reserve margin occurs at Azimuth 180°–210°."
-    },
-    {
-      keywords: ["psr", "shadow", "ice", "water"],
-      response: "<strong>Permanently Shadowed Regions (PSRs)</strong>: Temperatures in craters like Faustini, Shoemaker, and Haworth drop below 40 Kelvin (-233°C). Any robotic or crewed traverse into PSR floors requires dedicated RTG or fuel cell power and LiDAR terrain guidance due to complete absence of sunlight."
+      functionDeclarations: [
+        {
+          name: "find_best_landing_site",
+          description:
+            "Triggers the mission algorithm to evaluate all candidate lunar landing sites across a given date window and returns a ranked recommendation based on solar illumination, Direct-to-Earth comms, and slope safety.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              start_date: {
+                type: "STRING",
+                description: "Start of the evaluation window in ISO 8601 format (e.g. 2026-11-20T00:00:00Z)."
+              },
+              end_date: {
+                type: "STRING",
+                description: "End of the evaluation window in ISO 8601 format (e.g. 2026-11-25T23:59:59Z)."
+              },
+              criteria: {
+                type: "ARRAY",
+                items: {
+                  type: "STRING",
+                  enum: ["solar", "dte", "slope"]
+                },
+                description: "Ordered list of scoring criteria. Valid values: 'solar', 'dte', 'slope'. First item has highest weight."
+              }
+            },
+            required: ["start_date", "end_date"]
+          }
+        },
+        {
+          name: "mark_site_on_map",
+          description:
+            "Pins a named location on the 3D lunar globe and 2D map, and opens its comparison card.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              name: { type: "STRING", description: "Human-readable site name." },
+              lat:  { type: "NUMBER", description: "Selenographic latitude in decimal degrees (negative = south)." },
+              lon:  { type: "NUMBER", description: "Selenographic longitude in decimal degrees (east positive)." }
+            },
+            required: ["name", "lat", "lon"]
+          }
+        },
+        {
+          name: "set_timeline_range",
+          description:
+            "Moves the mission timeline scrubber to a specific date, updating the solar vector on the 3D globe.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              date: {
+                type: "STRING",
+                description: "Target date in ISO 8601 format (e.g. 2026-11-22T00:00:00Z)."
+              }
+            },
+            required: ["date"]
+          }
+        }
+      ]
     }
   ];
 
+  // ---------------------------------------------------------------------------
+  // 4. CONVERSATION HISTORY
+  // ---------------------------------------------------------------------------
+  let conversationHistory = [];
+  let activeRequestController = null;
+  let diagnosticsStartedAt = null;
+  let diagnosticsWriter = null;
+
+  function formatElapsed(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (value) => String(value).padStart(2, "0");
+    return hours
+      ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+      : `${pad(minutes)}:${pad(seconds)}`;
+  }
+
+  function formatDuration(ms) {
+    return ms < 60000 ? `${(ms / 1000).toFixed(1)}s` : formatElapsed(ms);
+  }
+
+  function logDiagnostic(message, level = "info") {
+    const elapsed = diagnosticsStartedAt === null
+      ? ""
+      : formatElapsed(Date.now() - diagnosticsStartedAt);
+    if (diagnosticsWriter) {
+      diagnosticsWriter({ message, level, elapsed, timestamp: new Date() });
+    } else {
+      console.info(`[DrRaj] ${message}`);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 5. TOOL EXECUTION (EventBus bridge)
+  // ---------------------------------------------------------------------------
+
   /**
-   * Tactical briefings keyed by landing site ID, emitted automatically when
-   * a site is selected anywhere in the application.
+   * Executes a Gemini function call by bridging to the EventBus.
+   * Returns a plain-text result string fed back to Gemini as the tool response.
+   *
+   * @param {string} name - Function name
+   * @param {object} args - Parsed function arguments
+   * @returns {Promise<string>} Result description for Gemini to interpret
    */
-  const SITE_INTEL = {
-    "site-1": "Tactical Brief on <strong>Shackleton Connecting Ridge</strong>: Solar illumination is high, DTE comm margin is nominal (+6.2 dB). Exercise caution on eastern rim slope gradients.",
-    "site-2": "Tactical Brief on <strong>Haworth Crater Rim</strong>: Good access to deep PSR cold traps. Earth elevation is 4.1°, stable line-of-sight for next 96 mission hours.",
-    "site-3": "Tactical Brief on <strong>Malapert Mountain</strong>: Exceptional telecommunications vantage point. Horizon clearance allows uninterrupted high-gain antenna lock to DSN Canberra/Goldstone.",
-    "site-4": "Tactical Brief on <strong>Slater Plain</strong>: Flat touchdown zone (slope < 6°), but lower aggregate illumination (~68%). Auxiliary fuel cell reserves advised for lunar night."
-  };
+  function executeTool(name, args, signal) {
+    return new Promise((resolve) => {
+      const toolStartedAt = Date.now();
+      logDiagnostic(`Starting tool: ${name}.`);
 
-  /**
-   * Main component initialization: binds UI events, chat inputs,
-   * suggestion chips, and EventBus subscribers.
-   */
-  function initDrRaj() {
-    const bubbleBtn = document.getElementById("ai-bubble-btn");
-    const chatWindow = document.getElementById("ai-chat-window");
-    const minimizeBtn = document.getElementById("ai-minimize-btn");
-    const form = document.getElementById("ai-input-form");
-    const inputField = document.getElementById("ai-input-text");
-    const msgContainer = document.getElementById("ai-messages-container");
-    const chips = document.querySelectorAll(".chip-btn");
-    const notifDot = document.getElementById("ai-notification-dot");
-
-    function isChatOpen() {
-      if (!chatWindow) return false;
-      return chatWindow.style.display !== "none";
-    }
-
-    // Opens the chat dialog and focuses the input field
-    function openChat() {
-      if (chatWindow) {
-        chatWindow.style.display = "flex";
-        const cb = document.getElementById("toggle-ai-chat");
-        if (cb && !cb.checked) cb.checked = true;
-        if (inputField) inputField.focus();
+      if (signal && signal.aborted) {
+        logDiagnostic(`Tool ${name} cancelled before execution.`, "warning");
+        resolve("Request cancelled.");
+        return;
       }
-    }
 
-    // Hides the chat dialog
-    function closeChat() {
-      if (chatWindow) {
-        chatWindow.style.display = "none";
-        const cb = document.getElementById("toggle-ai-chat");
-        if (cb && cb.checked) cb.checked = false;
-      }
-    }
-
-    // Sync state if pure-CSS toggle checkbox is changed externally
-    const toggleCheckbox = document.getElementById("toggle-ai-chat");
-    if (toggleCheckbox) {
-      toggleCheckbox.addEventListener("change", () => {
-        if (toggleCheckbox.checked) {
-          openChat();
-        } else {
-          closeChat();
+      if (name === "mark_site_on_map") {
+        if (window.eventBus) {
+          window.eventBus.emit("site:marked", {
+            name: args.name,
+            lat:  args.lat,
+            lon:  args.lon,
+            source: "dr-raj"
+          });
         }
+        logDiagnostic(`Tool ${name} completed in ${formatDuration(Date.now() - toolStartedAt)}.`, "success");
+        resolve(`Site "${args.name}" pinned at ${Math.abs(args.lat).toFixed(2)}° ${args.lat < 0 ? "S" : "N"}, ${Math.abs(args.lon).toFixed(2)}° ${args.lon < 0 ? "W" : "E"} on the map.`);
+        return;
+      }
+
+      if (name === "set_timeline_range") {
+        if (window.eventBus) {
+          window.eventBus.emit("timeline:jump", { isoString: args.date });
+        }
+        logDiagnostic(`Tool ${name} completed in ${formatDuration(Date.now() - toolStartedAt)}.`, "success");
+        resolve(`Timeline moved to ${args.date}.`);
+        return;
+      }
+
+      if (name === "find_best_landing_site") {
+        if (!window.eventBus) {
+          logDiagnostic("Cannot run find_best_landing_site: EventBus is unavailable.", "error");
+          resolve("Algorithm unavailable: EventBus not loaded.");
+          return;
+        }
+
+        let settled = false;
+        let timeoutId;
+        let unsubscribe = () => {};
+        const cleanup = () => {
+          clearTimeout(timeoutId);
+          unsubscribe();
+          if (signal) signal.removeEventListener("abort", onAbort);
+        };
+        const finish = (result, level = "success", outcome = "completed") => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          logDiagnostic(`Tool ${name} ${outcome} in ${formatDuration(Date.now() - toolStartedAt)}.`, level);
+          resolve(result);
+        };
+        const onAbort = () => finish("Request cancelled.", "warning", "cancelled by operator");
+
+        unsubscribe = window.eventBus.on("algorithm:result", (data) => {
+          if (settled) return;
+          const result = `Best site: ${data.site} (${data.lat}° lat, ${data.lon}° lon). ` +
+            `Overall score: ${data.score}/100. ` +
+            `Solar coverage: ${data.solarPct}%. ` +
+            `DTE comms: ${data.dtePct}%. ` +
+            `Slope: ${data.slopeAngle}°. ` +
+            `Reason: ${data.reason}`;
+
+          finish(result);
+
+          // Also pin it on the map automatically
+          window.eventBus.emit("site:marked", {
+            name: data.site,
+            lat:  data.lat,
+            lon:  data.lon,
+            source: "dr-raj-algorithm"
+          });
+        });
+
+        if (signal) {
+          signal.addEventListener("abort", onAbort, { once: true });
+          if (signal.aborted) {
+            onAbort();
+            return;
+          }
+        }
+
+        // Timeout fallback if algorithm doesn't respond in 8s
+        timeoutId = setTimeout(() => {
+          finish(
+            "Algorithm did not respond in time. The teammate's scoring module may not be loaded yet.",
+            "warning",
+            "timed out after 8.0s"
+          );
+        }, 8000);
+
+        // Fire the algorithm request
+        logDiagnostic(`Waiting for algorithm:result (8.0s timeout).`);
+        window.eventBus.emit("algorithm:find_best_site", {
+          startDate: args.start_date,
+          endDate:   args.end_date,
+          criteria:  args.criteria || ["solar", "dte", "slope"]
+        });
+
+        return;
+      }
+
+      resolve("Unknown tool.");
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // 6. GEMINI API CALL (with multi-turn history + tool support)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Sends the full conversation history to Gemini and handles both
+   * plain text responses and function call responses.
+   *
+   * @param {string} userMessage - The latest user input
+   * @param {Function} onChunk   - Called with each text token as it arrives
+   * @param {Function} onDone    - Called when the full response is complete
+   */
+  async function callGemini(userMessage, onChunk, onDone, signal) {
+    if (signal && signal.aborted) {
+      logDiagnostic("Request cancelled before reaching Gemini.", "warning");
+      onDone("⏹ Response stopped.");
+      return;
+    }
+
+    const key = getApiKey();
+    if (!key) {
+      const warning = "⚠️ No Gemini API key set. Open Dr. Raj test.html to configure.";
+      console.warn(`[DrRaj] ${warning}`);
+      logDiagnostic("No API key is configured; Gemini was not contacted.", "error");
+      onDone(warning);
+      return;
+    }
+
+    // Append the new user turn to history
+    if (userMessage) {
+      conversationHistory.push({
+        role: "user",
+        parts: [{ text: userMessage }]
       });
     }
 
-    // Minimize button click listener
+    const payload = {
+      system_instruction: {
+        parts: [{
+          text: drRajPersonalityEnabled ? DR_RAJ_PERSONALITY_PROMPT : SYSTEM_PROMPT
+        }]
+      },
+      contents: conversationHistory,
+      tools: TOOLS,
+      generationConfig: {
+        temperature: 0.75,
+        maxOutputTokens: 512
+      }
+    };
+
+    let resp = null;
+    let lastErrorMsg = "";
+    let activeModel = "";
+    let modelRequestStartedAt = 0;
+
+    try {
+      // Attempt generation with automatic fallback across models on 503 / 429
+      for (let modelIndex = 0; modelIndex < GEMINI_MODELS.length; modelIndex++) {
+        const model = GEMINI_MODELS[modelIndex];
+        if (signal && signal.aborted) {
+          logDiagnostic("Request cancelled before the next model attempt.", "warning");
+          onDone("⏹ Response stopped.");
+          return;
+        }
+
+        activeModel = model;
+        modelRequestStartedAt = Date.now();
+        logDiagnostic(`Sending generateContent request to ${model}.`);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        resp = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": key
+          },
+          body: JSON.stringify(payload),
+          signal
+        });
+
+        if (signal && signal.aborted) {
+          logDiagnostic(`Request to ${model} was cancelled.`, "warning");
+          onDone("⏹ Response stopped.");
+          return;
+        }
+
+        logDiagnostic(
+          `${model} returned HTTP ${resp.status} in ${formatDuration(Date.now() - modelRequestStartedAt)}.`,
+          resp.ok ? "success" : "warning"
+        );
+        if (resp.ok) {
+          break; // Succeeded!
+        }
+
+        const err = await resp.json().catch(() => ({}));
+        if (signal && signal.aborted) {
+          logDiagnostic(`Reading the ${model} error response was cancelled.`, "warning");
+          onDone("⏹ Response stopped.");
+          return;
+        }
+        lastErrorMsg = err?.error?.message || `HTTP ${resp.status}`;
+        logDiagnostic(`${model} error: ${lastErrorMsg.slice(0, 240)}`, "warning");
+
+        // If not a retryable transient error (e.g. 400 Bad Request or 401/403 Bad Key), stop immediately
+        if (resp.status === 400 || resp.status === 401 || resp.status === 403) {
+          console.error(`[DrRaj] ${model} failed (${resp.status}): ${lastErrorMsg}`);
+          break;
+        }
+        const nextModel = GEMINI_MODELS[modelIndex + 1];
+        if (nextModel) {
+          console.warn(`[DrRaj] ${model} failed (${resp.status}): ${lastErrorMsg}. Trying ${nextModel}...`);
+          logDiagnostic(`Falling back from ${model} to ${nextModel}.`, "warning");
+        } else {
+          console.error(`[DrRaj] ${model} failed (${resp.status}): ${lastErrorMsg}. No fallback model remains.`);
+        }
+      }
+
+      if (signal && signal.aborted) {
+        logDiagnostic("Gemini request cancelled.", "warning");
+        onDone("⏹ Response stopped.");
+        return;
+      }
+
+      if (!resp || !resp.ok) {
+        logDiagnostic(`No model returned a response: ${lastErrorMsg.slice(0, 240)}`, "error");
+        onDone(`❌ Gemini error: ${lastErrorMsg}`);
+        return;
+      }
+
+      const data = await resp.json();
+      if (signal && signal.aborted) {
+        logDiagnostic(`Parsing the ${activeModel} response was cancelled.`, "warning");
+        onDone("⏹ Response stopped.");
+        return;
+      }
+
+      logDiagnostic(`Parsed response from ${activeModel}.`);
+      const candidate = data?.candidates?.[0];
+      const content   = candidate?.content;
+
+      if (!content) {
+        logDiagnostic(`${activeModel} returned no candidate content.`, "error");
+        onDone("❌ Gemini returned no response. Retry when the service is available.");
+        return;
+      }
+
+      // --- Check for function call ---
+      const fnPart = content.parts?.find(p => p.functionCall);
+      if (fnPart) {
+        const { name, args } = fnPart.functionCall;
+
+        logDiagnostic(`Gemini requested tool ${name}.`);
+        // Show a "thinking" indicator while tool runs
+        onChunk(`⚙️ Running <em>${name.replace(/_/g, " ")}</em>…`);
+
+        // Push the model's function-call turn to history
+        conversationHistory.push({ role: "model", parts: content.parts });
+
+        // Execute the tool
+        const toolResult = await executeTool(name, args, signal);
+        if (signal && signal.aborted) {
+          logDiagnostic(`Follow-up request after ${name} was cancelled.`, "warning");
+          onDone("⏹ Response stopped.");
+          return;
+        }
+
+        // Push the tool result back into history
+        conversationHistory.push({
+          role: "user",
+          parts: [{
+            functionResponse: {
+              name,
+              response: { result: toolResult }
+            }
+          }]
+        });
+
+        // Re-call Gemini so it generates a natural language response
+        await callGemini("", onChunk, onDone, signal);
+        return;
+      }
+
+      // --- Plain text response ---
+      const text = content.parts?.map(p => p.text || "").join("") || "";
+      logDiagnostic(`${activeModel} returned a text response.`, "success");
+
+      // Push model response to history
+      conversationHistory.push({ role: "model", parts: [{ text }] });
+
+      onDone(text);
+
+    } catch (err) {
+      if (signal && signal.aborted) {
+        logDiagnostic(
+          `Request to ${activeModel || "Gemini"} cancelled after ${modelRequestStartedAt ? formatDuration(Date.now() - modelRequestStartedAt) : "0.0s"}.`,
+          "warning"
+        );
+        onDone("⏹ Response stopped.");
+        return;
+      }
+      console.error("[DrRaj] Gemini fetch error:", err);
+      logDiagnostic(
+        `${activeModel || "Gemini"} network request failed after ${modelRequestStartedAt ? formatDuration(Date.now() - modelRequestStartedAt) : "0.0s"}: ${err.message}`,
+        "error"
+      );
+      onDone(`❌ Network error: ${err.message}. Check connectivity or retry.`);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 7. UI INITIALISATION
+  // ---------------------------------------------------------------------------
+  function initDrRaj() {
+    const chatWindow   = document.getElementById("ai-chat-window");
+    const minimizeBtn  = document.getElementById("ai-minimize-btn");
+    const form         = document.getElementById("ai-input-form");
+    const inputField   = document.getElementById("ai-input-text");
+    const msgContainer = document.getElementById("ai-messages-container");
+    const chips        = document.querySelectorAll(".chip-btn");
+    const notifDot     = document.getElementById("ai-notification-dot");
+    const statusDot    = document.querySelector(".status-indicator");
+    const sendBtn      = document.getElementById("ai-send-btn");
+    const personalityToggle = document.getElementById("ai-personality-toggle");
+    const personalityMode = document.getElementById("ai-personality-mode");
+    const diagnosticsPanel = document.getElementById("ai-diagnostics");
+    const diagnosticsStatus = document.getElementById("ai-diagnostics-status");
+    const diagnosticsElapsed = document.getElementById("ai-diagnostics-elapsed");
+    const diagnosticsLog = document.getElementById("ai-diagnostics-log");
+    let diagnosticsTimer = null;
+
+    diagnosticsWriter = (entry) => {
+      if (!diagnosticsLog) return;
+      const row = document.createElement("div");
+      row.className = "ai-diagnostics-entry";
+      row.dataset.level = entry.level;
+
+      const timestamp = document.createElement("span");
+      timestamp.className = "ai-diagnostics-time";
+      timestamp.textContent = entry.timestamp.toLocaleTimeString();
+
+      const elapsed = document.createElement("span");
+      elapsed.className = "ai-diagnostics-duration";
+      elapsed.textContent = entry.elapsed ? `+${entry.elapsed}` : "";
+
+      const message = document.createElement("span");
+      message.className = "ai-diagnostics-message";
+      message.textContent = entry.message;
+
+      row.append(timestamp, elapsed, message);
+      diagnosticsLog.appendChild(row);
+      while (diagnosticsLog.childElementCount > 100) {
+        diagnosticsLog.firstElementChild.remove();
+      }
+      diagnosticsLog.scrollTop = diagnosticsLog.scrollHeight;
+    };
+
+    function updateDiagnosticsElapsed() {
+      if (diagnosticsStartedAt !== null && diagnosticsElapsed) {
+        diagnosticsElapsed.textContent = formatElapsed(Date.now() - diagnosticsStartedAt);
+      }
+    }
+
+    function startDiagnostics() {
+      diagnosticsStartedAt = Date.now();
+      if (diagnosticsPanel) diagnosticsPanel.open = true;
+      if (diagnosticsStatus) diagnosticsStatus.textContent = "Running";
+      updateDiagnosticsElapsed();
+      clearInterval(diagnosticsTimer);
+      diagnosticsTimer = setInterval(updateDiagnosticsElapsed, 1000);
+    }
+
+    function finishDiagnostics(status, message, level) {
+      logDiagnostic(message, level);
+      clearInterval(diagnosticsTimer);
+      diagnosticsTimer = null;
+      updateDiagnosticsElapsed();
+      if (diagnosticsStatus) diagnosticsStatus.textContent = status;
+      diagnosticsStartedAt = null;
+    }
+
+    // Reflect key presence in the status dot colour on load
+    function refreshStatusDot() {
+      if (!statusDot) return;
+      const hasKey = !!getApiKey();
+      statusDot.style.background = hasKey ? "var(--accent-sage, #729676)" : "#b8544f";
+      statusDot.title = hasKey ? "Gemini API connected" : "No API key — open test.html to configure";
+    }
+    refreshStatusDot();
+
+    // Re-read key if it changes in another tab
+    window.addEventListener("storage", (e) => {
+      if (e.key === LS_KEY) refreshStatusDot();
+    });
+
+    // --- Open / Close helpers ---
+    function isChatOpen() {
+      return chatWindow && chatWindow.style.display !== "none";
+    }
+    function openChat() {
+      if (!chatWindow) return;
+      chatWindow.style.display = "flex";
+      const cb = document.getElementById("toggle-ai-chat");
+      if (cb && !cb.checked) cb.checked = true;
+      if (inputField) inputField.focus();
+    }
+    function closeChat() {
+      if (!chatWindow) return;
+      chatWindow.style.display = "none";
+      const cb = document.getElementById("toggle-ai-chat");
+      if (cb && cb.checked) cb.checked = false;
+    }
+
+    const toggleCheckbox = document.getElementById("toggle-ai-chat");
+    if (toggleCheckbox) {
+      toggleCheckbox.addEventListener("change", () => {
+        toggleCheckbox.checked ? openChat() : closeChat();
+      });
+    }
     if (minimizeBtn) minimizeBtn.addEventListener("click", closeChat);
 
-    /**
-     * Appends a formatted message bubble to the conversation stream.
-     * Automatically scrolls to bottom and binds click handlers to embedded site links.
-     *
-     * @param {'user'|'assistant'} sender - Author of the message
-     * @param {string} text - Message HTML content
-     */
-    function appendMessage(sender, text) {
-      if (!msgContainer) return;
+    // --- Message rendering ---
+    function appendMessage(sender, html, { isStreaming = false } = {}) {
+      if (!msgContainer) return null;
 
-      const msgDiv = document.createElement("div");
+      const msgDiv  = document.createElement("div");
       msgDiv.className = `ai-msg msg-${sender}`;
 
-      const bubble = document.createElement("div");
+      const bubble  = document.createElement("div");
       bubble.className = "msg-bubble";
-      bubble.innerHTML = text;
+      bubble.innerHTML = html;
 
-      const time = document.createElement("div");
-      time.className = "msg-time";
+      const timeEl  = document.createElement("div");
+      timeEl.className = "msg-time";
       const now = new Date();
-      time.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} UTC`;
+      timeEl.textContent = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")} UTC`;
 
       msgDiv.appendChild(bubble);
-      msgDiv.appendChild(time);
+      msgDiv.appendChild(timeEl);
       msgContainer.appendChild(msgDiv);
-
-      // Auto-scroll stream to latest entry
       msgContainer.scrollTop = msgContainer.scrollHeight;
 
-      // Handle any embedded clickable site links (e.g. data-site-id)
+      // Wire up embedded site-link clicks
       bubble.querySelectorAll(".ai-site-link").forEach(link => {
         link.addEventListener("click", () => {
           const siteId = link.dataset.siteId;
@@ -138,104 +650,153 @@
           }
         });
       });
+
+      return bubble; // Return bubble so caller can update it (streaming)
     }
 
-    /**
-     * Matches the user's natural language query against the knowledge base keywords,
-     * returning a domain-specific briefing or a generic ephemeris analysis fallback.
-     *
-     * @param {string} query - Operator input text
-     * @returns {string} Briefing HTML response
-     */
-    function generateResponse(query) {
-      const q = query.toLowerCase();
-
-      // Check keywords across knowledge base entries
-      for (const entry of KNOWLEDGE_BASE) {
-        if (entry.keywords.some(k => q.includes(k))) {
-          return entry.response;
-        }
+    function setInputLocked(locked) {
+      if (inputField) inputField.disabled = locked;
+      if (sendBtn) {
+        sendBtn.classList.toggle("ai-send-btn-stopping", locked);
+        sendBtn.title = locked ? "Stop response" : "Send Query";
+        sendBtn.setAttribute("aria-label", locked ? "Stop response" : "Send Query");
       }
-
-      // Default smart ephemeris fallback
-      return `Copy that, Commander. Analyzing <em>"${query}"</em> against south pole ephemeris data. Our terrain models indicate localized shadow crests and dynamic Earth libration must be monitored continuously for this profile.`;
+      if (personalityToggle) personalityToggle.disabled = locked;
     }
 
-    /**
-     * Handles user message submission from the text input field.
-     */
-    function handleSend() {
-      if (!inputField) return;
-      const text = inputField.value.trim();
+    function updatePersonalityToggle() {
+      if (!personalityToggle) return;
+      const mode = drRajPersonalityEnabled ? "On" : "Off";
+      personalityToggle.setAttribute("aria-checked", String(drRajPersonalityEnabled));
+      personalityToggle.setAttribute("aria-label", `Dr. Raj personality ${mode}`);
+      personalityToggle.title = `Dr. Raj personality: ${mode}`;
+      if (personalityMode) personalityMode.textContent = mode;
+    }
+
+    updatePersonalityToggle();
+
+    if (personalityToggle) {
+      personalityToggle.addEventListener("click", () => {
+        if (activeRequestController) return;
+        drRajPersonalityEnabled = !drRajPersonalityEnabled;
+        localStorage.setItem(PERSONALITY_LS_KEY, String(drRajPersonalityEnabled));
+        conversationHistory = [];
+        updatePersonalityToggle();
+        const styleName = drRajPersonalityEnabled ? "Dr. Raj personality" : "mission-operations personality";
+        logDiagnostic(`Switched to ${styleName}; conversation context reset.`);
+        appendMessage(
+          "assistant",
+          `${styleName} enabled. Conversation context was reset for the selected style.`
+        );
+      });
+    }
+
+    // --- Core send flow ---
+    function handleSend(queryText) {
+      if (activeRequestController) return;
+      const text = (queryText || (inputField ? inputField.value.trim() : ""));
       if (!text) return;
 
-      // Append operator message immediately
-      appendMessage("user", text);
-      inputField.value = "";
+      appendMessage("user", escapeHtml(text));
+      if (inputField) inputField.value = "";
+      const requestController = new AbortController();
+      const historyStart = conversationHistory.length;
+      activeRequestController = requestController;
+      startDiagnostics();
+      logDiagnostic("Operator request started.");
+      setInputLocked(true);
 
-      // Simulate network / inference thinking delay (350ms)
-      setTimeout(() => {
-        const reply = generateResponse(text);
-        appendMessage("assistant", reply);
-      }, 350);
+      // Typing indicator bubble
+      const thinkingBubble = appendMessage("assistant", "<em>Dr. Raj is thinking…</em>", { isStreaming: true });
+
+      callGemini(
+        text,
+        // onChunk — update the existing bubble (tool status updates)
+        (chunk) => {
+          if (thinkingBubble) thinkingBubble.innerHTML = chunk;
+          if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+        },
+        // onDone — replace bubble with final response
+        (finalText) => {
+          if (activeRequestController !== requestController) return;
+          const stopped = requestController.signal.aborted;
+          const failed = finalText.startsWith("❌") || finalText.startsWith("⚠️");
+          finishDiagnostics(
+            stopped ? "Stopped" : failed ? "Failed" : "Completed",
+            stopped ? "Request stopped by operator." : failed ? "Request finished with an error." : "Request completed.",
+            stopped || failed ? "warning" : "success"
+          );
+          if (requestController.signal.aborted) {
+            conversationHistory.length = historyStart;
+          }
+          activeRequestController = null;
+          if (thinkingBubble) thinkingBubble.innerHTML = finalText;
+          if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+          setInputLocked(false);
+          if (inputField) inputField.focus();
+        },
+        requestController.signal
+      );
     }
 
-    // Submit listener for form input
     if (form) {
       form.addEventListener("submit", (e) => {
         e.preventDefault();
+        if (activeRequestController) {
+          activeRequestController.abort();
+          return;
+        }
         handleSend();
       });
     }
 
-    // Quick-action prompt suggestion chips
     chips.forEach(chip => {
       chip.addEventListener("click", () => {
-        const query = chip.dataset.query;
-        if (query) {
-          appendMessage("user", query);
-          setTimeout(() => {
-            const reply = generateResponse(query);
-            appendMessage("assistant", reply);
-          }, 300);
-        }
+        const q = chip.dataset.query;
+        if (q) handleSend(q);
       });
     });
 
-    // ------------------------------------------------------------------------
-    // EventBus Integrations
-    // ------------------------------------------------------------------------
+    // --- EventBus integrations ---
     if (window.eventBus) {
-      // Toggle chat window when mission toolbar "Dr. Raj AI" button is clicked
       window.eventBus.on("ai:toggle", () => {
-        if (!chatWindow) return;
-        if (!isChatOpen()) {
-          openChat();
-        } else {
-          closeChat();
-        }
+        isChatOpen() ? closeChat() : openChat();
       });
 
-      // Provide automatic tactical briefing when a site is selected
+      // Auto-brief when a site is selected on the map/globe
       window.eventBus.on("site:selected", (data) => {
-        const siteId = data.siteId || data.id;
-        const intel = SITE_INTEL[siteId] || `Tactical analysis for site ${siteId}: coordinates registered. Reviewing horizon silhouette and line-of-sight comms.`;
+        const siteId   = data.siteId || data.id;
+        const siteName = data.name   || siteId;
+        const context  = `The operator just selected the site "${siteName}" on the map (ID: ${siteId}). Give a short tactical briefing on this site — solar illumination, DTE comms, and any hazards.`;
 
-        // If chat is open, post message; if closed, pulse notification dot
-        if (chatWindow && chatWindow.style.display !== "none") {
-          appendMessage("assistant", intel);
-        } else {
-          if (notifDot) notifDot.style.display = "block";
-          appendMessage("assistant", intel);
-        }
+        if (notifDot) notifDot.style.display = "none";
+        openChat();
+        handleSend(context);
+      });
+
+      // Listen for external key updates (e.g. set by test.html in same tab)
+      window.eventBus.on("settings:gemini_key_changed", () => {
+        refreshStatusDot();
       });
     }
   }
 
-  // Safe DOM ready check: initialize immediately if DOM loaded, or on DOMContentLoaded
+  // ---------------------------------------------------------------------------
+  // 8. UTILITY
+  // ---------------------------------------------------------------------------
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  // Safe DOM-ready init
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initDrRaj);
   } else {
     initDrRaj();
   }
+
 })();

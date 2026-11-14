@@ -9,19 +9,32 @@
   <link rel="stylesheet" href="ai_dr_raj.css">
 </head>
 <body style="background:#141618; margin:0; padding:30px; font-family:sans-serif; color:#eee;">
+  <section aria-label="Gemini API configuration" style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:12px; margin-bottom:20px; background:#1e2022; border:1px solid #3a3c3f; border-radius:6px;">
+    <label for="gemini-api-key" style="font-size:13px; color:#c99e52;">Gemini API key</label>
+    <input id="gemini-api-key" type="password" autocomplete="new-password" placeholder="Enter Gemini API key"
+      style="flex:1; min-width:220px; padding:8px; background:#141618; border:1px solid #3a3c3f; border-radius:4px; color:#eee;">
+    <button id="save-gemini-key" type="button" style="padding:8px 12px; background:#1e2022; border:1px solid #3a3c3f; color:#e2ded9; border-radius:4px; cursor:pointer;">Save Key</button>
+    <button id="test-gemini-connection" type="button" style="padding:8px 12px; background:#1e2022; border:1px solid #3a3c3f; color:#e2ded9; border-radius:4px; cursor:pointer;">Test Connection</button>
+    <span id="gemini-connection-status" role="status" aria-live="polite" style="font-size:12px; color:#8c867c;">Not tested</span>
+  </section>
+
   <h2 style="font-size:16px; color:#c99e52; margin-bottom:8px;">Dr. Raj AI Analyst - Standalone Test Harness</h2>
   <p style="font-size:13px; color:#8c867c; margin-bottom:20px;">
     Test AI dialog queries, quick chips, and response to external site selection events.
   </p>
 
   <!-- Interactive buttons to simulate external EventBus site selection events -->
-  <div style="display:flex; gap:10px; margin-bottom:20px;">
+  <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:20px;">
     <button id="btn-select-site-1" style="padding:6px 12px; background:#1e2022; border:1px solid #3a3c3f; color:#e2ded9; border-radius:4px; cursor:pointer;">
       Simulate Selecting Site 1 (Shackleton)
     </button>
     <button id="btn-select-site-3" style="padding:6px 12px; background:#1e2022; border:1px solid #3a3c3f; color:#e2ded9; border-radius:4px; cursor:pointer;">
       Simulate Selecting Site 3 (Malapert)
     </button>
+    <label style="display:inline-flex; align-items:center; gap:6px; margin-left:10px; font-size:13px; color:#c99e52; cursor:pointer; background:#1e2022; padding:6px 12px; border:1px solid #3a3c3f; border-radius:4px;">
+      <input type="checkbox" id="toggle-mock-algorithm" checked style="accent-color:#c87d55;">
+      <span>Simulate Teammate Algorithm Responder</span>
+    </label>
   </div>
 
   <!-- Micro-frontend mount container -->
@@ -30,6 +43,87 @@
   <!-- Shared EventBus dependency -->
   <script src="../../core/event_bus.js"></script>
   <script>
+    const geminiKeyInput = document.getElementById("gemini-api-key");
+    const connectionStatus = document.getElementById("gemini-connection-status");
+    const apiKeyStorageKey = "dr_raj_gemini_key";
+    const primaryModel = "gemini-2.5-flash-lite";
+    const fallbackModel = "gemini-3.5-flash-lite";
+
+    geminiKeyInput.value = localStorage.getItem(apiKeyStorageKey) || "";
+
+    document.getElementById("save-gemini-key").addEventListener("click", () => {
+      const key = geminiKeyInput.value.trim();
+      localStorage.setItem(apiKeyStorageKey, key);
+      connectionStatus.textContent = key ? "Key saved; connection not tested" : "No key configured";
+      connectionStatus.style.color = "#c99e52";
+      if (window.eventBus) window.eventBus.emit("settings:gemini_key_changed");
+    });
+
+    document.getElementById("test-gemini-connection").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const key = geminiKeyInput.value.trim();
+      if (!key) {
+        connectionStatus.textContent = "🔴 Invalid Key";
+        connectionStatus.style.color = "#b8544f";
+        return;
+      }
+
+      button.disabled = true;
+      connectionStatus.textContent = "Testing…";
+      connectionStatus.style.color = "#8c867c";
+
+      async function pingModel(modelName) {
+        return fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": key
+            },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: "Reply OK." }] }],
+              generationConfig: { maxOutputTokens: 8 }
+            })
+          }
+        );
+      }
+
+      try {
+        let response = await pingModel(primaryModel);
+        let usedFallback = false;
+        if (response.status === 404 || response.status === 429 || response.status >= 500) {
+          usedFallback = true;
+          connectionStatus.textContent = `Retrying with ${fallbackModel}…`;
+          response = await pingModel(fallbackModel);
+        }
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          const message = errorBody.error && errorBody.error.message
+            ? errorBody.error.message
+            : `HTTP ${response.status}`;
+          connectionStatus.textContent = response.status === 401 || response.status === 403
+            ? `🔴 Invalid Key: ${message}`
+            : `⚠️ Gemini API error (${response.status}): ${message}`;
+          connectionStatus.style.color = response.status === 401 || response.status === 403
+            ? "#b8544f"
+            : "#c99e52";
+          return;
+        }
+        connectionStatus.textContent = usedFallback
+          ? `🟢 Connected (${fallbackModel})`
+          : `🟢 Connected (${primaryModel})`;
+        connectionStatus.style.color = "#729676";
+      } catch (error) {
+        console.error("[DrRaj] Gemini connection test failed:", error);
+        connectionStatus.textContent = `⚠️ Connection Failed: ${error.message}`;
+        connectionStatus.style.color = "#c99e52";
+      } finally {
+        button.disabled = false;
+      }
+    });
+
     // Simulate external site selection triggers
     document.getElementById("btn-select-site-1").addEventListener("click", () => {
       if (window.eventBus) window.eventBus.emit("site:selected", { siteId: "site-1" });
@@ -37,6 +131,35 @@
     document.getElementById("btn-select-site-3").addEventListener("click", () => {
       if (window.eventBus) window.eventBus.emit("site:selected", { siteId: "site-3" });
     });
+
+    // Simulated Teammate Scoring Algorithm Responder
+    if (window.eventBus) {
+      window.eventBus.on("algorithm:find_best_site", (data) => {
+        const isMockActive = document.getElementById("toggle-mock-algorithm")?.checked;
+        if (!isMockActive) return;
+
+        console.log("[MockAlgorithm] Intercepted search request:", data);
+
+        const mockResult = {
+          site: "Shackleton Connecting Ridge",
+          lat: -89.44,
+          lon: 222.8,
+          score: 94,
+          solarPct: 88,
+          dtePct: 92,
+          slopeAngle: 4.8,
+          reason: "Continuous grazing sunlight (88%) on peak ridge with unblocked Direct-to-Earth line of sight."
+        };
+
+        window.eventBus.emit("algorithm:result", mockResult);
+        console.log("[MockAlgorithm] Responded with optimal landing site:", mockResult);
+      });
+
+      // Log site:marked when Dr. Raj pins the site
+      window.eventBus.on("site:marked", (site) => {
+        console.log("[TestHarness] 📍 Map pin triggered via EventBus:", site);
+      });
+    }
 
     // Asynchronously fetch and inject component markup and script for isolated testing
     fetch("ai_dr_raj.html")
