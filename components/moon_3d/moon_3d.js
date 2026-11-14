@@ -16,6 +16,19 @@
   const MOON_RADIUS = 2.5;
 
   function initThreeMoon() {
+    // Wire up bottom 4K / 8K HUD texture switcher buttons
+    const clarityButtons = document.querySelectorAll(
+      ".moon-clarity-hud .hud-pill-btn",
+    );
+    clarityButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetRes = btn.dataset.res; // '4k' or '8k'
+        if (targetRes) {
+          applyTextureResolution(targetRes);
+        }
+      });
+    });
+
     const container = document.getElementById("moon-webgl-canvas");
     if (!container) return;
 
@@ -311,7 +324,12 @@
         lastEphemerisRequest = setTimeout(async () => {
           // Use the last marked site coordinates, defaulting to South Pole if none
           const site = window._lastMarkedSite || { lat: -89.4, lon: 222.6 };
-          const ephem = await fetchEphemeris(site.lat, site.lon, data.sliderValue, data.isoString);
+          const ephem = await fetchEphemeris(
+            site.lat,
+            site.lon,
+            data.sliderValue,
+            data.isoString,
+          );
           if (ephem) {
             applySunPosition(ephem, data.sliderValue);
             // Broadcast ephemeris to other components
