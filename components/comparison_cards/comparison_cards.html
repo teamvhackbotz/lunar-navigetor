@@ -25,6 +25,21 @@
     </div>
   </div>
 
+  <div class="cards-comparison-controls" role="group" aria-label="Compare candidate sites by time window">
+    <label class="comparison-date-field">
+      <span>From (UTC)</span>
+      <input id="comparison-from" type="datetime-local" step="3600">
+    </label>
+    <label class="comparison-date-field">
+      <span>To (UTC, exclusive)</span>
+      <input id="comparison-to" type="datetime-local" step="3600">
+    </label>
+    <button class="btn-cards-tool" id="btn-compare-sites" type="button">Compare</button>
+    <span class="comparison-status" id="comparison-status" role="status" aria-live="polite">
+      Hourly telemetry is available for November 2026. Roughness, dispersion, and touchdown velocity are not assessed.
+    </span>
+  </div>
+
   <div class="carousel-container" id="carousel-track">
 
     <!-- ========================================================================

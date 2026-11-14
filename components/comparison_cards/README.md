@@ -11,6 +11,7 @@ Teammate C
   - Solar altitude elevation angle and rising/grazing/shadow status.
   - Time remaining until next sunset or sunrise.
   - Direct-to-Earth line-of-sight communication elevation angle.
+- **Date-Window Comparison:** Select a whole-hour UTC interval in November 2026 and compare all marked candidate cards. Cards are ordered by touchdown-slope class, then sunlit time and Earth visibility from the available hourly telemetry. A candidate without a matching catalog series or backend evaluation is marked unavailable and placed after candidates with data. Terrain roughness, landing dispersion, and touchdown velocities are not assessed by this comparison.
 - **Secondary Dropdown Card System (Multi-Site Evaluation):**
   - Attached sub-cards (`.secondary-detail-card`) dropping down directly beneath parent cards.
   - 4 Interactive view tabs:
