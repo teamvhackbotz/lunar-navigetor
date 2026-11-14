@@ -33,7 +33,9 @@
   let moonMesh, sunLight;
   const pinsMap = new Map();
   let pinsContainer = null;
-  
+  let lastEphemerisRequest = null;
+  let ephemerisCache = new Map(); // key: "lat,lon,sliderValue" -> {sun,earth}
+
   // Standard WebGL world radius of the lunar sphere
   const MOON_RADIUS = 2.5;
 
@@ -392,15 +394,29 @@
       // Highlight active pin when an external component selects a site
       window.eventBus.on("site:marked", (data) => {
         if (!data || typeof data.lat !== "number" || typeof data.lon !== "number") return;
+        window._lastMarkedSite = { lat: data.lat, lon: data.lon };
         updateActivePin(data.lat, data.lon);
       });
 
       // Dynamically revolve the Sun around the Moon as timeline progresses
       window.eventBus.on("time:changed", (data) => {
-        const angle = (data.sliderValue / 100) * Math.PI * 2;
-        sunLight.position.x = Math.cos(angle) * 14;
-        sunLight.position.z = Math.sin(angle) * 14;
-        sunLight.position.y = Math.sin(angle * 2) * 0.8;
+        // Apply fallback immediately (simulated) for instant visual feedback
+        applySunPosition(null, data.sliderValue);
+
+        // Then fetch real ephemeris for the active site (debounced)
+        clearTimeout(lastEphemerisRequest);
+        lastEphemerisRequest = setTimeout(async () => {
+          // Use the last marked site coordinates, defaulting to South Pole if none
+          const site = window._lastMarkedSite || { lat: -89.4, lon: 222.6 };
+          const ephem = await fetchEphemeris(site.lat, site.lon, data.sliderValue);
+          if (ephem) {
+            applySunPosition(ephem, data.sliderValue);
+            // Broadcast ephemeris to other components
+            if (window.eventBus) {
+              window.eventBus.emit("ephemeris:updated", ephem);
+            }
+          }
+        }, 600); // 600ms debounce: don't spam API while scrubbing
       });
 
       // Synchronize texture resolution from Settings Modal or external command
@@ -724,6 +740,66 @@
       number: 1,
       active: true
     });
+  }
+
+  async function fetchEphemeris(lat, lon, sliderValue) {
+    // Convert slider (0-100) to a real ISO datetime:
+    // slider 0 = 2026-01-01T00:00Z, slider 100 = 2026-12-31T23:59Z
+    const startMs = Date.UTC(2026, 0, 1, 0, 0, 0);
+    const endMs = Date.UTC(2026, 11, 31, 23, 59, 0);
+    const ms = startMs + (sliderValue / 100) * (endMs - startMs);
+    const dt = new Date(ms).toISOString();
+
+    const cacheKey = `${lat.toFixed(1)},${lon.toFixed(1)},${Math.round(sliderValue)}`;
+    if (ephemerisCache.has(cacheKey)) {
+      return ephemerisCache.get(cacheKey);
+    }
+
+    try {
+      const url = `http://localhost:8000/api/ephemeris?lat=${lat}&lon=${lon}&dt=${encodeURIComponent(dt)}`;
+      const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (!resp.ok) throw new Error("API error");
+      const data = await resp.json();
+      ephemerisCache.set(cacheKey, data);
+      if (ephemerisCache.size > 100) {
+        // Evict oldest entry
+        ephemerisCache.delete(ephemerisCache.keys().next().value);
+      }
+      return data;
+    } catch (err) {
+      console.warn("[moon_3d] Ephemeris fetch failed, using fallback:", err.message);
+      return null;
+    }
+  }
+
+  function applySunPosition(ephem, sliderValue) {
+    if (!sunLight) return;
+    if (ephem && ephem.sun && typeof ephem.sun.az === "number" && typeof ephem.sun.el === "number") {
+      // Convert azimuth/elevation to Three.js world position
+      // Moon coord system: Y=north pole, X=-prime meridian, Z=90E meridian
+      const azRad = (ephem.sun.az * Math.PI) / 180;
+      const elRad = (ephem.sun.el * Math.PI) / 180;
+      const dist = 14;
+      // Az is measured from North clockwise. Convert to Three.js coords.
+      const sinAz = Math.sin(azRad);
+      const cosAz = Math.cos(azRad);
+      const cosEl = Math.cos(elRad);
+      const sinEl = Math.sin(elRad);
+      sunLight.position.set(
+        dist * cosEl * sinAz,    // X
+        dist * sinEl,            // Y (up = elevation)
+        dist * cosEl * (-cosAz)  // Z
+      );
+      // If sun is below horizon (el < -2°), dim it significantly
+      sunLight.intensity = ephem.sun.el < -2 ? 0.15 : 2.2;
+    } else {
+      // Fallback: use the simulated orbit
+      const angle = (sliderValue / 100) * Math.PI * 2;
+      sunLight.position.x = Math.cos(angle) * 14;
+      sunLight.position.z = Math.sin(angle) * 14;
+      sunLight.position.y = Math.sin(angle * 2) * 0.8;
+      sunLight.intensity = 2.2;
+    }
   }
 
   // ==========================================================================
