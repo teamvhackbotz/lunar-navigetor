@@ -899,12 +899,21 @@
   /**
    * Highlights the card matching lat/lon in the DOM.
    */
-  function highlightCard(lat, lon) {
+  function highlightCard(lat, lon, name) {
     const cards = document.querySelectorAll(".site-card:not(.card-add-new)");
+    const normalizedName = String(name || "").trim().toLowerCase();
+    const hasNameMatch = normalizedName && Array.from(cards).some(c =>
+      c.dataset.name && c.dataset.name.trim().toLowerCase() === normalizedName
+    );
     cards.forEach(c => {
       const cLat = parseFloat(c.dataset.lat);
       const cLon = parseFloat(c.dataset.lon);
-      const match = Math.abs(cLat - lat) < 0.25 && Math.abs(cLon - lon) < 2.0;
+      const dLon = Math.abs((cLon - lon + 540) % 360 - 180);
+      const matchByName = normalizedName && c.dataset.name &&
+        c.dataset.name.trim().toLowerCase() === normalizedName;
+      const match = hasNameMatch
+        ? matchByName
+        : Math.abs(cLat - lat) < 0.25 && dLon < 2.0;
       c.classList.toggle("active", match);
     });
     renumberCardsAndSync();
@@ -915,16 +924,23 @@
    */
   function findCardByCoordsOrName(lat, lon, name) {
     const columns = document.querySelectorAll(".site-card-column");
+    const normalizedName = String(name || "").trim().toLowerCase();
+    if (normalizedName) {
+      for (const col of columns) {
+        const card = col.querySelector(".site-card");
+        if (card && card.dataset.name &&
+            card.dataset.name.trim().toLowerCase() === normalizedName) {
+          return col;
+        }
+      }
+    }
+
     for (const col of columns) {
       const card = col.querySelector(".site-card");
       if (!card) continue;
-      const cName = card.dataset.name;
       const cLat = parseFloat(card.dataset.lat);
       const cLon = parseFloat(card.dataset.lon);
 
-      if (name && cName && name.trim().toLowerCase() === cName.trim().toLowerCase()) {
-        return col;
-      }
       if (!isNaN(cLat) && !isNaN(cLon)) {
         const dLat = Math.abs(cLat - lat);
         const dLon = Math.abs((cLon - lon + 540) % 360 - 180);
@@ -1309,7 +1325,8 @@
        *    Find existing card or dynamically create a new comparison card, highlight, and ensure drawer is open!
        */
       window.eventBus.on("site:marked", (data) => {
-        if (!data || typeof data.lat !== "number" || typeof data.lon !== "number") return;
+         if (!data || !Number.isFinite(data.lat) || !Number.isFinite(data.lon) ||
+             data.lat < -90 || data.lat > 90) return;
 
         // Micro-step coordinate nudges or card selection only highlights without spawning duplicates
         if (data.source === "comparison-cards" || data.source === "keyboard-nudge") {
@@ -1319,16 +1336,57 @@
 
         // Check if matching card already exists in the deck
         const existingCol = findCardByCoordsOrName(data.lat, data.lon, data.name);
+        let targetCol = existingCol;
         if (existingCol) {
-          highlightCard(data.lat, data.lon);
+          highlightCard(data.lat, data.lon, data.name);
           scrollCardIntoTrackView(existingCol);
         } else {
           // Add dynamically
-          addDynamicCard(data);
+          targetCol = addDynamicCard(data);
         }
 
         // Ensure drawer is open so the user sees their candidate card
         ensureCardsDrawerOpen();
+        if (data.openDetails === true && targetCol) {
+          setCardTabState(targetCol, data.detailTab || "horizon", true);
+        }
+      });
+
+      window.eventBus.on("cards:compare", (data) => {
+        if (!data || !data.siteA || !data.siteB) return;
+        if (![data.siteA, data.siteB].every(site =>
+          Number.isFinite(site.lat) && Number.isFinite(site.lon) &&
+          site.lat >= -90 && site.lat <= 90
+        )) return;
+        const columnsToCompare = [data.siteA, data.siteB]
+          .map(site => findCardByCoordsOrName(site.lat, site.lon, site.name))
+          .filter(Boolean);
+        if (columnsToCompare.length !== 2) return;
+
+        ensureCardsDrawerOpen();
+        document.querySelectorAll(".site-card:not(.card-add-new)").forEach(card => {
+          card.classList.remove("active");
+        });
+        columnsToCompare.forEach(col => {
+          const card = col.querySelector(".site-card");
+          if (card) card.classList.add("active");
+        });
+        renumberCardsAndSync();
+
+        const track = document.getElementById("carousel-track");
+        if (track) {
+          const [first, second] = columnsToCompare;
+          const left = Math.min(first.offsetLeft, second.offsetLeft);
+          const right = Math.max(
+            first.offsetLeft + first.clientWidth,
+            second.offsetLeft + second.clientWidth
+          );
+          const center = (left + right) / 2;
+          track.scrollTo({
+            left: Math.max(0, center - track.clientWidth / 2),
+            behavior: "smooth"
+          });
+        }
       });
 
       /**

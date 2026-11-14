@@ -2,14 +2,83 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Dr. Raj AI Assistant - Standalone Test Harness</title>
+  <base href="../../">
+  <title>Dr. Raj AI Assistant - Integrated Test Harness</title>
   <!-- Global design system styles -->
-  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="components/comparison_cards/comparison_cards.css">
+  <link rel="stylesheet" href="components/moon_3d/moon_3d.css">
   <!-- Dr. Raj AI component styles -->
-  <link rel="stylesheet" href="ai_dr_raj.css">
+  <link rel="stylesheet" href="components/ai_dr_raj/ai_dr_raj.css">
+  <style>
+    body {
+      min-height: 100vh;
+      box-sizing: border-box;
+      height: auto !important;
+      width: auto !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      position: relative;
+      padding: 18px !important;
+    }
+
+    .test-harness-header {
+      max-width: 1200px;
+      margin: 0 auto 14px;
+    }
+
+    .test-harness-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .test-harness-controls button {
+      padding: 7px 10px;
+      background: #1e2022;
+      border: 1px solid #3a3c3f;
+      color: #e2ded9;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .test-harness-controls button:hover {
+      border-color: #c87d55;
+    }
+
+    .test-harness-status {
+      color: #8c867c;
+      font-size: 12px;
+      margin-left: 4px;
+    }
+
+    .integration-test-cockpit {
+      position: relative;
+      isolation: isolate;
+      width: 100%;
+      max-width: 1500px;
+      height: min(74vh, 760px);
+      min-height: 540px;
+      margin: 0 auto 20px;
+      overflow: hidden;
+      border: 1px solid #3a3c3f;
+      border-radius: 8px;
+      background: #08090b;
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 10px !important; }
+      .integration-test-cockpit { min-height: 480px; height: 68vh; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
-<body style="background:#141618; margin:0; padding:30px; font-family:sans-serif; color:#eee;">
-  <section aria-label="Gemini API configuration" style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:12px; margin-bottom:20px; background:#1e2022; border:1px solid #3a3c3f; border-radius:6px;">
+<body style="background:#141618; margin:0; font-family:sans-serif; color:#eee;">
+  <div class="test-harness-header">
+  <section aria-label="Gemini API configuration" style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:12px; margin-bottom:14px; background:#1e2022; border:1px solid #3a3c3f; border-radius:6px;">
     <label for="gemini-api-key" style="font-size:13px; color:#c99e52;">Gemini API key</label>
     <input id="gemini-api-key" type="password" autocomplete="new-password" placeholder="Enter Gemini API key"
       style="flex:1; min-width:220px; padding:8px; background:#141618; border:1px solid #3a3c3f; border-radius:4px; color:#eee;">
@@ -18,30 +87,38 @@
     <span id="gemini-connection-status" role="status" aria-live="polite" style="font-size:12px; color:#8c867c;">Not tested</span>
   </section>
 
-  <h2 style="font-size:16px; color:#c99e52; margin-bottom:8px;">Dr. Raj AI Analyst - Standalone Test Harness</h2>
+  <h2 style="font-size:16px; color:#c99e52; margin:0 0 6px;">Dr. Raj AI Analyst - Integrated Test Harness</h2>
   <p style="font-size:13px; color:#8c867c; margin-bottom:20px;">
-    Test AI dialog queries, quick chips, and response to external site selection events.
+    Test site focus, pins, candidate-card details, and AI tool calls. Visual controls work without a Gemini key.
   </p>
 
-  <!-- Interactive buttons to simulate external EventBus site selection events -->
-  <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:20px;">
-    <button id="btn-select-site-1" style="padding:6px 12px; background:#1e2022; border:1px solid #3a3c3f; color:#e2ded9; border-radius:4px; cursor:pointer;">
-      Simulate Selecting Site 1 (Shackleton)
-    </button>
-    <button id="btn-select-site-3" style="padding:6px 12px; background:#1e2022; border:1px solid #3a3c3f; color:#e2ded9; border-radius:4px; cursor:pointer;">
-      Simulate Selecting Site 3 (Malapert)
-    </button>
-    <label style="display:inline-flex; align-items:center; gap:6px; margin-left:10px; font-size:13px; color:#c99e52; cursor:pointer; background:#1e2022; padding:6px 12px; border:1px solid #3a3c3f; border-radius:4px;">
+  <div class="test-harness-controls">
+    <button id="btn-focus-shackleton" type="button">Focus Shackleton + Horizon</button>
+    <button id="btn-focus-chandrayaan" type="button">Focus Chandrayaan-3</button>
+    <button id="btn-compare-sites" type="button">Compare Shackleton / Malapert</button>
+    <button id="btn-toggle-cards" type="button">Toggle candidate cards</button>
+    <button id="btn-select-site-1" type="button">Simulate selecting Shackleton</button>
+    <button id="btn-select-site-3" type="button">Simulate selecting Malapert</button>
+    <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#c99e52; cursor:pointer; background:#1e2022; padding:7px 10px; border:1px solid #3a3c3f; border-radius:4px;">
       <input type="checkbox" id="toggle-mock-algorithm" checked style="accent-color:#c87d55;">
-      <span>Simulate Teammate Algorithm Responder</span>
+      <span>Mock best-site algorithm</span>
     </label>
+    <span id="integration-status" class="test-harness-status" role="status" aria-live="polite">Loading integrated test components…</span>
+  </div>
   </div>
 
-  <!-- Micro-frontend mount container -->
+  <section id="test-cockpit" class="integration-test-cockpit" aria-label="Integrated Moon and candidate cards test scene">
+    <input type="checkbox" id="toggle-top-cards" class="drawer-toggle" checked aria-label="Show candidate cards">
+    <div id="mount-comparison-cards"></div>
+    <div id="mount-moon-3d"></div>
+  </section>
+
+  <!-- AI component is mounted alongside the visual test scene. -->
   <div id="mount-ai-dr-raj"></div>
 
   <!-- Shared EventBus dependency -->
-  <script src="../../core/event_bus.js"></script>
+  <script src="core/event_bus.js"></script>
+  <script src="core/lunar_physics.js"></script>
   <script>
     const geminiKeyInput = document.getElementById("gemini-api-key");
     const connectionStatus = document.getElementById("gemini-connection-status");
@@ -126,10 +203,24 @@
 
     // Simulate external site selection triggers
     document.getElementById("btn-select-site-1").addEventListener("click", () => {
-      if (window.eventBus) window.eventBus.emit("site:selected", { siteId: "site-1" });
+      if (window.eventBus) {
+        window.eventBus.emit("site:selected", {
+          siteId: "site-1",
+          name: "Peak Near Shackleton",
+          lat: -89.6,
+          lon: 129.2
+        });
+      }
     });
     document.getElementById("btn-select-site-3").addEventListener("click", () => {
-      if (window.eventBus) window.eventBus.emit("site:selected", { siteId: "site-3" });
+      if (window.eventBus) {
+        window.eventBus.emit("site:selected", {
+          siteId: "site-3",
+          name: "Malapert Massif",
+          lat: -85.9,
+          lon: 2.9
+        });
+      }
     });
 
     // Simulated Teammate Scoring Algorithm Responder
@@ -161,21 +252,94 @@
       });
     }
 
-    // Asynchronously fetch and inject component markup and script for isolated testing
-    fetch("ai_dr_raj.html")
-      .then(r => r.text())
-      .then(html => {
-        document.getElementById("mount-ai-dr-raj").innerHTML = html;
-        const script = document.createElement("script");
-        script.src = "ai_dr_raj.js";
-        document.body.appendChild(script);
+    document.getElementById("btn-focus-shackleton").addEventListener("click", () => {
+      window.eventBus.emit("site:marked", {
+        name: "Peak Near Shackleton",
+        lat: -89.6,
+        lon: 129.2,
+        source: "test-harness",
+        focus: true,
+        openDetails: true,
+        detailTab: "horizon"
+      });
+    });
 
-        // Auto-display chat window in test harness so it is immediately visible
+    document.getElementById("btn-focus-chandrayaan").addEventListener("click", () => {
+      window.eventBus.emit("site:marked", {
+        name: "Chandrayaan-3 / Shiv Shakti Point",
+        lat: -69.37,
+        lon: 32.35,
+        source: "test-harness",
+        focus: true,
+        openDetails: true,
+        detailTab: "solar"
+      });
+    });
+
+    document.getElementById("btn-compare-sites").addEventListener("click", () => {
+      const siteA = { name: "Peak Near Shackleton", lat: -89.6, lon: 129.2 };
+      const siteB = { name: "Malapert Massif", lat: -85.9, lon: 2.9 };
+      [siteA, siteB].forEach(site => {
+        window.eventBus.emit("site:marked", {
+          ...site,
+          source: "test-harness",
+          focus: false,
+          openDetails: false
+        });
+      });
+      window.eventBus.emit("cards:compare", { siteA, siteB });
+    });
+
+    document.getElementById("btn-toggle-cards").addEventListener("click", () => {
+      const toggle = document.getElementById("toggle-top-cards");
+      toggle.checked = !toggle.checked;
+      toggle.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    async function loadTestComponent(name, mountId) {
+      const response = await fetch(`components/${name}/${name}.html`, { cache: "no-cache" });
+      if (!response.ok) throw new Error(`Could not load ${name}.html (${response.status})`);
+      document.getElementById(mountId).innerHTML = await response.text();
+    }
+
+    function loadComponentScript(source) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = source;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Could not load ${source}`));
+        document.body.appendChild(script);
+      });
+    }
+
+    async function startIntegratedHarness() {
+      const status = document.getElementById("integration-status");
+      try {
+        if (typeof THREE === "undefined" || !THREE.OrbitControls) {
+          throw new Error("Three.js or OrbitControls did not load. Check the CDN connection.");
+        }
+
+        await loadTestComponent("comparison_cards", "mount-comparison-cards");
+        await loadTestComponent("moon_3d", "mount-moon-3d");
+        await loadComponentScript("components/comparison_cards/comparison_cards.js");
+        await loadComponentScript("components/moon_3d/moon_3d.js");
+        await loadTestComponent("ai_dr_raj", "mount-ai-dr-raj");
+        await loadComponentScript("components/ai_dr_raj/ai_dr_raj.js");
+
+        status.textContent = "Integrated scene ready. Use the visual controls or ask Dr. Raj to show/compare sites.";
+        status.style.color = "#729676";
         setTimeout(() => {
           const chatWin = document.getElementById("ai-chat-window");
           if (chatWin) chatWin.style.display = "flex";
         }, 100);
-      });
+      } catch (error) {
+        console.error("[TestHarness] Component initialization failed:", error);
+        status.textContent = `Integration setup failed: ${error.message}`;
+        status.style.color = "#b8544f";
+      }
+    }
+
+    startIntegratedHarness();
   </script>
 </body>
 </html>

@@ -30,6 +30,9 @@ Teammate F
   - `algorithm:find_best_site`: `{ startDate, endDate, criteria }` for algorithm-backed landing site recommendations; Dr. Raj listens for `algorithm:result` and marks the returned site.
   - `site:marked`: Used for named locations and algorithm recommendations.
   - `timeline:jump`: `{ isoString }` when moving the timeline.
+  - `cards:compare`: `{ siteA, siteB }` requests a side-by-side card comparison.
+
+The `show_landing_site` tool resolves canonical Artemis, CLPS, international, and Apollo sites, then emits `site:marked` with camera-focus and detail-tab instructions. `compare_sites` resolves two sites and requests their comparison cards. Dynamic card telemetry is application profile data and should not be represented as validated live mission telemetry.
 
 ## Gemini API Key
 Open `test.html` to enter a Gemini API key, save it in `localStorage` as `dr_raj_gemini_key`, and test connectivity to `gemini-2.5-flash-lite` with `gemini-3.5-flash-lite` as the availability fallback. Saving broadcasts `settings:gemini_key_changed` so an open Dr. Raj instance refreshes its status indicator.

@@ -26,6 +26,76 @@
   const PERSONALITY_LS_KEY = "dr_raj_personality_enabled";
   let drRajPersonalityEnabled = localStorage.getItem(PERSONALITY_LS_KEY) === "true";
 
+  const CANONICAL_SITES = {
+    "Peak Near Shackleton": { lat: -89.6, lon: 129.2, aliases: ["Shackleton", "Shackleton Crater"] },
+    "Connecting Ridge": { lat: -89.4, lon: 222.6 },
+    "Connecting Ridge Extension": { lat: -89.2, lon: 218.0 },
+    "Faustini Rim A": { lat: -87.1, lon: 67.0, aliases: ["Faustini"] },
+    "de Gerlache Rim 1": { lat: -88.3, lon: 291.5, aliases: ["de Gerlache"] },
+    "de Gerlache Rim 2": { lat: -88.1, lon: 290.0 },
+    "de Gerlache-Kocher Massif": { lat: -85.8, lon: 236.4 },
+    "Haworth Crater Rim": { lat: -87.4, lon: 343.0, aliases: ["Haworth"] },
+    "Malapert Massif": { lat: -85.9, lon: 2.9, aliases: ["Malapert"] },
+    "Leibnitz Beta Plateau": { lat: -85.8, lon: 328.0, aliases: ["Leibnitz Beta"] },
+    "Nobile Rim 1": { lat: -85.2, lon: 53.5, aliases: ["Nobile"] },
+    "Nobile Rim 2": { lat: -84.2, lon: 60.7 },
+    "Amundsen Rim": { lat: -84.5, lon: 105.0, aliases: ["Amundsen"] },
+    "IM-1 / Malapert A": { lat: -80.13, lon: 1.44, aliases: ["IM-1", "IM 1", "Malapert A"] },
+    "VIPER / Mons Mouton": { lat: -85.5, lon: 31.8, aliases: ["VIPER", "Mons Mouton"] },
+    "Chandrayaan-3 / Shiv Shakti Point": {
+      lat: -69.37, lon: 32.35, aliases: ["Chandrayaan-3", "Chandrayaan 3", "Shiv Shakti Point"]
+    },
+    "Chang'e 4": { lat: -45.46, lon: 177.6, aliases: ["Chang E 4"] },
+    "Chang'e 5": { lat: 43.06, lon: 308.08, aliases: ["Chang E 5"] },
+    "Chang'e 6": { lat: -41.64, lon: 206.01, aliases: ["Chang E 6"] },
+    "SLIM": { lat: -13.31, lon: 25.25 },
+    "Apollo 11": { lat: 0.67, lon: 23.47 },
+    "Apollo 12": { lat: -3.01, lon: 336.58 },
+    "Apollo 14": { lat: -3.65, lon: 342.53 },
+    "Apollo 15": { lat: 26.13, lon: 3.63 },
+    "Apollo 16": { lat: -8.97, lon: 15.50 },
+    "Apollo 17": { lat: 20.19, lon: 30.77 }
+  };
+
+  function normalizeSiteName(name) {
+    return String(name || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  function resolveSite(name, lat, lon) {
+    const normalizedName = normalizeSiteName(name);
+    const entries = Object.entries(CANONICAL_SITES);
+    let match = entries.find(([canonicalName, site]) =>
+      [canonicalName, ...(site.aliases || [])]
+        .some(alias => normalizeSiteName(alias) === normalizedName)
+    );
+
+    if (!match && normalizedName) {
+      const mentions = entries.flatMap(([canonicalName, site]) =>
+        [canonicalName, ...(site.aliases || [])]
+          .map(alias => ({ canonicalName, site, alias: normalizeSiteName(alias) }))
+          .filter(candidate => candidate.alias && normalizedName.includes(candidate.alias))
+      ).sort((a, b) => b.alias.length - a.alias.length);
+      if (mentions.length) match = [mentions[0].canonicalName, mentions[0].site];
+    }
+
+    const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lon);
+    if (hasCoordinates && (lat < -90 || lat > 90)) return null;
+    if (!hasCoordinates && !match) return null;
+
+    const canonicalName = match ? match[0] : "";
+    const site = match ? match[1] : null;
+    return {
+      name: canonicalName || String(name || "Custom Site").trim(),
+      lat: hasCoordinates ? lat : site.lat,
+      lon: hasCoordinates ? lon : site.lon
+    };
+  }
+
   function getApiKey() {
     return (localStorage.getItem(LS_KEY) || "").trim();
   }
@@ -56,7 +126,9 @@ SAFETY AND EVIDENCE:
 
 TOOL USE:
 - When the user asks where to land or what the best site is for a date window, you MUST call find_best_landing_site.
-- When the user asks to see or target a specific site on the map, call mark_site_on_map.
+- When the user asks to show, find, visit, or locate a named landing site or crater, or asks where a named mission landed, call show_landing_site. Use canonical coordinates when available.
+- When the user asks to compare two sites, call compare_sites.
+- When the user explicitly asks to place a map pin, call mark_site_on_map; known site names are resolved to canonical coordinates.
 - When the user wants to adjust or jump the timeline date, call set_timeline_range.
 - After receiving a tool result, summarize the relevant metrics, source, limitations, and safety implications. If a tool times out, state that it timed out and do not invent a result.`;
 
@@ -77,6 +149,8 @@ DR. RAJ PERSONALITY:
 - If appropriate, use brief, restrained dry wit about data limitations; never make it biographical or let humor obscure operational facts.
 - Express measured appreciation for notable lunar terrain without cinematic language or exaggerated drama.
 - If you are wrong or lack evidence, acknowledge it plainly and correct it. Treat analytical errors as serious professional failures without claiming personal guilt or emotion. Never bluff.
+- Call show_landing_site for requests to show, find, visit, or locate a named site or for questions about where a named mission landed.
+- Call compare_sites whenever the user asks for a comparison of two named sites.
 - Keep answers to one or two concise paragraphs. Do not use pop-culture references, movie tangents, ethnic stereotypes, or sitcom tropes.`;
 
   // ---------------------------------------------------------------------------
@@ -109,21 +183,54 @@ DR. RAJ PERSONALITY:
                 description: "Ordered list of scoring criteria. Valid values: 'solar', 'dte', 'slope'. First item has highest weight."
               }
             },
-            required: ["start_date", "end_date"]
+            required: ["start_date", "end_date", "criteria"]
           }
         },
         {
           name: "mark_site_on_map",
           description:
-            "Pins a named location on the 3D lunar globe and 2D map, and opens its comparison card.",
+            "Adds a numbered pin and focuses a named location using canonical coordinates when available. Prefer show_landing_site for explicit site-view requests.",
           parameters: {
             type: "OBJECT",
             properties: {
               name: { type: "STRING", description: "Human-readable site name." },
-              lat:  { type: "NUMBER", description: "Selenographic latitude in decimal degrees (negative = south)." },
-              lon:  { type: "NUMBER", description: "Selenographic longitude in decimal degrees (east positive)." }
+              lat:  { type: "NUMBER", description: "Optional selenographic latitude in decimal degrees (negative = south)." },
+              lon:  { type: "NUMBER", description: "Optional selenographic longitude in decimal degrees (east positive)." }
             },
-            required: ["name", "lat", "lon"]
+            required: ["name"]
+          }
+        },
+        {
+          name: "show_landing_site",
+          description:
+            "Resolves a named lunar landing site or crater, focuses the 3D globe, places or highlights a numbered pin, opens its comparison card, and expands the requested detail tab.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              name: { type: "STRING", description: "Site, crater, or mission landing-site name." },
+              lat: { type: "NUMBER", description: "Optional selenographic latitude in decimal degrees." },
+              lon: { type: "NUMBER", description: "Optional selenographic longitude in decimal degrees." },
+              detail_tab: {
+                type: "STRING",
+                enum: ["horizon", "slope", "solar", "comms"],
+                description: "Optional detail card to expand; defaults to horizon."
+              }
+            },
+            required: ["name"]
+          }
+        },
+        {
+          name: "compare_sites",
+          description:
+            "Resolves two lunar sites, opens and highlights both comparison cards, and requests a side-by-side comparison.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              site_a: { type: "STRING", description: "Name or alias of the first lunar site." },
+              site_b: { type: "STRING", description: "Name or alias of the second lunar site." },
+              date: { type: "STRING", description: "Optional comparison date in ISO 8601 format." }
+            },
+            required: ["site_a", "site_b"]
           }
         },
         {
@@ -179,6 +286,41 @@ DR. RAJ PERSONALITY:
     }
   }
 
+  function getSiteProfileSummary(site) {
+    const profiles = window.ComparisonCards &&
+      typeof window.ComparisonCards.getProfiles === "function"
+      ? window.ComparisonCards.getProfiles()
+      : null;
+    if (!profiles) return `${site.name}: no comparison-card profile is available.`;
+
+    const normalizedName = normalizeSiteName(site.name);
+    const profile = Object.values(profiles).find(candidate =>
+      normalizeSiteName(candidate.name) === normalizedName
+    );
+    if (!profile) return `${site.name}: no comparison-card profile is available.`;
+
+    const metrics = [];
+    if (profile.elevation !== undefined && profile.elevation !== null) {
+      metrics.push(`elevation ${profile.elevation}`);
+    }
+    if (profile.solar && profile.solar.daylightPct !== undefined && profile.solar.daylightPct !== null) {
+      metrics.push(`illumination ${profile.solar.daylightPct}`);
+    }
+    if (profile.horizon && typeof profile.horizon.sunEl === "number") {
+      metrics.push(`solar elevation ${profile.horizon.sunEl}°`);
+    }
+    if (profile.slope && profile.slope.slopeVal !== undefined && profile.slope.slopeVal !== null) {
+      metrics.push(`slope ${profile.slope.slopeVal}${profile.slope.slopeStatus ? ` (${profile.slope.slopeStatus})` : ""}`);
+    }
+    if (profile.horizon && typeof profile.horizon.earthEl === "number") {
+      metrics.push(`Earth elevation ${profile.horizon.earthEl}°`);
+    }
+
+    return metrics.length
+      ? `${site.name} displayed card profile: ${metrics.join(", ")} (application profile values; not live or mission-validated telemetry).`
+      : `${site.name}: the comparison-card profile contains no summary metrics.`;
+  }
+
   // ---------------------------------------------------------------------------
   // 5. TOOL EXECUTION (EventBus bridge)
   // ---------------------------------------------------------------------------
@@ -202,17 +344,77 @@ DR. RAJ PERSONALITY:
         return;
       }
 
-      if (name === "mark_site_on_map") {
-        if (window.eventBus) {
-          window.eventBus.emit("site:marked", {
-            name: args.name,
-            lat:  args.lat,
-            lon:  args.lon,
-            source: "dr-raj"
-          });
+      if (name === "show_landing_site" || name === "mark_site_on_map") {
+        const site = resolveSite(args.name, args.lat, args.lon);
+        if (!site) {
+          logDiagnostic(`Could not resolve site "${args.name}" without coordinates.`, "error");
+          resolve(`I could not resolve "${args.name}". Provide a recognized site name or both latitude and longitude.`);
+          return;
         }
-        logDiagnostic(`Tool ${name} completed in ${formatDuration(Date.now() - toolStartedAt)}.`, "success");
-        resolve(`Site "${args.name}" pinned at ${Math.abs(args.lat).toFixed(2)}° ${args.lat < 0 ? "S" : "N"}, ${Math.abs(args.lon).toFixed(2)}° ${args.lon < 0 ? "W" : "E"} on the map.`);
+        if (!window.eventBus) {
+          logDiagnostic("Cannot focus the requested site: EventBus is unavailable.", "error");
+          resolve("The site was resolved, but map and globe controls are unavailable because EventBus is not loaded.");
+          return;
+        }
+
+        const detailTab = args.detail_tab || "horizon";
+        window.eventBus.emit("site:marked", {
+          name: site.name,
+          lat: site.lat,
+          lon: site.lon,
+          source: "dr-raj",
+          focus: true,
+          openDetails: true,
+          detailTab
+        });
+        const profileSummary = getSiteProfileSummary(site);
+        logDiagnostic(`Focused ${site.name} at ${site.lat.toFixed(2)}°, ${site.lon.toFixed(2)}°.`, "success");
+        resolve(
+          `Issued 3D camera focus and pin request for ${site.name} at ${site.lat.toFixed(2)}° latitude, ${site.lon.toFixed(2)}° longitude, and requested the ${detailTab} card detail. ${profileSummary}`
+        );
+        return;
+      }
+
+      if (name === "compare_sites") {
+        const siteA = resolveSite(args.site_a);
+        const siteB = resolveSite(args.site_b);
+        if (!siteA || !siteB) {
+          logDiagnostic("Could not resolve both sites for comparison.", "error");
+          resolve("I could not resolve both site names. Use canonical site names or aliases from the mission catalog.");
+          return;
+        }
+        if (normalizeSiteName(siteA.name) === normalizeSiteName(siteB.name)) {
+          resolve("Select two different sites for comparison.");
+          return;
+        }
+        if (!window.eventBus) {
+          logDiagnostic("Cannot compare sites: EventBus is unavailable.", "error");
+          resolve("The sites were resolved, but comparison controls are unavailable because EventBus is not loaded.");
+          return;
+        }
+
+        const markedSite = (site, focus) => ({
+          name: site.name,
+          lat: site.lat,
+          lon: site.lon,
+          source: "dr-raj",
+          focus,
+          openDetails: false
+        });
+        window.eventBus.emit("site:marked", markedSite(siteA, false));
+        window.eventBus.emit("site:marked", markedSite(siteB, false));
+        window.eventBus.emit("cards:compare", {
+          siteA: { name: siteA.name, lat: siteA.lat, lon: siteA.lon },
+          siteB: { name: siteB.name, lat: siteB.lat, lon: siteB.lon }
+        });
+
+        const dateNote = args.date ? ` Requested comparison date: ${args.date}; no date-specific calculation was returned.` : "";
+        const comparison = [
+          getSiteProfileSummary(siteA),
+          getSiteProfileSummary(siteB)
+        ].join(" ");
+        logDiagnostic(`Requested card comparison: ${siteA.name} vs ${siteB.name}.`, "success");
+        resolve(`Issued a side-by-side card comparison request for ${siteA.name} (${siteA.lat.toFixed(2)}°, ${siteA.lon.toFixed(2)}°) and ${siteB.name} (${siteB.lat.toFixed(2)}°, ${siteB.lon.toFixed(2)}°). ${comparison}${dateNote}`);
         return;
       }
 
