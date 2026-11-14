@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Comparison Cards - Standalone Test Harness</title>
+  <!-- Global design system styles -->
+  <link rel="stylesheet" href="../../styles.css">
+  <!-- Active operational theme stylesheet -->
+  <link rel="stylesheet" id="theme-stylesheet" href="../../themes/theme_earth.css">
+  <!-- Comparison cards component styles -->
+  <link rel="stylesheet" href="comparison_cards.css">
+  <!-- Shared Theme Manager -->
+  <script src="../../themes/theme_manager.js"></script>
+  <style>
+    body { background: var(--bg-deep-space, #141618); padding: 40px; font-family: sans-serif; color: var(--text-primary, #ede8e1); }
+    /* Override absolute top positioning so cards display naturally within test page body */
+    .drawer-top-cards { position: relative; top: auto; overflow: visible; }
+    .carousel-container { padding-bottom: 30px; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <h2 style="color:var(--text-primary, #ede8e1); font-size:18px;">Comparison Cards — Multi-Site Secondary Dropdown Test Harness</h2>
+    <p style="color:var(--text-muted, #8c867c); font-size:13px; margin-bottom:20px;">
+      Test multi-candidate evaluation: click <code>[ 🌄 Horizon ]</code>, <code>[ 📈 Slope ]</code>, <code>[ ☀️ Solar ]</code>, or <code>[ 📡 Comms ]</code> on multiple cards simultaneously to inspect secondary sub-cards side-by-side.
+    </p>
+
+    <!-- Simulated Timeline Time Scrubber to test Sun Tracker movement -->
+    <div style="margin-bottom: 24px; padding: 12px 16px; background: var(--bg-surface-dark, #1e2022); border: 1px solid var(--border-subtle, #3a3c3f); border-radius: 6px; display: flex; align-items: center; gap: 14px;">
+      <span style="font-size: 12px; font-weight: 600; color: var(--accent-sand, #c99e52);">Simulate Mission Time Scrubber:</span>
+      <input type="range" id="test-time-scrubber" min="0" max="100" value="0" style="flex: 1; cursor: pointer;">
+      <span id="test-time-val" style="font-family: monospace; font-size: 12px; min-width: 45px;">0%</span>
+    </div>
+
+    <!-- Micro-frontend mount container -->
+    <div id="mount-comparison-cards"></div>
+
+    <!-- Real-time EventBus logging console -->
+    <div id="event-log" style="margin-top:30px; padding:15px; background:var(--bg-surface-dark, #1e2022); border:1px solid var(--border-subtle, #3a3c3f); border-radius:6px; font-family:monospace; font-size:12px; color:var(--text-secondary, #beb7ac);">
+      <strong>Event Bus Output:</strong>
+      <ul id="log-list" style="margin:8px 0 0; padding-left:20px; max-height: 140px; overflow-y: auto;">
+        <li>Listening for events...</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Shared core event bus and math dependencies -->
+  <script src="../../core/event_bus.js"></script>
+  <script src="../../core/coord_math.js"></script>
+  <script>
+    const logList = document.getElementById("log-list");
+    function logEvent(name, data) {
+      const li = document.createElement("li");
+      li.textContent = `[${new Date().toLocaleTimeString()}] ${name}: ${JSON.stringify(data)}`;
+      logList.prepend(li);
+    }
+
+    if (window.eventBus) {
+      window.eventBus.on("site:marked", d => logEvent("site:marked", d));
+      window.eventBus.on("card:inspect", d => logEvent("card:inspect (Ready for Step 3)", d));
+    }
+
+    const scrubber = document.getElementById("test-time-scrubber");
+    const valText = document.getElementById("test-time-val");
+    if (scrubber) {
+      scrubber.addEventListener("input", (e) => {
+        const val = parseInt(e.target.value, 10);
+        valText.textContent = `${val}%`;
+        if (window.eventBus) {
+          window.eventBus.emit("time:changed", { sliderValue: val });
+        }
+      });
+    }
+
+    // Asynchronously fetch and inject component markup and script for isolated testing
+    fetch("comparison_cards.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("mount-comparison-cards").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "comparison_cards.js";
+        document.body.appendChild(script);
+      });
+  </script>
+</body>
+</html>

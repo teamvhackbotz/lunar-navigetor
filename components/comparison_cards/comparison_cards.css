@@ -1,0 +1,584 @@
+/* ==========================================================================
+   Lunar Landing Site Navigator - Candidate Comparison Cards
+   File: components/comparison_cards/comparison_cards.css
+   Role: Layout, boundary constraints, scroll-snap carousel, status badges,
+         and attached secondary detail sub-cards with SVG visualizations.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Floating Top Corridor Container
+   Floats horizontally across the upper viewport directly beneath the top navigation bar.
+   Uses overflow:hidden and box-sizing:border-box to guarantee that cards
+   are strictly clipped inside the available corridor and NEVER tuck or bleed
+   under the left or right horizon drawers.
+   -------------------------------------------------------------------------- */
+.drawer-top-cards {
+  position: absolute;
+  top: calc(var(--height-top-nav, 54px) + 12px);
+  left: 0;
+  right: 0;
+  background: transparent;
+  z-index: 90;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
+              right 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
+              opacity 0.2s ease;
+}
+
+/* --------------------------------------------------------------------------
+   2. Dynamic Drawer Clearance Rules (Corridor Shifting)
+   -------------------------------------------------------------------------- */
+
+/* When Left Horizon Drawer opens: inset left boundary by 380px */
+#toggle-left-horizon:checked ~ #mount-comparison-cards .drawer-top-cards,
+#toggle-left-horizon:checked ~ .drawer-top-cards {
+  left: var(--width-left-drawer, 380px) !important;
+}
+
+/* When Right Horizon Drawer opens: inset right boundary by 380px */
+#toggle-right-horizon:checked ~ #mount-comparison-cards .drawer-top-cards,
+#toggle-right-horizon:checked ~ .drawer-top-cards {
+  right: var(--width-right-drawer, 380px) !important;
+}
+
+/* When BOTH Horizon Drawers are open: lock both left and right edges at 380px */
+#toggle-left-horizon:checked ~ #toggle-right-horizon:checked ~ #mount-comparison-cards .drawer-top-cards,
+#toggle-left-horizon:checked ~ #toggle-right-horizon:checked ~ .drawer-top-cards {
+  left: var(--width-left-drawer, 380px) !important;
+  right: var(--width-right-drawer, 380px) !important;
+}
+
+/* --------------------------------------------------------------------------
+   2B. Flight Corridor Toolbar (Site Count & Undo/Redo Deck)
+   -------------------------------------------------------------------------- */
+.cards-corridor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 48px 6px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.cards-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cards-toolbar-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.cards-toolbar-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary, #beb7ac);
+}
+
+.cards-count-badge {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(200, 125, 85, 0.16);
+  border: 1px solid rgba(200, 125, 85, 0.35);
+  color: var(--accent-terracotta, #c87d55);
+}
+
+.cards-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-cards-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(30, 32, 34, 0.82);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  color: var(--text-secondary, #beb7ac);
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cards-tool:hover:not(:disabled) {
+  background: var(--bg-surface-dark, #1e2022);
+  border-color: var(--accent-terracotta, #c87d55);
+  color: var(--text-primary, #ede8e1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+
+.btn-cards-tool:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+.btn-cards-tool .tool-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+   3. Horizontal Scroll-Snap Carousel Container
+   Maintains justify-content: flex-start with a 48px side gutter so Card 1 is
+   never pushed into negative scroll space and never collides with side handles.
+   -------------------------------------------------------------------------- */
+.carousel-container {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 48px;
+  padding: 4px 48px 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  align-items: flex-start;
+  pointer-events: auto;
+  scrollbar-width: thin;
+}
+
+/* Custom scrollbar styling for card track */
+.carousel-container::-webkit-scrollbar {
+  height: 6px;
+}
+.carousel-container::-webkit-scrollbar-track {
+  background: rgba(30, 32, 34, 0.4);
+  border-radius: 3px;
+}
+.carousel-container::-webkit-scrollbar-thumb {
+  background: var(--border-medium, #4e4f52);
+  border-radius: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   4. Site Card Column Container
+   Hosts the Primary Summary Card and its attached Secondary Detail Sub-Card.
+   Scrolls together as a unified vertical column within the horizontal carousel.
+   -------------------------------------------------------------------------- */
+.site-card-column {
+  flex: 0 0 295px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scroll-snap-align: start;
+  transition: flex 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* Constrain width to 255px when corridor is narrowed between two open 380px sidebars */
+#toggle-left-horizon:checked ~ #toggle-right-horizon:checked ~ #mount-comparison-cards .site-card-column,
+#toggle-left-horizon:checked ~ #toggle-right-horizon:checked ~ .drawer-top-cards .site-card-column {
+  flex: 0 0 255px;
+}
+
+/* --------------------------------------------------------------------------
+   5. Primary Site Card Component
+   Semi-transparent frosted card with mission telemetry and safety stats.
+   -------------------------------------------------------------------------- */
+.site-card {
+  width: 100%;
+  background-color: var(--bg-card, #27292b);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.site-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.6);
+  border-color: var(--border-medium, #4e4f52);
+}
+
+.site-card.active {
+  border-color: var(--accent-terracotta, #c87d55);
+  box-shadow: 0 0 0 1px var(--accent-terracotta, #c87d55), 0 12px 30px rgba(0,0,0,0.6);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.card-header-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.site-number-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  background: rgba(30, 32, 34, 0.9);
+  color: var(--accent-sand, #c99e52);
+  border: 1px solid var(--border-medium, #4e4f52);
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.site-card.active .site-number-badge {
+  background: var(--accent-terracotta, #c87d55);
+  color: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 0 0 8px rgba(200, 125, 85, 0.65);
+}
+
+.site-tag {
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-bottom: 3px;
+}
+.tag-artemis { background: #3b352b; color: var(--accent-sand, #c99e52); }
+.tag-clps { background: #2b353b; color: var(--accent-slate, #5f798a); }
+
+.site-name { font-size: 14px; font-weight: 600; color: var(--text-primary, #ede8e1); }
+.site-coords { font-size: 11px; font-family: var(--font-mono, monospace); color: var(--text-muted, #8c867c); }
+
+.card-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-muted, #8c867c);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+}
+.card-dismiss:hover { color: var(--text-primary, #ede8e1); }
+
+/* 4-Metric Landing Safety Grid */
+.card-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: var(--bg-surface-dark, #1e2022);
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+.metric-item { display: flex; flex-direction: column; gap: 2px; }
+.metric-label { font-size: 9px; color: var(--text-muted, #8c867c); text-transform: uppercase; }
+.metric-value { font-size: 12px; font-weight: 600; color: var(--text-primary, #ede8e1); font-family: var(--font-mono, monospace); }
+
+.status-safe { color: var(--accent-sage, #7d967e); }
+.status-warning { color: var(--accent-sand, #c99e52); }
+.status-danger { color: var(--accent-danger, #b8544f); }
+.tag-status { font-size: 9px; padding: 1px 4px; border-radius: 2px; margin-left: 2px; background: rgba(255,255,255,0.1); }
+
+/* Illumination Progress Bar */
+.card-timeline-preview { display: flex; flex-direction: column; gap: 4px; }
+.preview-label { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted, #8c867c); }
+.preview-bar-track { height: 5px; background: var(--bg-surface-dark, #1e2022); border-radius: 3px; overflow: hidden; }
+.preview-bar-fill { height: 100%; }
+.fill-sun { background: var(--accent-sand, #c99e52); }
+.fill-shadow { background: var(--border-medium, #4e4f52); }
+
+/* --------------------------------------------------------------------------
+   6. Interactive Secondary Detail Tabs
+   Buttons to toggle open Horizon, Slope, Solar Curve, and Comms sub-cards.
+   -------------------------------------------------------------------------- */
+.card-detail-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.btn-detail-tab {
+  padding: 5px 2px;
+  background: var(--bg-surface-dark, #1e2022);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 4px;
+  color: var(--text-muted, #8c867c);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-detail-tab:hover {
+  color: var(--text-primary, #ede8e1);
+  border-color: var(--text-secondary, #beb7ac);
+}
+
+.btn-detail-tab.active {
+  background: rgba(200, 125, 85, 0.16);
+  border-color: var(--border-active, #c87d55);
+  color: var(--text-primary, #ede8e1);
+  box-shadow: 0 0 0 1px var(--border-active, #c87d55);
+}
+
+/* Card action button row */
+.card-actions { display: flex; gap: 8px; margin-top: auto; }
+.btn-card-action {
+  flex: 1;
+  padding: 6px 0;
+  background: var(--bg-surface-dark, #1e2022);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 4px;
+  color: var(--text-secondary, #beb7ac);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-card-action:hover { background: var(--border-subtle, #3a3c3f); color: var(--text-primary, #ede8e1); }
+
+/* --------------------------------------------------------------------------
+   7. Attached Secondary Detail Sub-Card
+   Expands smoothly directly below the parent primary card.
+   -------------------------------------------------------------------------- */
+.secondary-detail-card {
+  width: 100%;
+  background-color: var(--bg-card, rgba(39, 41, 43, 0.95));
+  backdrop-filter: blur(14px);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.25s ease,
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.3s ease,
+              border-color 0.25s ease;
+  box-sizing: border-box;
+}
+
+.secondary-detail-card.open {
+  max-height: 290px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  padding: 10px 12px;
+  border-color: var(--border-medium, #4e4f52);
+}
+
+.subcard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle, #3a3c3f);
+  padding-bottom: 6px;
+}
+
+.subcard-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary, #ede8e1);
+  letter-spacing: 0.3px;
+}
+
+.subcard-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-subcard-action {
+  background: var(--bg-surface-dark, #1e2022);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 3px;
+  color: var(--text-muted, #8c867c);
+  font-size: 10px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-subcard-action:hover {
+  color: var(--text-primary, #ede8e1);
+  border-color: var(--text-secondary, #beb7ac);
+}
+
+.btn-close-subcard:hover {
+  color: var(--accent-danger, #b8544f);
+  border-color: var(--accent-danger, #b8544f);
+}
+
+/* Sub-card internal content body */
+.subcard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   8. Chart Visualizations Inside Secondary Sub-Card
+   -------------------------------------------------------------------------- */
+
+/* Horizon Skyline Chart */
+.subcard-chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 90px;
+  background: var(--bg-deep-space, #141618);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.subcard-chart-wrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.subcard-zero-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 55%;
+  height: 1px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+
+.subcard-azimuth-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted, #8c867c);
+  padding: 1px 4px;
+}
+
+/* Celestial trackers inside skyline */
+.subcard-tracker {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+  transition: left 0.3s ease, top 0.3s ease;
+}
+
+.subcard-status-callout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-secondary, #beb7ac);
+  background: var(--bg-surface-dark, #1e2022);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 3px solid var(--accent-sage, #7d967e);
+}
+
+.subcard-status-callout.warning {
+  border-left-color: var(--accent-sand, #c99e52);
+}
+
+.subcard-status-callout.danger {
+  border-left-color: var(--accent-danger, #b8544f);
+}
+
+/* Slope Profile and Radial Details */
+.subcard-slope-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: var(--bg-surface-dark, #1e2022);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.subcard-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.subcard-stat-label {
+  font-size: 8px;
+  color: var(--text-muted, #8c867c);
+  text-transform: uppercase;
+}
+
+.subcard-stat-val {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-primary, #ede8e1);
+}
+
+/* --------------------------------------------------------------------------
+   9. Add New Site Placeholder Card
+   -------------------------------------------------------------------------- */
+.card-add-new {
+  border: 2px dashed var(--border-medium, #4e4f52);
+  background: rgba(30,32,34,0.6);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.card-add-new:hover { border-color: var(--accent-terracotta, #c87d55); }
+.add-content { text-align: center; padding: 12px 10px; }
+.add-icon { font-size: 26px; color: var(--accent-terracotta, #c87d55); line-height: 1; margin-bottom: 4px; }
+.add-content h4 { font-size: 13px; margin-bottom: 4px; color: var(--text-primary, #ede8e1); }
+.add-content p { font-size: 10px; color: var(--text-muted, #8c867c); margin-bottom: 8px; }
+.btn-add-site {
+  padding: 4px 10px;
+  background: var(--accent-terracotta, #c87d55);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}

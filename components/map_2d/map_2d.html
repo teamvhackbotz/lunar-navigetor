@@ -1,0 +1,286 @@
+<!-- ==========================================================================
+     COMPONENT: 2D Cartographic Synchronizer (components/map_2d/)
+     TEMPLATE: map_2d.html
+     
+     ROLE:
+     Provides precision 2D lunar inspection viewports with dual presentation modes:
+     1. Single Focused View (Default):
+        - Centered Map Viewport (South Pole, 2:1 Global Flat, or North Pole)
+        - Flanked by symmetrical Left & Right Tactical Wings (Collapsed as default):
+          * Left Wing: Target shortcuts (Artemis candidates / Apollo landmarks / Cold traps)
+          * Right Wing: Live Selenographic coordinates, solar illumination, PSR temperature, and DTE lock
+     2. Tri-Map Panoramic View:
+        - 3-viewport side-by-side comparison deck (North Disc | Global Flat | South Disc)
+     
+     INTERACTION & INTEGRATION:
+     - Drawer open/close driven by pure CSS via #toggle-bottom-map in index.html.
+     - Height configurable between 390px (Baseline) and 500px (Maximized Tactical Deck).
+     - Clicking on any map computes lunar coordinates and dispatches 'site:marked'.
+     - Two consecutive clicks calculate geodesic distance on the lunar sphere (R = 1,737.4 km).
+     ========================================================================== -->
+
+<!-- Main Bottom Drawer: Positioned above the timeline, slides up when #toggle-bottom-map is checked -->
+<section class="drawer-bottom-map" id="drawer-bottom-map" aria-label="2D Cartographic Synchronizer Deck">
+
+  <!-- ========================================================================
+       DRAWER HEADER: Title, Segmented Switcher, Tactical Wings & Maximize Controls
+       ======================================================================== -->
+  <header class="drawer-header">
+    <div class="map-controls-row">
+      <h3 class="drawer-title">🗺️ 2D Maps</h3>
+      
+      <!-- Distance Badge: Displays real-time geodesic distance between two user-clicked points -->
+      <span class="distance-pill" id="map-distance-display" aria-live="polite" title="Click 2 points on any map to measure lunar surface distance">
+        📏 <strong>0.0 km</strong>
+      </span>
+    </div>
+
+    <!-- Segmented Projection Switcher Tabs -->
+    <div class="map-view-switcher" role="tablist" aria-label="Map Projection Selector">
+      <button type="button" class="map-view-pill active" data-view="south" title="South Pole Stereographic (Artemis III Target Zone)" role="tab" aria-selected="true">
+        🎯 South
+      </button>
+      <button type="button" class="map-view-pill" data-view="global" title="Global Cylindrical Equirectangular (Strict 2:1 Ratio)" role="tab" aria-selected="false">
+        🌐 Flat
+      </button>
+      <button type="button" class="map-view-pill" data-view="north" title="North Pole Stereographic (70°N – 90°N)" role="tab" aria-selected="false">
+        ❄️ North
+      </button>
+      <button type="button" class="map-view-pill" data-view="tri" title="Tri-Map Panoramic View (All 3 Views Side-by-Side)" role="tab" aria-selected="false">
+        ◫ Tri
+      </button>
+    </div>
+
+    <!-- Header Tools: Maximize Height & Collapse Icon Buttons -->
+    <div class="map-header-tools">
+      <!-- Height Maximize / Restore Toggle (Icon only) -->
+      <button type="button" class="map-tool-btn icon-only" id="btn-toggle-maximize" title="Maximize Deck Height" aria-label="Maximize Deck Height">
+        ⛶
+      </button>
+
+      <!-- Collapse Close Button: Label targeting #toggle-bottom-map checkbox -->
+      <label for="toggle-bottom-map" class="btn-close-drawer icon-only" title="Collapse 2D Maps Drawer" role="button" tabindex="0" aria-label="Close 2D Map Deck">
+        ✕
+      </label>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       MAP DECK STAGE: Symmetrical Console (Left Wing | Tab | Center Map | Tab | Right Wing)
+       ======================================================================== -->
+  <div class="map-deck-stage mode-single" id="map-deck-stage">
+    
+    <!-- ----------------------------------------------------------------------
+         LEFT TACTICAL WING: TARGET SHORTCUTS & EXPLORATION CANDIDATES
+         Hugs left flank of active map; expands outward to the left
+         ---------------------------------------------------------------------- -->
+    <aside class="tactical-wing wing-left collapsed" id="wing-left" aria-label="Target Shortcuts & Exploration Candidates">
+      <div class="wing-header">
+        <div class="wing-title-group">
+          <span class="wing-icon">🎯</span>
+          <h4 class="wing-heading" id="wing-left-title">Candidate Targets</h4>
+        </div>
+        <div class="wing-header-actions">
+          <span class="wing-badge" id="wing-left-badge">Artemis III</span>
+          <button type="button" class="wing-close-btn" id="btn-close-left-wing" title="Collapse Targets Wing" aria-label="Collapse Targets Wing">✕</button>
+        </div>
+      </div>
+
+      <!-- Dynamic Targets Container (Populated dynamically by map_2d.js) -->
+      <div class="wing-group" id="wing-left-content">
+        <span class="wing-label">Quick Select:</span>
+        <div class="quick-targets-grid" id="quick-targets-container">
+          <!-- Populated by map_2d.js based on active projection -->
+        </div>
+      </div>
+
+      <div class="wing-footer-tip">
+        <span>💡 Click any candidate to set landing coordinates and center viewports.</span>
+      </div>
+    </aside>
+
+    <!-- Left Wing Map Flank Handle -->
+    <button type="button" class="map-wing-tab tab-left" id="tab-wing-left" title="Toggle Target Shortcuts Wing" aria-expanded="false" aria-label="Toggle Target Shortcuts Wing">
+      <span class="tab-arrow">❮</span>
+      <span class="tab-icon">🎯</span>
+      <span class="tab-text">TARGETS</span>
+    </button>
+
+    <!-- ----------------------------------------------------------------------
+         CENTER MAP STAGE: Hosts the Centered Map (or 3-column Tri-Map grid)
+         ---------------------------------------------------------------------- -->
+    <div class="map-center-stage" id="map-center-stage">
+
+      <!-- Panel 1: North Pole Stereographic Disc (70°N – 90°N) -->
+      <div class="map-panel polar-panel" id="north-polar-panel">
+        <div class="panel-header-mini">
+          <span class="map-type-badge badge-north">❄️ North Pole (70°N – 90°N)</span>
+          <span class="panel-tip">Stereographic Projection · Cold Traps (Peary, Hermite)</span>
+        </div>
+
+        <div class="polar-disc-wrapper">
+          <div class="polar-disc-mock disc-north" id="north-polar-map-disc" title="Click inside North Polar disc to mark coordinate">
+            <!-- Concentric Latitude Boundary Rings (Percentage scaled) -->
+            <div class="polar-ring ring-88" title="88° N Latitude Boundary"></div>
+            <div class="polar-ring ring-85" title="85° N Latitude Boundary"></div>
+            <div class="polar-ring ring-80" title="80° N Latitude Boundary"></div>
+
+            <!-- Crosshairs: Meridian axes intersecting at Lunar North Pole (90°N) -->
+            <div class="polar-crosshair ch-vert" aria-hidden="true"></div>
+            <div class="polar-crosshair ch-horiz" aria-hidden="true"></div>
+
+            <!-- Cardinal Orientation Labels -->
+            <span class="polar-dir dir-0">0° (Prime)</span>
+            <span class="polar-dir dir-90">90° E</span>
+            <span class="polar-dir dir-180">180°</span>
+            <span class="polar-dir dir-270">270° W</span>
+
+            <!-- Active Marker Pin -->
+            <div class="map-marker" id="north-polar-active-pin" style="display: none;" aria-live="polite">
+              📍 Active Point
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Global Flat Map (Strict 2:1 Cylindrical Equirectangular Projection) -->
+      <div class="map-panel rect-panel" id="rect-map-panel">
+        <div class="panel-header-mini">
+          <span class="map-type-badge">🌐 Global Flat (Equirectangular 180°W – 180°E)</span>
+          <span class="panel-tip">Strict 2:1 Aspect Ratio · Click anywhere for global coordinates</span>
+        </div>
+
+        <div class="rect-map-wrapper">
+          <div class="rect-map-canvas-mock" id="rect-map-canvas-mock" title="Click flat map to mark any lunar latitude">
+            <!-- Cartographic Grid Lines -->
+            <div class="rect-grid-line lat-equator" title="Lunar Equator (0°)"></div>
+            <div class="rect-grid-line lat-70n" title="70° N Polar Boundary"></div>
+            <div class="rect-grid-line lat-70s" title="70° S Polar Boundary"></div>
+            <div class="rect-grid-line lon-prime" title="Prime Meridian (0°)"></div>
+
+            <!-- Historical Landmark Badges -->
+            <div class="landmark-badge lm-apollo11" style="top: 50%; left: 56%;" title="Apollo 11 Landing Site (0.67° N, 23.5° E)">
+              · Apollo 11
+            </div>
+            <div class="landmark-badge lm-chandrayaan" style="top: 88%; left: 59%;" title="Chandrayaan-3 Shiv Shakti Point (69.4° S, 32.3° E)">
+              · Chandrayaan-3
+            </div>
+
+            <!-- Regional Exploration Boundary Overlays -->
+            <div class="landmark-zone zone-south" title="South Polar Exploration Region (70°S to 90°S)">South Pole Region</div>
+            <div class="landmark-zone zone-north" title="North Polar Cold Traps (70°N to 90°N)">North Pole Region</div>
+
+            <!-- Active Marker Pin -->
+            <div class="rect-marker" id="rect-active-pin" style="top: 96%; left: 62%;" aria-live="polite">
+              <div class="marker-dot"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 3: South Pole Stereographic Disc (70°S – 90°S) - Artemis III Primary -->
+      <div class="map-panel polar-panel single-active" id="south-polar-panel">
+        <div class="panel-header-mini">
+          <span class="map-type-badge badge-south">🎯 South Pole (70°S – 90°S)</span>
+          <span class="panel-tip">Artemis III Target Zone · Shackleton, Connecting Ridge, Malapert</span>
+        </div>
+
+        <div class="polar-disc-wrapper">
+          <div class="polar-disc-mock disc-south" id="south-polar-map-disc" title="Click inside South Polar disc to mark coordinate">
+            <!-- Concentric Latitude Boundary Rings (Percentage scaled) -->
+            <div class="polar-ring ring-88" title="88° S Latitude Boundary"></div>
+            <div class="polar-ring ring-85" title="85° S Latitude Boundary"></div>
+            <div class="polar-ring ring-80" title="80° S Latitude Boundary"></div>
+
+            <!-- Crosshairs: Meridian axes intersecting at Lunar South Pole (90°S) -->
+            <div class="polar-crosshair ch-vert" aria-hidden="true"></div>
+            <div class="polar-crosshair ch-horiz" aria-hidden="true"></div>
+
+            <!-- Cardinal Orientation Labels -->
+            <span class="polar-dir dir-0">0° (Prime)</span>
+            <span class="polar-dir dir-90">90° E</span>
+            <span class="polar-dir dir-180">180°</span>
+            <span class="polar-dir dir-270">270° W</span>
+
+            <!-- Active Marker Pin -->
+            <div class="map-marker" id="south-polar-active-pin" style="top: 48%; left: 52%;" aria-live="polite">
+              📍 Connecting Ridge
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Wing Map Flank Handle -->
+    <button type="button" class="map-wing-tab tab-right" id="tab-wing-right" title="Toggle Live Telemetry Wing" aria-expanded="false" aria-label="Toggle Live Telemetry Wing">
+      <span class="tab-arrow">❯</span>
+      <span class="tab-icon">📡</span>
+      <span class="tab-text">TELEMETRY</span>
+    </button>
+
+    <!-- ----------------------------------------------------------------------
+         RIGHT TACTICAL WING: LIVE SELENOGRAPHIC TELEMETRY & DTE LOCK
+         Hugs right flank of active map; expands outward to the right
+         ---------------------------------------------------------------------- -->
+    <aside class="tactical-wing wing-right collapsed" id="wing-right" aria-label="Selenographic Telemetry & Environment">
+      <div class="wing-header">
+        <div class="wing-title-group">
+          <span class="wing-icon">📡</span>
+          <h4 class="wing-heading">Live Telemetry</h4>
+        </div>
+        <div class="wing-header-actions">
+          <span class="wing-badge status-safe" id="telemetry-comm-badge">DTE Lock</span>
+          <button type="button" class="wing-close-btn" id="btn-close-right-wing" title="Collapse Telemetry Wing" aria-label="Collapse Telemetry Wing">✕</button>
+        </div>
+      </div>
+
+      <!-- Live Coordinates Card -->
+      <div class="wing-group">
+        <span class="wing-label">Target Selenography:</span>
+        <div class="telemetry-readout-card">
+          <div class="t-row">
+            <span class="t-key">Selected Site:</span>
+            <span class="t-val highlight" id="tel-site-name">Connecting Ridge</span>
+          </div>
+          <div class="t-row">
+            <span class="t-key">Coordinates:</span>
+            <span class="t-val" id="tel-coord-readout">89.40° S, 222.6° E</span>
+          </div>
+          <div class="t-row">
+            <span class="t-key">Dist. to Pole:</span>
+            <span class="t-val" id="tel-pole-dist">18.2 km</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Environmental & Comms Telemetry -->
+      <div class="wing-group">
+        <span class="wing-label">Environmental Metrics:</span>
+        <div class="telemetry-metrics-grid">
+          <div class="t-metric-box">
+            <span class="t-m-label">Sun Elevation</span>
+            <span class="t-m-val status-safe" id="tel-sun-elev">+1.4° (Day)</span>
+          </div>
+          <div class="t-metric-box">
+            <span class="t-m-label">PSR Ice Temp</span>
+            <span class="t-m-val" id="tel-psr-temp">38 K (-235°C)</span>
+          </div>
+          <div class="t-metric-box">
+            <span class="t-m-label">Earth LOS DTE</span>
+            <span class="t-m-val status-safe" id="tel-dte-elev">+6.2° (Lock)</span>
+          </div>
+          <div class="t-metric-box">
+            <span class="t-m-label">Touchdown Slope</span>
+            <span class="t-m-val status-safe" id="tel-slope">5.8° (Safe)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="wing-footer-tip">
+        <span>🛰️ DSN Canberra / Goldstone telemetry synchronized with orbital ephemeris.</span>
+      </div>
+    </aside>
+
+  </div>
+</section>

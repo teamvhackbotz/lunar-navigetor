@@ -1,0 +1,80 @@
+<!-- ==========================================================================
+     Lunar Landing Site Navigator - Dr. Raj AI Lunar Mission Analyst
+     File: components/ai_dr_raj/ai_dr_raj.html
+     Role: Interactive intelligence panel simulating an AI geologist & trajectory
+           analyst offering tactical briefings, illumination analysis, and DTE advice.
+     ========================================================================== -->
+
+<!-- Floating assistant wrapper pinned to bottom-right corner above timeline cockpit -->
+<div class="ai-assistant-wrapper" id="ai-assistant-wrapper">
+
+  <!-- ========================================================================
+       Expanded Chat / Intelligence Window
+       Initially hidden (display: none); toggled open/closed via the "👨‍🚀 Dr. Raj AI"
+       button in the bottom mission toolbar (emits 'ai:toggle' across EventBus).
+       ======================================================================== -->
+  <div class="ai-chat-window" id="ai-chat-window" style="display: none;">
+
+    <!-- Chat window header with agent identity & status -->
+    <div class="ai-chat-header">
+      <div class="ai-header-left">
+        <!-- Agent avatar badge -->
+        <span class="ai-avatar-small">👨‍🚀</span>
+        <div class="ai-header-meta">
+          <div class="ai-header-title">Dr. Raj</div>
+          <div class="ai-header-status">
+            <!-- Pulsing green status dot indicating active simulation connectivity -->
+            <span class="status-indicator"></span>
+            Lunar Surface & Trajectory AI
+          </div>
+        </div>
+      </div>
+      <!-- Header window controls -->
+      <div class="ai-header-actions">
+        <!-- Minimize button collapses chat window -->
+        <button class="ai-header-btn" id="ai-minimize-btn" title="Minimize">&minus;</button>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         Quick Action Suggestion Chips
+         Pre-canned queries for one-click prompt entry regarding key lunar science topics.
+         ======================================================================== -->
+    <div class="ai-quick-chips">
+      <button class="chip-btn" data-query="Assess Shackleton Connecting Ridge">📍 Shackleton Ridge</button>
+      <button class="chip-btn" data-query="Check Earth Comms for Malapert Mountain">📡 Malapert Comms</button>
+      <button class="chip-btn" data-query="Explain Libration Impact on DTE">🌍 Libration Effect</button>
+      <button class="chip-btn" data-query="Best Artemis site for 6-day solar stay?">☀️ Solar Stay</button>
+    </div>
+
+    <!-- ========================================================================
+         Conversation History Stream
+         Scrollable corridor rendering incoming tactical briefs and operator dialogue.
+         ======================================================================== -->
+    <div class="ai-messages-container" id="ai-messages-container">
+      <!-- Default welcome greeting explaining analyst capabilities -->
+      <div class="ai-msg msg-assistant">
+        <div class="msg-bubble">
+          Greetings Commander. I am <strong>Dr. Raj</strong>, your Lunar Mission Analyst.
+          Select any landing site or drag the mission timeline, and I'll analyze solar illumination windows, DTE link margins, and PSR crater hazards in real time.
+        </div>
+        <div class="msg-time">Flight Room Active</div>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         Operator Input Form
+         Text input field and submit button for custom conversational queries.
+         ======================================================================== -->
+    <form class="ai-input-form" id="ai-input-form">
+      <input type="text" class="ai-input-field" id="ai-input-text" placeholder="Ask Dr. Raj about lunar sites..." autocomplete="off">
+      <button type="submit" class="ai-send-btn" id="ai-send-btn" title="Send Query">
+        <!-- Paper airplane send icon -->
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </form>
+  </div>
+</div>

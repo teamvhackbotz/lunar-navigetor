@@ -1,0 +1,203 @@
+/* ==========================================================================
+   Lunar Landing Site Navigator - Quick Search Command Palette Styles
+   File: components/search_palette/search_palette.css
+   ========================================================================== */
+
+.search-palette-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(8, 10, 12, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  animation: searchFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes searchFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.search-palette-modal {
+  width: 90%;
+  max-width: 600px;
+  background: rgba(26, 28, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: searchSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes searchSlideDown {
+  from { transform: translateY(-16px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Input Row */
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-subtle, #3a3c3f);
+  gap: 12px;
+  background: rgba(32, 34, 38, 0.5);
+}
+
+.search-palette-icon {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: var(--text-primary, #ede8e1);
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted, #8c867c);
+  font-size: 13px;
+}
+
+.search-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #8c867c);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.search-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Results Container & List */
+.search-results-container {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.search-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Individual Search Result Item */
+.search-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  border-left: 3px solid transparent;
+}
+
+.search-result-item:hover,
+.search-result-item.selected {
+  background: rgba(200, 125, 85, 0.15);
+  border-left-color: var(--accent-terracotta, #c87d55);
+}
+
+.search-item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.search-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #ede8e1);
+}
+
+.search-item-coords {
+  font-size: 11px;
+  color: var(--text-muted, #8c867c);
+  font-family: var(--font-mono, monospace);
+}
+
+.search-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary, #beb7ac);
+}
+
+.search-tag.tag-artemis {
+  background: rgba(200, 125, 85, 0.25);
+  color: var(--accent-sand, #c99e52);
+  border: 1px solid rgba(200, 125, 85, 0.4);
+}
+
+.search-tag.tag-clps {
+  background: rgba(125, 143, 105, 0.25);
+  color: var(--accent-sage, #7d8f69);
+  border: 1px solid rgba(125, 143, 105, 0.4);
+}
+
+.search-empty-state {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted, #8c867c);
+  font-size: 13px;
+}
+
+/* Footer & Hints */
+.search-palette-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  background: rgba(18, 20, 22, 0.9);
+  border-top: 1px solid var(--border-subtle, #3a3c3f);
+  font-size: 11px;
+  color: var(--text-muted, #8c867c);
+}
+
+.search-shortcuts-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-shortcuts-hint kbd {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--text-secondary, #beb7ac);
+}

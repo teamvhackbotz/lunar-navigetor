@@ -1,0 +1,71 @@
+/* ==========================================================================
+   Lunar Landing Site Navigator - Celestial Triad Mini-Map
+   File: components/minimap_triad/minimap_triad.css
+   Role: Layout, orbital rings, and celestial body positions for the triad widget
+   ========================================================================== */
+
+/* Pinned to bottom-right viewport above the bottom mission cockpit dock */
+.minimap-triad {
+  position: absolute;
+  bottom: calc(var(--height-bottom-cockpit, 92px) + 14px);
+  right: 18px;
+  top: auto;
+  left: auto;
+  width: 170px;
+  background: rgba(30, 32, 34, 0.9);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 6px;
+  padding: 10px;
+  backdrop-filter: blur(6px);
+  z-index: 80;
+  cursor: pointer;
+  transition: bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              right 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.15s ease;
+}
+
+.minimap-triad:hover {
+  border-color: var(--border-active, #c87d55);
+}
+
+/* Dynamic clearance: Shifts upward when the bottom 2D Maps drawer slides open */
+#toggle-bottom-map:checked ~ #mount-minimap-triad .minimap-triad,
+#toggle-bottom-map:checked ~ .minimap-triad {
+  bottom: calc(var(--height-bottom-cockpit, 92px) + 305px);
+}
+
+/* Dynamic clearance: Shifts inward when the right GIS Overlays drawer slides open */
+#toggle-right-horizon:checked ~ #mount-minimap-triad .minimap-triad,
+#toggle-right-horizon:checked ~ .minimap-triad {
+  right: calc(var(--width-right-drawer, 380px) + 18px);
+}
+
+/* Dynamic clearance: Shifts inward when the Dr. Raj AI assistant window opens */
+#toggle-ai-chat:checked ~ #mount-minimap-triad .minimap-triad,
+#toggle-ai-chat:checked ~ .minimap-triad {
+  right: calc(360px + 28px);
+}
+
+#toggle-right-horizon:checked ~ #toggle-ai-chat:checked ~ #mount-minimap-triad .minimap-triad,
+#toggle-right-horizon:checked ~ #toggle-ai-chat:checked ~ .minimap-triad {
+  right: calc(var(--width-right-drawer, 380px) + 360px + 28px);
+}
+
+.minimap-header { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }
+.minimap-title { font-weight: 600; color: var(--text-secondary, #beb7ac); }
+.minimap-mode { color: var(--accent-sand, #c99e52); font-size: 10px; font-weight: 600; }
+
+/* Canvas plotting container */
+.triad-canvas-mock { position: relative; height: 90px; display: flex; align-items: center; justify-content: center; }
+
+/* Concentric dashed orbit circles */
+.orbit-ring { position: absolute; border-radius: 50%; border: 1px dashed var(--border-subtle, #3a3c3f); }
+.ring-earth { width: 55px; height: 55px; }
+.ring-sun { width: 85px; height: 85px; }
+
+/* Central and orbiting celestial emoji nodes */
+.moon-node { font-size: 18px; z-index: 2; }
+.earth-node { position: absolute; font-size: 13px; top: 16px; left: 24px; transition: all 0.2s ease; }
+.sun-node { position: absolute; font-size: 15px; bottom: 8px; right: 14px; transition: all 0.2s ease; }
+
+.minimap-footer { text-align: center; font-size: 9px; color: var(--text-muted, #8c867c); margin-top: 4px; }

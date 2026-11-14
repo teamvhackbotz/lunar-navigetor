@@ -1,0 +1,39 @@
+/**
+ * ==============================================================================
+ * Lunar Landing Site Navigator - Theme 1: Muted Earth Tones (Default)
+ * File: themes/theme_earth.css
+ * Palette: Deep basalt space, warm charcoal surfaces, terracotta primary accent,
+ *          sandstone secondary, sage green terrain alerts, and parchment text.
+ * ==============================================================================
+ */
+
+:root, body, body.theme-earth {
+  /* Surface & Background Tones */
+  --bg-deep-space: #141618;
+  --bg-surface-dark: #1e2022;
+  --bg-cockpit: #17181a;
+  --bg-card: rgba(39, 41, 43, 0.92);
+  --bg-card-hover: rgba(49, 51, 54, 0.96);
+  --bg-drawer: #212325;
+  --bg-overlay: rgba(14, 15, 17, 0.78);
+
+  /* Border Tones */
+  --border-subtle: #3a3c3f;
+  --border-medium: #4e4f52;
+  --border-active: #c87d55;
+
+  /* Typography Colors */
+  --text-primary: #ede8e1;
+  --text-secondary: #beb7ac;
+  --text-muted: #8c867c;
+
+  /* Functional Accents & Status Alerts */
+  --accent-terracotta: #c87d55;
+  --accent-sand: #c99e52;
+  --accent-sage: #7d967e;
+  --accent-slate: #5f798a;
+  --accent-danger: #b8544f;
+
+  /* Swatch Preview Gradient for Settings Picker */
+  --theme-swatch-gradient: linear-gradient(135deg, #141618 0%, #212325 50%, #c87d55 100%);
+}

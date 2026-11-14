@@ -1,0 +1,335 @@
+<!-- ==========================================================================
+     Lunar Landing Site Navigator - Mission Cockpit Settings Modal
+     File: components/settings_modal/settings_modal.html
+     Role: Flight-grade settings dialog with categorized left sidebar navigation:
+           Visual Themes, 3D Simulation, Coordinates, Site Cards, 2D Maps, Hotkeys.
+     ========================================================================== -->
+
+<!-- Fullscreen backdrop overlay with dark frosted blur. Toggled via EventBus "settings:open" -->
+<div class="settings-modal-overlay" id="settings-modal-overlay" style="display: none;">
+  <!-- Centered modal dialog window with two-column sidebar layout -->
+  <div class="settings-modal-dialog">
+
+    <!-- Modal Header -->
+    <div class="settings-modal-header">
+      <div class="settings-title-group">
+        <span class="settings-icon">⚙️</span>
+        <h2 class="settings-title">Mission Cockpit Settings</h2>
+      </div>
+      <!-- Close button (X) -->
+      <button class="settings-close-btn" id="settings-close-btn" title="Close Settings">&times;</button>
+    </div>
+
+    <!-- Two-Column Layout: Left Sidebar Navigation + Right Content Stage -->
+    <div class="settings-modal-layout">
+      
+      <!-- Left Categorized Sidebar -->
+      <nav class="settings-sidebar-nav" aria-label="Settings Categories">
+        <button type="button" class="settings-nav-item active" data-tab="theme">
+          <span class="nav-icon">🎨</span>
+          <span class="nav-label">Visual Theme</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-tab="graphics">
+          <span class="nav-icon">🪐</span>
+          <span class="nav-label">3D Simulation</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-tab="ephemeris">
+          <span class="nav-icon">🧭</span>
+          <span class="nav-label">Coordinates</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-tab="cards">
+          <span class="nav-icon">🃏</span>
+          <span class="nav-label">Site Cards</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-tab="map2d">
+          <span class="nav-icon">🗺️</span>
+          <span class="nav-label">2D Maps Deck</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-tab="shortcuts">
+          <span class="nav-icon">⌨️</span>
+          <span class="nav-label">Cockpit Hotkeys</span>
+        </button>
+      </nav>
+
+      <!-- Right Content Stage (Active category pane) -->
+      <div class="settings-content-stage">
+
+        <!-- ==================================================================
+             Category 1: Visual Theme Selection
+             ================================================================== -->
+        <div class="settings-pane active" id="pane-theme">
+          <div class="pane-header">
+            <h3 class="pane-title">Visual Palette & Theme</h3>
+            <p class="pane-desc">Select an operational color theme tailored for flight room lighting and ambient contrast.</p>
+          </div>
+          
+          <div class="theme-picker-grid">
+            <!-- Theme Option 1: Muted Earth (Default) -->
+            <label class="theme-card active" data-theme="earth">
+              <input type="radio" name="app-theme" value="earth" checked>
+              <div class="theme-swatch swatch-earth"></div>
+              <div class="theme-info">
+                <span class="theme-name">Muted Earth</span>
+                <span class="theme-sub">Basalt, Sandstone, Terracotta</span>
+              </div>
+            </label>
+
+            <!-- Theme Option 2: Lunar Regolith (Monochrome) -->
+            <label class="theme-card" data-theme="regolith">
+              <input type="radio" name="app-theme" value="regolith">
+              <div class="theme-swatch swatch-regolith"></div>
+              <div class="theme-info">
+                <span class="theme-name">Lunar Regolith</span>
+                <span class="theme-sub">Monochrome Titanium & Basalt</span>
+              </div>
+            </label>
+
+            <!-- Theme Option 3: High-Contrast Space -->
+            <label class="theme-card" data-theme="space">
+              <input type="radio" name="app-theme" value="space">
+              <div class="theme-swatch swatch-space"></div>
+              <div class="theme-info">
+                <span class="theme-name">High-Contrast Space</span>
+                <span class="theme-sub">Obsidian Deep Space & Cyan/Amber</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             Category 2: 3D Visualization & Graphics
+             ================================================================== -->
+        <div class="settings-pane" id="pane-graphics">
+          <div class="pane-header">
+            <h3 class="pane-title">3D Graphics & Ephemeris Simulation</h3>
+            <p class="pane-desc">Configure Three.js terrain vertical exaggeration, shadow maps, and coordinate overlays.</p>
+          </div>
+
+          <div class="settings-grid">
+            <!-- Vertical Elevation Exaggeration -->
+            <div class="setting-item">
+              <label class="setting-label" for="setting-terrain-exag">Vertical Terrain Exaggeration</label>
+              <select id="setting-terrain-exag" class="setting-select">
+                <option value="1">1.0x (True Scale Elevation)</option>
+                <option value="2" selected>2.0x (Enhanced Craters & Rims)</option>
+                <option value="3">3.0x (Steep Slopes & PSR Walls)</option>
+              </select>
+            </div>
+
+            <!-- Directional Light Shadow Map Resolution -->
+            <div class="setting-item">
+              <label class="setting-label" for="setting-shadow-quality">Cast Shadow Quality</label>
+              <select id="setting-shadow-quality" class="setting-select">
+                <option value="high" selected>High (4096² Shadow Map)</option>
+                <option value="medium">Medium (2048² Shadow Map)</option>
+                <option value="low">Low (1024² Fast Render)</option>
+              </select>
+            </div>
+
+            <!-- Latitude/Longitude Polar Wireframe Grid Toggle -->
+            <div class="setting-item">
+              <label class="setting-label" for="setting-coord-grid">Coordinate Grid Overlay</label>
+              <label class="switch-toggle">
+                <input type="checkbox" id="setting-coord-grid" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Orbital Libration Wobble Simulation Toggle -->
+            <div class="setting-item">
+              <label class="setting-label" for="setting-libration-wobble">Earth Libration Wobble</label>
+              <label class="switch-toggle">
+                <input type="checkbox" id="setting-libration-wobble" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             Category 3: Navigation & Coordinates
+             ================================================================== -->
+        <div class="settings-pane" id="pane-ephemeris">
+          <div class="pane-header">
+            <h3 class="pane-title">Mission Ephemeris & Coordinate Formats</h3>
+            <p class="pane-desc">Choose between decimal degrees and DMS, and adjust the timeline time standard.</p>
+          </div>
+
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label class="setting-label" for="setting-coord-format">Coordinate Notation</label>
+              <select id="setting-coord-format" class="setting-select">
+                <option value="decimal" selected>Decimal Degrees (&plusmn;89.54&deg;)</option>
+                <option value="dms">DMS (89&deg; 32' 24" S)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label class="setting-label" for="setting-time-format">Timeline Display Standard</label>
+              <select id="setting-time-format" class="setting-select">
+                <option value="utc" selected>UTC (ISO 8601)</option>
+                <option value="met">MET (Mission Elapsed Time)</option>
+                <option value="lst">LST (Local Solar Time)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             Category 4: Candidate Cards Layout
+             ================================================================== -->
+        <div class="settings-pane" id="pane-cards">
+          <div class="pane-header">
+            <h3 class="pane-title">Candidate Cards Layout</h3>
+            <p class="pane-desc">Configure sub-card expansion behavior and deep inspection presentations.</p>
+          </div>
+
+          <div class="settings-grid">
+            <div class="setting-item" style="grid-column: span 2;">
+              <label class="setting-label" for="setting-card-layout">Detail Sub-Card Presentation</label>
+              <select id="setting-card-layout" class="setting-select">
+                <option value="dropdown" selected>Attached Card Dropdown (Default — Scrolls with Parent)</option>
+                <option value="shelf">Fixed Secondary Shelf Row (Aligned Top Corridor)</option>
+              </select>
+            </div>
+            <div class="setting-item" style="grid-column: span 2;">
+              <label class="setting-label" for="setting-inspect-mode">Detail Inspection Presentation</label>
+              <select id="setting-inspect-mode" class="setting-select">
+                <option value="modal" selected>Centered Focus Modal (Default — High Contrast Focus)</option>
+                <option value="hud">Draggable Floating HUD Panel (Movable Non-Modal Window)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             Category 5: 2D Cartographic Synchronizer
+             ================================================================== -->
+        <div class="settings-pane" id="pane-map2d">
+          <div class="pane-header">
+            <h3 class="pane-title">2D Cartographic Synchronizer</h3>
+            <p class="pane-desc">Default projection, initial presentation mode, telemetry wings, and tactical deck height.</p>
+          </div>
+
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label class="setting-label" for="setting-map2d-mode">Display Presentation Mode</label>
+              <select id="setting-map2d-mode" class="setting-select">
+                <option value="single" selected>Single Focused View (Expanded)</option>
+                <option value="tri">Tri-Map Multi-View (Side-by-Side)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label class="setting-label" for="setting-map2d-projection">Default Active Projection</label>
+              <select id="setting-map2d-projection" class="setting-select">
+                <option value="south" selected>South Pole (Artemis III Target)</option>
+                <option value="global">Global Flat (2:1 Ratio)</option>
+                <option value="north">North Pole (Cold Traps)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label class="setting-label" for="setting-map2d-left-wing">Left Wing: Targets</label>
+              <select id="setting-map2d-left-wing" class="setting-select">
+                <option value="collapsed" selected>Collapsed (Default — Focused Map)</option>
+                <option value="expanded">Expanded (Target Shortcuts)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label class="setting-label" for="setting-map2d-right-wing">Right Wing: Telemetry</label>
+              <select id="setting-map2d-right-wing" class="setting-select">
+                <option value="collapsed" selected>Collapsed (Default — Focused Map)</option>
+                <option value="expanded">Expanded (Live Telemetry)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label class="setting-label" for="setting-map2d-height">Default Deck Height</label>
+              <select id="setting-map2d-height" class="setting-select">
+                <option value="baseline" selected>Baseline Tactical (390px)</option>
+                <option value="maximized">Maximized Inspection (500px)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             Category 6: Cockpit Keyboard Controls & Hotkeys
+             ================================================================== -->
+        <div class="settings-pane" id="pane-shortcuts">
+          <div class="pane-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 class="pane-title" style="margin: 0;">Cockpit Keyboard Controls</h3>
+              <p class="pane-desc" style="margin-top: 4px;">Precision single-hand hotkeys for flight room navigation and surface targeting.</p>
+            </div>
+            <label class="switch-toggle" title="Enable / Disable global keyboard shortcuts">
+              <input type="checkbox" id="setting-shortcuts-enabled" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="shortcuts-table">
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Fine-Tune Pin (Latitude North / South)</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">↑</kbd> / <kbd class="kbd-badge">↓</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Fine-Tune Pin (Longitude West / East)</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">←</kbd> / <kbd class="kbd-badge">→</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Coarse Step Pin Nudge (0.25°)</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">Shift</kbd> + <kbd class="kbd-badge">Arrows</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Toggle Comparison Cards Deck</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">Alt</kbd> + <kbd class="kbd-badge">↑</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Toggle 2D Cartographic Deck</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">Alt</kbd> + <kbd class="kbd-badge">↓</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Slide Left / Right Horizon Drawers</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">Alt</kbd> + <kbd class="kbd-badge">←</kbd> / <kbd class="kbd-badge">→</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Play / Pause Time Simulation</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">Space</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Timeline Step Back / Forward 1 Hour</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">Ctrl</kbd> + <kbd class="kbd-badge">←</kbd> / <kbd class="kbd-badge">→</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Open Quick Site Search Palette</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">/</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Undo / Redo Comparison Card Action</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">Ctrl</kbd> + <kbd class="kbd-badge">Z</kbd> / <kbd class="kbd-badge">Y</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Toggle Dr. Raj AI Lunar Analyst</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">Shift</kbd> + <kbd class="kbd-badge">?</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Dismiss Active Modals / Drawers</span>
+              <span class="shortcut-keys"><kbd class="kbd-badge">ESC</kbd></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="settings-modal-footer">
+      <span class="settings-footer-note">Settings persist in local browser storage.</span>
+      <div class="settings-btn-group">
+        <!-- Reverts settings back to initial state -->
+        <button class="settings-btn-secondary" id="settings-reset-btn">Reset Defaults</button>
+        <!-- Commits values to localStorage and broadcasts EventBus updates -->
+        <button class="settings-btn-primary" id="settings-apply-btn">Apply & Close</button>
+      </div>
+    </div>
+  </div>
+</div>

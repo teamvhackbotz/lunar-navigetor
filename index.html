@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lunar Landing Site Navigator - Cockpit</title>
+  <!-- Global cockpit layout tokens, reset, and master drawer transition rules -->
+  <link rel="stylesheet" href="styles.css?v=4">
+  <!-- Active operational color theme (swapped dynamically by themes/theme_manager.js) -->
+  <link rel="stylesheet" id="theme-stylesheet" href="themes/theme_earth.css">
+  <!-- Theme Manager: pre-boots active theme from localStorage with zero FOUC -->
+  <script src="themes/theme_manager.js"></script>
+</head>
+<body class="theme-earth">
+
+  <!-- ========================================================================
+       1. PURE-CSS COLLAPSIBLE DRAWER TOGGLE CHECKBOXES
+       These hidden checkboxes sit at the root of the DOM so sibling selectors (~)
+       can coordinate zero-latency CSS animations across all mounted components.
+       Triggered by <label for="toggle-..."> elements throughout the UI.
+       ======================================================================== -->
+
+  <!-- Left Drawer: Site A Topographic Horizon & Elevation Profile -->
+  <input type="checkbox" id="toggle-left-horizon" class="drawer-toggle">
+
+  <!-- Right Drawer: Site B Topographic Horizon & Comparison Profile -->
+  <input type="checkbox" id="toggle-right-horizon" class="drawer-toggle">
+
+  <!-- Top Corridor: Candidate Comparison Cards (collapsed by default) -->
+  <input type="checkbox" id="toggle-top-cards" class="drawer-toggle">
+
+  <!-- Bottom Drawer: Tri-Map 2D Navigation (North Disc, Flat Map, South Disc) -->
+  <input type="checkbox" id="toggle-bottom-map" class="drawer-toggle">
+
+  <!-- Floating Assistant: Dr. Raj AI Lunar Mission Analyst Chat Window -->
+  <input type="checkbox" id="toggle-ai-chat" class="drawer-toggle">
+
+  <!-- ========================================================================
+       2. MICRO-FRONTEND COMPONENT MOUNT CONTAINERS
+       Asynchronously populated by core/loader.js on DOMContentLoaded.
+       Each container receives its component's HTML markup, while its CSS and JS
+       are injected into <head> and <body> respectively.
+       ======================================================================== -->
+  <div id="mount-top-nav"></div>              <!-- Top navigation & branding header -->
+  <div id="mount-comparison-cards"></div>     <!-- Floating candidate landing site cards -->
+  <div id="mount-moon-3d"></div>              <!-- Three.js 3D lunar globe viewport -->
+  <div id="mount-horizon-topography"></div>   <!-- Dual Site A & Site B horizon skyline profiles -->
+  <div id="mount-minimap-triad"></div>        <!-- Sun-Earth-Moon celestial triad reference widget -->
+  <div id="mount-map-2d"></div>               <!-- Tri-Map 2D drawer (North Disc, Flat Map, South Disc) -->
+  <div id="mount-timeline"></div>             <!-- Bottom mission cockpit dock & time scrubber -->
+  <div id="mount-settings-modal"></div>       <!-- Cockpit graphics, theme, and ephemeris modal -->
+  <div id="mount-ai-dr-raj"></div>            <!-- Dr. Raj AI mission analyst assistant -->
+  <div id="mount-inspection-modal"></div>     <!-- High-resolution candidate site inspector workspace -->
+  <div id="mount-search-palette"></div>       <!-- Quick landing site search command palette -->
+
+  <!-- ========================================================================
+       3. CORE APPLICATION DEPENDENCIES & BOOTSTRAP PIPELINE
+       Execution order:
+       1. Three.js r128 3D rendering library
+       2. Three.js OrbitControls camera manipulation
+       3. core/event_bus.js: Universal pub/sub broker (window.eventBus)
+       4. core/coord_math.js: Selenographic projections & Haversine distance (window.CoordMath)
+       5. core/loader.js: Component assembler that mounts all 9 micro-frontends
+       ======================================================================== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="core/event_bus.js?v=4"></script>
+  <script src="core/coord_math.js?v=4"></script>
+  <script src="core/keyboard_shortcuts.js?v=4"></script>
+  <script src="core/loader.js?v=4"></script>
+</body>
+</html>

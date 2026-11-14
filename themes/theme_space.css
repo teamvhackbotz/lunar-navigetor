@@ -1,0 +1,39 @@
+/**
+ * ==============================================================================
+ * Lunar Landing Site Navigator - Theme 3: High-Contrast Deep Space
+ * File: themes/theme_space.css
+ * Palette: Pitch OLED black, deep void panels, mission control amber,
+ *          vibrant solar gold, electric telemetry green, and stark pure white text.
+ * ==============================================================================
+ */
+
+:root, body, body.theme-space, body.theme-contrast {
+  /* Surface & Background Tones */
+  --bg-deep-space: #000000;
+  --bg-surface-dark: #0a0a0a;
+  --bg-cockpit: #080808;
+  --bg-card: rgba(18, 18, 18, 0.98);
+  --bg-card-hover: rgba(30, 30, 30, 1.0);
+  --bg-drawer: #0d0d0d;
+  --bg-overlay: rgba(0, 0, 0, 0.88);
+
+  /* Border Tones */
+  --border-subtle: #333333;
+  --border-medium: #666666;
+  --border-active: #ffb300;
+
+  /* Typography Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #888888;
+
+  /* Functional Accents & Status Alerts */
+  --accent-terracotta: #ffb300;
+  --accent-sand: #ffca28;
+  --accent-sage: #00e676;
+  --accent-slate: #29b6f6;
+  --accent-danger: #ff1744;
+
+  /* Swatch Preview Gradient for Settings Picker */
+  --theme-swatch-gradient: linear-gradient(135deg, #000000 0%, #0d0d0d 50%, #ffb300 100%);
+}

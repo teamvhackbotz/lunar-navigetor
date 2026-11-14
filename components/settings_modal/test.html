@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings Modal - Standalone Test Harness</title>
+  <!-- Global design system styles -->
+  <link rel="stylesheet" href="../../styles.css">
+  <!-- Active operational theme stylesheet -->
+  <link rel="stylesheet" id="theme-stylesheet" href="../../themes/theme_earth.css">
+  <!-- Settings modal component styles -->
+  <link rel="stylesheet" href="settings_modal.css">
+  <!-- Shared Theme Manager -->
+  <script src="../../themes/theme_manager.js"></script>
+</head>
+<body style="background:var(--bg-deep-space, #141618); margin:0; padding:40px; font-family:sans-serif; color:var(--text-primary, #eee);">
+  <h2 style="font-size:16px; color:#c99e52; margin-bottom:8px;">Settings Modal Standalone Test Harness</h2>
+  <p style="font-size:13px; color:#8c867c; margin-bottom:20px;">
+    Test theme switching and visual graphics preferences in isolation with real-time EventBus logging.
+  </p>
+
+  <!-- Button to trigger opening the modal dialog via EventBus -->
+  <button id="open-test-modal" style="padding:10px 18px; background:#c87d55; border:none; border-radius:4px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">
+    ⚙️ Open Mission Cockpit Settings
+  </button>
+
+  <!-- Micro-frontend mount container -->
+  <div id="mount-settings-modal"></div>
+
+  <!-- Real-time EventBus output console -->
+  <div id="event-log" style="margin-top:30px; padding:15px; background:#1b1d20; border:1px solid #3a3c3f; border-radius:6px; font-family:monospace; font-size:12px; color:#beb7ac; max-width:600px;">
+    <strong>Event Bus Output:</strong>
+    <ul id="log-list" style="margin:8px 0 0; padding-left:20px;">
+      <li>Listening for events...</li>
+    </ul>
+  </div>
+
+  <!-- Shared EventBus dependency -->
+  <script src="../../core/event_bus.js"></script>
+  <script>
+    const logList = document.getElementById("log-list");
+    function logEvent(name, data) {
+      const li = document.createElement("li");
+      li.textContent = `[${new Date().toLocaleTimeString()}] ${name}: ${JSON.stringify(data)}`;
+      logList.prepend(li);
+    }
+
+    // Subscribe to all events emitted by the settings modal
+    if (window.eventBus) {
+      window.eventBus.on("theme:changed", d => logEvent("theme:changed", d));
+      window.eventBus.on("settings:changed", d => logEvent("settings:changed", d));
+      window.eventBus.on("grid:toggle", d => logEvent("grid:toggle", d));
+      window.eventBus.on("terrain:exaggeration", d => logEvent("terrain:exaggeration", d));
+    }
+
+    document.getElementById("open-test-modal").addEventListener("click", () => {
+      if (window.eventBus) window.eventBus.emit("settings:open");
+    });
+
+    // Asynchronously fetch and inject component markup and script for isolated testing
+    fetch("settings_modal.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("mount-settings-modal").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "settings_modal.js";
+        document.body.appendChild(script);
+      });
+  </script>
+</body>
+</html>

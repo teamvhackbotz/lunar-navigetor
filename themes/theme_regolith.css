@@ -1,0 +1,39 @@
+/**
+ * ==============================================================================
+ * Lunar Landing Site Navigator - Theme 2: Lunar Regolith
+ * File: themes/theme_regolith.css
+ * Palette: Highlands titanium, monochrome basalt, soft steel blue accents,
+ *          pale mint terrain indicators, and crisp silver-white text.
+ * ==============================================================================
+ */
+
+:root, body, body.theme-regolith {
+  /* Surface & Background Tones */
+  --bg-deep-space: #0f1012;
+  --bg-surface-dark: #191b1e;
+  --bg-cockpit: #141618;
+  --bg-card: rgba(29, 32, 36, 0.94);
+  --bg-card-hover: rgba(38, 42, 48, 0.98);
+  --bg-drawer: #1c1e22;
+  --bg-overlay: rgba(11, 13, 15, 0.82);
+
+  /* Border Tones */
+  --border-subtle: #343840;
+  --border-medium: #4c525c;
+  --border-active: #8ea8c3;
+
+  /* Typography Colors */
+  --text-primary: #f0f3f6;
+  --text-secondary: #b8c1cc;
+  --text-muted: #7d8794;
+
+  /* Functional Accents & Status Alerts */
+  --accent-terracotta: #7a9cc6;
+  --accent-sand: #b0c4de;
+  --accent-sage: #7eb09b;
+  --accent-slate: #8ea8c3;
+  --accent-danger: #cf6679;
+
+  /* Swatch Preview Gradient for Settings Picker */
+  --theme-swatch-gradient: linear-gradient(135deg, #0f1012 0%, #1c1e22 50%, #8ea8c3 100%);
+}

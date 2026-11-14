@@ -1,0 +1,436 @@
+/* ==========================================================================
+   Lunar Landing Site Navigator - High-Resolution Site Inspector Modal & HUD
+   File: components/inspection_modal/inspection_modal.css
+   Role: Layout, typography, draggable HUD window styles, and SVG chart styling
+         for centered modal and draggable floating HUD modes.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Outer Overlay Container
+   -------------------------------------------------------------------------- */
+
+/* Centered Modal Mode (Default): Frosted dimming backdrop */
+.site-inspector-overlay.mode-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: var(--bg-overlay, rgba(14, 15, 17, 0.78));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.site-inspector-overlay.mode-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Floating HUD Mode: Transparent, non-blocking click pass-through */
+.site-inspector-overlay.mode-hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 950;
+  background: transparent;
+  backdrop-filter: none;
+  pointer-events: none;
+  display: block;
+}
+
+.site-inspector-overlay.mode-hud.active {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   2. Inspector Dialog Window
+   -------------------------------------------------------------------------- */
+.site-inspector-dialog {
+  background-color: var(--bg-card, rgba(39, 41, 43, 0.96));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-medium, #4e4f52);
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  pointer-events: auto;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+/* Centered Modal Geometry */
+.site-inspector-overlay.mode-modal .site-inspector-dialog {
+  width: 780px;
+  max-width: 95vw;
+  max-height: 88vh;
+  transform: scale(0.96);
+}
+
+.site-inspector-overlay.mode-modal.active .site-inspector-dialog {
+  transform: scale(1);
+}
+
+/* Floating HUD Geometry */
+.site-inspector-overlay.mode-hud .site-inspector-dialog {
+  position: absolute;
+  top: 70px;
+  left: calc(50vw - 350px);
+  width: 700px;
+  max-width: 92vw;
+  border-color: var(--border-active, #c87d55);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.85);
+}
+
+/* --------------------------------------------------------------------------
+   3. Draggable Header Row
+   -------------------------------------------------------------------------- */
+.inspector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: var(--bg-surface-dark, #1e2022);
+  border-bottom: 1px solid var(--border-subtle, #3a3c3f);
+  cursor: grab;
+  user-select: none;
+}
+
+.inspector-header:active {
+  cursor: grabbing;
+}
+
+.inspector-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inspector-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: #3b352b;
+  color: var(--accent-sand, #c99e52);
+}
+
+.inspector-site-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #ede8e1);
+}
+
+.inspector-site-coords {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted, #8c867c);
+}
+
+.inspector-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-inspector-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--bg-cockpit, #17181a);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 4px;
+  color: var(--text-secondary, #beb7ac);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-inspector-header:hover {
+  background: var(--border-subtle, #3a3c3f);
+  color: var(--text-primary, #ede8e1);
+}
+
+.btn-inspector-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #8c867c);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.btn-inspector-close:hover {
+  color: var(--accent-danger, #b8544f);
+}
+
+/* --------------------------------------------------------------------------
+   4. View Switcher Tabs Navigation
+   -------------------------------------------------------------------------- */
+.inspector-tabs-nav {
+  display: flex;
+  gap: 4px;
+  padding: 8px 18px 0;
+  background: var(--bg-surface-dark, #1e2022);
+  border-bottom: 1px solid var(--border-subtle, #3a3c3f);
+  overflow-x: auto;
+}
+
+.inspector-tab-btn {
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted, #8c867c);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.inspector-tab-btn:hover {
+  color: var(--text-primary, #ede8e1);
+}
+
+.inspector-tab-btn.active {
+  color: var(--accent-sand, #c99e52);
+  border-bottom-color: var(--accent-sand, #c99e52);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   5. Primary Visualization Stage
+   -------------------------------------------------------------------------- */
+.inspector-stage {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: calc(88vh - 160px);
+}
+
+/* High-Resolution Skyline Plot Wrap */
+.inspector-skyline-wrap {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: var(--bg-deep-space, #141618);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.inspector-skyline-wrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Elevation Grid Lines & Y-Axis Labels */
+.inspector-y-axis {
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 0;
+  pointer-events: none;
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted, #8c867c);
+  z-index: 5;
+}
+
+/* Azimuth 15° Compass Axis */
+.inspector-azimuth-axis {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 6px;
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted, #8c867c);
+  border-bottom: 1px solid var(--border-subtle, #3a3c3f);
+}
+
+/* Interactive Crosshair Tracking Guide */
+.inspector-crosshair-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(200, 125, 85, 0.6);
+  pointer-events: none;
+  display: none;
+  z-index: 10;
+}
+
+.inspector-crosshair-badge {
+  position: absolute;
+  top: 8px;
+  padding: 2px 8px;
+  background: rgba(20, 22, 24, 0.92);
+  border: 1px solid var(--border-active, #c87d55);
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-primary, #ede8e1);
+  pointer-events: none;
+  transform: translateX(-50%);
+  display: none;
+  z-index: 11;
+  white-space: nowrap;
+}
+
+/* Celestial Trackers in High-Res Skyline */
+.inspector-celestial-tracker {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.7));
+  z-index: 8;
+  transition: left 0.3s ease, top 0.3s ease;
+}
+
+.tracker-tag {
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(20, 22, 24, 0.85);
+  color: var(--text-primary, #ede8e1);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+}
+
+/* --------------------------------------------------------------------------
+   6. Crater Slope & Quantitative Grids
+   -------------------------------------------------------------------------- */
+.inspector-metrics-panel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.inspector-stat-box {
+  background: var(--bg-surface-dark, #1e2022);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--text-muted, #8c867c);
+}
+
+.stat-val {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-primary, #ede8e1);
+}
+
+/* --------------------------------------------------------------------------
+   7. Telemetry Footer
+   -------------------------------------------------------------------------- */
+.inspector-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: var(--bg-surface-dark, #1e2022);
+  border-top: 1px solid var(--border-subtle, #3a3c3f);
+}
+
+.inspector-telemetry-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.telemetry-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.pill-ok {
+  background: rgba(125, 150, 126, 0.2);
+  color: var(--accent-sage, #7d967e);
+  border: 1px solid var(--accent-sage, #7d967e);
+}
+
+.pill-warn {
+  background: rgba(201, 158, 82, 0.2);
+  color: var(--accent-sand, #c99e52);
+  border: 1px solid var(--accent-sand, #c99e52);
+}
+
+.telemetry-detail {
+  font-size: 11px;
+  color: var(--text-secondary, #beb7ac);
+}
+
+.inspector-footer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-inspector-action {
+  padding: 6px 12px;
+  background: var(--bg-cockpit, #17181a);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 4px;
+  color: var(--text-secondary, #beb7ac);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-inspector-action:hover {
+  background: var(--border-subtle, #3a3c3f);
+  color: var(--text-primary, #ede8e1);
+}
+
+.btn-inspector-action.btn-primary {
+  background: var(--accent-terracotta, #c87d55);
+  color: #fff;
+  border-color: var(--accent-terracotta, #c87d55);
+}
+
+.btn-inspector-action.btn-primary:hover {
+  background: #d68a62;
+}

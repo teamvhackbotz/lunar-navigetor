@@ -1,0 +1,148 @@
+/* ==========================================================================
+   Lunar Landing Site Navigator - Global Timeline & Cockpit Dock
+   File: components/timeline/timeline.css
+   Role: Layout, button styles, typography, and SVG scale styling for the bottom dock
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Bottom Cockpit Dock Container
+   Fixed bottom bar (height: 92px) spanning 100% viewport width.
+   Stacks above the 3D globe canvas (z: 1) and comparison cards (z: 90) at z-index: 100.
+   -------------------------------------------------------------------------- */
+.bottom-cockpit-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--height-bottom-cockpit, 92px);
+  background: var(--bg-surface-dark, #1e2022);
+  border-top: 1px solid var(--border-subtle, #3a3c3f);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+}
+
+/* --------------------------------------------------------------------------
+   2. Tier 1: Upper Mission Toolbar (Height: 44px)
+   Horizontal bar housing tools, telemetry readouts, and simulation controls.
+   -------------------------------------------------------------------------- */
+.mission-toolbar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Playback and speed control group */
+.toolbar-playback-group { display: flex; align-items: center; gap: 6px; }
+
+/* Media button base style */
+.btn-media {
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  background: var(--bg-card, #27292b);
+  border: 1px solid var(--border-medium, #4e4f52);
+  color: var(--text-primary, #ede8e1);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+.btn-media:hover { background: var(--bg-card-hover, #313336); }
+
+/* Play/Pause toggle button states */
+.btn-play { background: var(--accent-terracotta, #c87d55); border-color: var(--accent-terracotta, #c87d55); color: #fff; }
+.btn-play.playing { background: var(--accent-sand, #c99e52); border-color: var(--accent-sand, #c99e52); color: #000; }
+
+/* Simulation speed multiplier pill buttons */
+.speed-selector { display: flex; align-items: center; gap: 3px; margin-left: 6px; }
+.speed-label { font-size: 10px; color: var(--text-muted, #8c867c); }
+.btn-speed {
+  font-size: 10px; padding: 2px 6px;
+  background: var(--bg-card, #27292b); border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 3px; color: var(--text-secondary, #beb7ac); cursor: pointer;
+}
+.btn-speed.active { background: var(--accent-slate, #5f798a); color: #fff; }
+
+/* --------------------------------------------------------------------------
+   3. Telemetry & Coordinate Center Status Readouts
+   Monospace text group displaying UTC simulation timestamp and marked target.
+   -------------------------------------------------------------------------- */
+.toolbar-center-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+}
+.status-clock { color: var(--accent-sand, #c99e52); font-weight: 600; }
+.status-coord { color: var(--text-primary, #ede8e1); }
+.status-phase { color: var(--text-muted, #8c867c); }
+.status-divider { color: var(--border-medium, #4e4f52); }
+
+/* --------------------------------------------------------------------------
+   4. Mission Tools Group (Left)
+   Interactive tool buttons (Mark Site pin drop, 2D Maps drawer, Dr. Raj AI).
+   -------------------------------------------------------------------------- */
+.toolbar-tools-group { display: flex; align-items: center; gap: 6px; }
+.btn-tool {
+  font-size: 11px; font-weight: 600; padding: 5px 12px;
+  background: var(--bg-card, #27292b); border: 1px solid var(--border-medium, #4e4f52);
+  border-radius: 4px; color: var(--text-secondary, #beb7ac); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s ease;
+}
+.btn-tool:hover { background: var(--bg-card-hover, #313336); border-color: var(--border-active, #c87d55); color: var(--text-primary, #ede8e1); }
+.btn-tool.active {
+  background: var(--accent-terracotta, #c87d55) !important;
+  border-color: var(--accent-terracotta, #c87d55) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(200, 125, 85, 0.45) !important;
+}
+.label-tool { cursor: pointer; }
+
+/* --------------------------------------------------------------------------
+   5. Tier 2: Lower Timeline & Precision Scale Strip (Height: 48px)
+   Houses the calendar meta labels, SVG graduation tick ruler, and range slider.
+   -------------------------------------------------------------------------- */
+.full-timeline-strip {
+  height: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 16px 4px;
+}
+
+/* Date boundary and event labels row */
+.timeline-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted, #8c867c);
+  margin-bottom: 2px;
+}
+.timeline-marker-event { color: var(--accent-sand, #c99e52); }
+
+/* SVG scale ruler displaying sub-day tick graduations */
+.timeline-precision-ruler {
+  width: 100%;
+  height: 10px;
+  margin-bottom: 2px;
+}
+.ruler-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Scrubber container & native slider input */
+.timeline-track-container { width: 100%; }
+.full-width-slider {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--accent-terracotta, #c87d55); /* Terracotta thumb and filled track */
+  cursor: pointer;
+  display: block;
+}

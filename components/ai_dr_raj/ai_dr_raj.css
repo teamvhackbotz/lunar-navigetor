@@ -1,0 +1,350 @@
+/* ==========================================================================
+   Lunar Landing Site Navigator - Dr. Raj AI Mission Analyst
+   File: components/ai_dr_raj/ai_dr_raj.css
+   Role: Floating layout, entrance animations, chat bubbles, and glassmorphic dialog
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Floating Assistant Outer Wrapper
+   Positions the AI assistant above the bottom cockpit dock at the bottom-right corner.
+   z-index: 120 ensures the AI dialog hovers above the bottom cockpit (z: 100),
+   comparison cards (z: 90), and side drawers (z: 95).
+   -------------------------------------------------------------------------- */
+.ai-assistant-wrapper {
+  position: absolute;
+  bottom: calc(var(--height-bottom-cockpit, 92px) + 12px);
+  right: 20px;
+  z-index: 120;
+  font-family: inherit;
+  transition: bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dynamic clearance: Shifts assistant upward when the bottom 2D Maps drawer slides up */
+#toggle-bottom-map:checked ~ #mount-ai-dr-raj .ai-assistant-wrapper {
+  bottom: calc(var(--height-bottom-cockpit, 92px) + 305px);
+}
+
+/* --------------------------------------------------------------------------
+   2. Floating Bubble Trigger Button
+   Circular/pill trigger providing visual callout when chat is minimized.
+   -------------------------------------------------------------------------- */
+.ai-bubble-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-surface, #1e2022);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  padding: 8px 14px 8px 10px;
+  border-radius: 28px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.ai-bubble-btn:hover {
+  border-color: var(--border-active, #c87d55);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+/* Avatar circular badge with terracotta highlight */
+.ai-avatar-badge {
+  font-size: 20px;
+  background: rgba(200, 125, 85, 0.15);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(200, 125, 85, 0.3);
+}
+
+.ai-bubble-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.ai-bubble-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary, #e2ded9);
+}
+
+.ai-bubble-role {
+  font-size: 10px;
+  color: var(--accent-sand, #c99e52);
+}
+
+/* Pulsing notification indicator for incoming automated tactical alerts */
+.ai-notification-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-sage, #729676);
+  border-radius: 50%;
+  margin-left: 2px;
+  box-shadow: 0 0 6px var(--accent-sage, #729676);
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* --------------------------------------------------------------------------
+   3. Expanded Chat Window Container
+   Fixed-dimension frosted glass dialog window with entrance animation.
+   -------------------------------------------------------------------------- */
+.ai-chat-window {
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  height: 480px;
+  max-height: calc(100vh - 160px);
+  background: var(--bg-surface, #1e2022);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 10px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Chat window title bar */
+.ai-chat-header {
+  padding: 12px 14px;
+  background: var(--bg-cockpit, #17181a);
+  border-bottom: 1px solid var(--border-subtle, #3a3c3f);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-avatar-small {
+  font-size: 18px;
+  background: rgba(200, 125, 85, 0.15);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.ai-header-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-header-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary, #e2ded9);
+}
+
+.ai-header-status {
+  font-size: 10px;
+  color: var(--accent-sage, #729676);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-indicator {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-sage, #729676);
+  border-radius: 50%;
+}
+
+.ai-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.ai-header-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #8c867c);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.ai-header-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #e2ded9);
+}
+
+/* --------------------------------------------------------------------------
+   4. Quick Action Query Chips
+   Horizontally scrollable track with suggested question prompt pills.
+   -------------------------------------------------------------------------- */
+.ai-quick-chips {
+  padding: 8px 12px;
+  background: rgba(23, 24, 26, 0.6);
+  border-bottom: 1px solid var(--border-subtle, #3a3c3f);
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none; /* Hides Firefox scrollbar */
+}
+
+.ai-quick-chips::-webkit-scrollbar {
+  display: none; /* Hides WebKit scrollbar */
+}
+
+.chip-btn {
+  background: var(--bg-surface, #1e2022);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  color: var(--text-secondary, #beb7ac);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip-btn:hover {
+  border-color: var(--border-active, #c87d55);
+  color: var(--text-primary, #e2ded9);
+}
+
+/* --------------------------------------------------------------------------
+   5. Message Stream & Chat Bubbles
+   Scrollable dialogue area containing user queries and Dr. Raj briefings.
+   -------------------------------------------------------------------------- */
+.ai-messages-container {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 86%;
+}
+
+/* Assistant message aligned to left */
+.msg-assistant {
+  align-self: flex-start;
+}
+
+/* Operator message aligned to right */
+.msg-user {
+  align-self: flex-end;
+}
+
+.msg-bubble {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Assistant bubble styling (dark cockpit theme) */
+.msg-assistant .msg-bubble {
+  background: var(--bg-cockpit, #17181a);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  color: var(--text-primary, #e2ded9);
+}
+
+/* User query bubble styling (terracotta theme) */
+.msg-user .msg-bubble {
+  background: var(--accent-terracotta, #c87d55);
+  color: #ffffff;
+}
+
+.msg-time {
+  font-size: 9px;
+  color: var(--text-muted, #8c867c);
+  margin-top: 3px;
+  padding: 0 4px;
+}
+
+.msg-user .msg-time {
+  text-align: right;
+}
+
+/* Embedded interactive site links inside messages */
+.ai-site-link {
+  color: var(--accent-sand, #c99e52);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ai-site-link:hover {
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   6. Input Form & Send Controls
+   -------------------------------------------------------------------------- */
+.ai-input-form {
+  padding: 8px 12px;
+  background: var(--bg-cockpit, #17181a);
+  border-top: 1px solid var(--border-subtle, #3a3c3f);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-input-field {
+  flex: 1;
+  background: var(--bg-surface, #1e2022);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  color: var(--text-primary, #e2ded9);
+  padding: 7px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.ai-input-field:focus {
+  border-color: var(--border-active, #c87d55);
+}
+
+.ai-send-btn {
+  background: var(--accent-terracotta, #c87d55);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ai-send-btn:hover {
+  background: #d68b63;
+}

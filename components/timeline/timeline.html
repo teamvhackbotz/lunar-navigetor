@@ -1,0 +1,104 @@
+<!-- ==========================================================================
+     Lunar Landing Site Navigator - Global Timeline & Mission Cockpit Bar
+     File: components/timeline/timeline.html
+     Role: Two-tiered bottom docking station driving mission time progression,
+           solar orbital simulation, coordinate readouts, and global tool toggles.
+     ========================================================================== -->
+
+<footer class="bottom-cockpit-bar">
+  <!-- ========================================================================
+       TIER 1: MISSION CONTROLS & UNIVERSAL MARKING TOOLBAR (Height: 44px)
+       Provides tool triggers, UTC clock, selenographic coordinates, & media playback.
+       ======================================================================== -->
+  <div class="mission-toolbar">
+
+    <!-- Group 1: Temporal Simulation Playback Controls (Left) -->
+    <div class="toolbar-playback-group">
+      <!-- Step backward 1 hour in simulation time -->
+      <button class="btn-media" id="btn-step-back" title="Step Back 1 Hour (Ctrl + ←)">⏮</button>
+      <!-- Play/Pause continuous time progression loop -->
+      <button class="btn-media btn-play" id="btn-play-pause" title="Play / Pause Time Progression (Spacebar)">▶</button>
+      <!-- Step forward 1 hour in simulation time -->
+      <button class="btn-media" id="btn-step-forward" title="Step Forward 1 Hour (Ctrl + →)">⏭</button>
+
+      <!-- Simulation speed acceleration selectors (100x vs 1000x real-time) -->
+      <div class="speed-selector">
+        <span class="speed-label">Speed:</span>
+        <button class="btn-speed active" data-speed="100">100×</button>
+        <button class="btn-speed" data-speed="1000">1000×</button>
+      </div>
+    </div>
+
+    <!-- Group 2: Live Mission Telemetry & Selenographic Coordinates (Center) -->
+    <div class="toolbar-center-status">
+      <!-- Universal mission clock displaying simulation UTC time -->
+      <span class="status-clock" id="status-clock">🕒 2026-11-15 14:00 UTC</span>
+      <span class="status-divider">·</span>
+      <!-- Real-time coordinate and landing target badge updated via EventBus 'site:marked' -->
+      <span class="status-coord" id="active-coord-display">📍 <strong>Connecting Ridge</strong> · 89.40° S · 222.6° E</span>
+      <span class="status-divider">·</span>
+      <!-- Lunar day/night lighting phase indicator -->
+      <span class="status-phase">🌕 Polar Day</span>
+    </div>
+
+    <!-- Group 3: Mission Tools (Right) -->
+    <div class="toolbar-tools-group">
+      <!-- Default Grab / Rotate Navigation Tool -->
+      <button class="btn-tool active" id="btn-tool-grab" title="Grab / Rotate 3D Globe (G)">
+        <span>✋ Grab</span>
+      </button>
+
+      <!-- Interactive pin-dropping tool for marking locations on 3D globe or 2D maps -->
+      <button class="btn-tool" id="btn-tool-mark" title="Mark Landing Site Pin (M)">
+        <span>📍 Mark</span>
+      </button>
+      
+      <!-- Pure-CSS label trigger linked to #toggle-bottom-map checkbox in index.html -->
+      <label for="toggle-bottom-map" class="btn-tool label-tool btn-tool-map" title="Toggle 2D Maps Drawer (Alt + ↓)">
+        <span>▲ 2D Maps</span>
+      </label>
+
+      <!-- Toggles the Dr. Raj AI lunar mission assistant drawer via EventBus 'ai:toggle' -->
+      <button class="btn-tool btn-tool-ai" id="btn-tool-ai" title="Toggle Dr. Raj AI Lunar Analyst (Shift + ?)">
+        <span>👨‍🚀 Dr. Raj AI</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       TIER 2: FULL-WIDTH TIMELINE WITH PRECISION SCALE RULER (Height: 48px)
+       Linear time-scrubber spanning November 2026 (Artemis III launch window).
+       ======================================================================== -->
+  <div class="full-timeline-strip">
+    <!-- Milestone metadata header row -->
+    <div class="timeline-meta-row">
+      <span class="timeline-date-edge">2026-11-01</span>
+      <span class="timeline-marker-event">🚀 Artemis III Target Window</span>
+      <span class="timeline-marker-event">❄️ Polar Solstice</span>
+      <span class="timeline-date-edge">2026-11-30</span>
+    </div>
+    
+    <!-- Precision scale ruler with SVG graduation ticks for sub-day time reading -->
+    <div class="timeline-precision-ruler">
+      <svg class="ruler-svg" viewBox="0 0 1000 12" preserveAspectRatio="none">
+        <line x1="0" y1="0" x2="0" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="2"></line>
+        <line x1="100" y1="4" x2="100" y2="12" stroke="rgba(255,255,255,0.25)" stroke-width="1"></line>
+        <line x1="200" y1="2" x2="200" y2="12" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"></line>
+        <line x1="300" y1="4" x2="300" y2="12" stroke="rgba(255,255,255,0.25)" stroke-width="1"></line>
+        <line x1="400" y1="2" x2="400" y2="12" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"></line>
+        <!-- Mid-month solstice reference tick highlighted in sand gold -->
+        <line x1="500" y1="0" x2="500" y2="12" stroke="rgba(201,158,82,0.8)" stroke-width="2"></line>
+        <line x1="600" y1="4" x2="600" y2="12" stroke="rgba(255,255,255,0.25)" stroke-width="1"></line>
+        <line x1="700" y1="2" x2="700" y2="12" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"></line>
+        <line x1="800" y1="4" x2="800" y2="12" stroke="rgba(255,255,255,0.25)" stroke-width="1"></line>
+        <line x1="900" y1="2" x2="900" y2="12" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"></line>
+        <line x1="1000" y1="0" x2="1000" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="2"></line>
+      </svg>
+    </div>
+
+    <!-- Scrubber track container with native HTML range input -->
+    <div class="timeline-track-container">
+      <input type="range" class="full-width-slider" id="timeline-scrubber" min="0" max="100" value="48">
+    </div>
+  </div>
+</footer>

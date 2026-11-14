@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D Moon - Standalone Test Harness</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <link rel="stylesheet" href="moon_3d.css">
+  <style>
+    body { background: #000; padding: 20px; font-family: sans-serif; color: #ede8e1; }
+    /* In isolated harness, give viewport a fixed height rather than absolute fullscreen */
+    .main-viewport { position: relative; top: auto; bottom: auto; height: 500px; border: 1px solid #3a3c3f; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 600px; margin: 0 auto;">
+    <h2>3D Moon Viewport - Isolated Test Harness</h2>
+    <p style="font-size:12px; color:#beb7ac; margin-bottom:12px;">
+      Left-click and drag to rotate, scroll to zoom into the South Pole, and click any surface location to drop a 3D pin.
+    </p>
+    
+    <!-- Component Mount Point -->
+    <div id="mount-moon-3d"></div>
+  </div>
+
+  <!-- Three.js Library & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <!-- Shared Core Infrastructure -->
+  <script src="../../core/event_bus.js"></script>
+  <script src="../../core/coord_math.js"></script>
+  
+  <script>
+    // Asynchronously loads component template and executes script
+    fetch("moon_3d.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("mount-moon-3d").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "moon_3d.js";
+        document.body.appendChild(script);
+      });
+  </script>
+</body>
+</html>

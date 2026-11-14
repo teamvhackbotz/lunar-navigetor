@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Top Nav - Standalone Test Harness</title>
+  <!-- Global design system styles -->
+  <link rel="stylesheet" href="../../styles.css">
+  <!-- Top navigation component styles -->
+  <link rel="stylesheet" href="top_nav.css">
+</head>
+<body style="background:#141618; padding-top:80px;">
+  <!-- Micro-frontend mount container -->
+  <div id="mount-top-nav"></div>
+
+  <!-- Shared EventBus dependency -->
+  <script src="../../core/event_bus.js"></script>
+  <script>
+    // Asynchronously fetch and inject the component markup and script for isolated testing
+    fetch("top_nav.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("mount-top-nav").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "top_nav.js";
+        document.body.appendChild(script);
+      });
+  </script>
+</body>
+</html>

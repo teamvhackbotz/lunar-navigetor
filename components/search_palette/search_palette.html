@@ -1,0 +1,43 @@
+<!-- ==========================================================================
+     Lunar Landing Site Navigator - Quick Site Search Command Palette
+     File: components/search_palette/search_palette.html
+     Role: Command palette for instant landing site filtering, selenographic
+           coordinate lookup, and immediate 3D focus navigation.
+     ========================================================================== -->
+
+<div class="search-palette-backdrop" id="search-palette-overlay" style="display: none;">
+  <div class="search-palette-modal" id="search-palette-modal" role="dialog" aria-modal="true">
+    
+    <!-- Search Input Row -->
+    <div class="search-input-wrapper">
+      <span class="search-palette-icon">🔍</span>
+      <input 
+        type="text" 
+        id="site-search-input" 
+        class="search-input" 
+        placeholder="Search landing sites, craters, or enter coordinates (e.g. Shackleton, -89.4 220)..." 
+        autocomplete="off" 
+        spellcheck="false"
+      />
+      <button class="search-close-btn" id="search-palette-close" title="Close Search (ESC)">✕</button>
+    </div>
+
+    <!-- Live Results Container -->
+    <div class="search-results-container" id="search-results-container">
+      <div class="search-results-list" id="search-results-list">
+        <!-- Dynamically rendered by search_palette.js -->
+      </div>
+    </div>
+
+    <!-- Search Palette Navigation Footer -->
+    <div class="search-palette-footer">
+      <div class="search-shortcuts-hint">
+        <span><kbd>↑</kbd> <kbd>↓</kbd> Navigate</span>
+        <span><kbd>↵</kbd> Select & Focus 3D</span>
+        <span><kbd>ESC</kbd> Close</span>
+      </div>
+      <span class="search-results-count" id="search-results-count">10 Sites Available</span>
+    </div>
+
+  </div>
+</div>

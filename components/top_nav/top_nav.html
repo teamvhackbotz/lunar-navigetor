@@ -1,0 +1,38 @@
+<!-- ==========================================================================
+     Lunar Landing Site Navigator - Top Navigation Bar
+     File: components/top_nav/top_nav.html
+     Role: Fixed upper header providing mission branding, dead-center comparison
+           card toggle trigger, and the global cockpit settings modal launcher.
+     ========================================================================== -->
+
+<header class="top-nav">
+  <!-- Brand Identity (Left Column) -->
+  <div class="nav-brand">
+    <span class="brand-icon">🌔</span>
+    <div class="nav-brand-text">
+      <h1 class="brand-title">Lunar Navigator</h1>
+    </div>
+  </div>
+
+  <!-- Dead-Center cleared to preserve full view of 3D Moon crown -->
+  <div class="nav-center-action"></div>
+
+  <!-- Global Cockpit Actions (Right Cluster) -->
+  <div class="nav-actions">
+    <!-- Dedicated Quick-Search Trigger -->
+    <button id="btn-open-search" class="btn-toggle btn-search" title="Search Landing Sites (/)">
+      <span>🔍 Search</span> <kbd class="kbd-shortcut">/</kbd>
+    </button>
+
+    <!-- Compare Sites Drawer Toggle (Pure-CSS label trigger linked to #toggle-top-cards) -->
+    <label for="toggle-top-cards" class="btn-toggle btn-compare" title="Toggle Comparison Cards (Alt + ↑)">
+      <span class="icon-indicator">▼</span> Compare Sites <span class="badge">3</span>
+    </label>
+
+    <!-- Dedicated button triggering 'settings:open' event across universal EventBus -->
+    <button id="btn-open-settings" class="btn-toggle btn-settings icon-only" title="Mission Cockpit Settings">
+      <span class="gear-icon">⚙️</span>
+    </button>
+  </div>
+</header>
+

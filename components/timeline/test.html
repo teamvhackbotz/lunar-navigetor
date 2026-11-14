@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Timeline - Standalone Test Harness</title>
+  <!-- Global design system styles -->
+  <link rel="stylesheet" href="../../styles.css">
+  <!-- Timeline component styles -->
+  <link rel="stylesheet" href="timeline.css">
+  <style>
+    body { background: #141618; padding: 40px; font-family: sans-serif; color: #ede8e1; }
+    /* Override absolute bottom docking so timeline displays inline for visual testing */
+    .bottom-cockpit-bar { position: relative; bottom: auto; border: 1px solid #4e4f52; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 900px; margin: 0 auto;">
+    <h2>Timeline & Mission Toolbar - Isolated Test</h2>
+    <p style="font-size:12px; color:#beb7ac; margin-bottom:20px;">
+      Test Play/Pause, speed multipliers (100x/1000x), step controls, and precision tick ruler scrubbing.
+    </p>
+    <!-- Micro-frontend mount container -->
+    <div id="mount-timeline"></div>
+  </div>
+
+  <!-- Shared core event bus and math dependencies -->
+  <script src="../../core/event_bus.js"></script>
+  <script src="../../core/coord_math.js"></script>
+  <script>
+    // Asynchronously fetch and inject the component markup and script for isolated testing
+    fetch("timeline.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("mount-timeline").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "timeline.js";
+        document.body.appendChild(script);
+      });
+  </script>
+</body>
+</html>

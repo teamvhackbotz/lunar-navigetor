@@ -1,0 +1,59 @@
+<!-- ==========================================================================
+     Lunar Landing Site Navigator - High-Resolution Site Inspector Modal & HUD
+     File: components/inspection_modal/inspection_modal.html
+     Role: Expands candidate site visualizations into an interactive, high-precision
+           workspace with fine-grained azimuth grids, crosshairs, and slope analyses.
+           Supports Centered Modal (default) and Draggable Floating HUD modes.
+     ========================================================================== -->
+
+<!-- Outer overlay wrapper. Switches between .mode-modal and .mode-hud -->
+<div class="site-inspector-overlay mode-modal" id="site-inspector-overlay" style="display: none;">
+  <!-- Centered / Draggable Dialog Window -->
+  <div class="site-inspector-dialog" id="site-inspector-dialog" role="dialog" aria-modal="true" aria-labelledby="inspector-site-name">
+
+    <!-- Draggable Header Row -->
+    <div class="inspector-header" id="inspector-drag-handle">
+      <div class="inspector-title-group">
+        <span class="inspector-badge" id="inspector-site-tag">Artemis III</span>
+        <h3 class="inspector-site-name" id="inspector-site-name">Peak Near Shackleton</h3>
+        <span class="inspector-site-coords" id="inspector-site-coords">89.6° S · 129.2° E · +1,240 m</span>
+      </div>
+
+      <div class="inspector-header-actions">
+        <!-- Quick-toggle between Centered Modal and Floating HUD -->
+        <button class="btn-inspector-header" id="btn-inspector-mode-toggle" title="Toggle between Centered Modal and Floating HUD">
+          <span id="inspector-mode-icon">◰</span> <span id="inspector-mode-label">Float HUD</span>
+        </button>
+        <!-- Close button -->
+        <button class="btn-inspector-close" id="btn-inspector-close" title="Close Inspector">&times;</button>
+      </div>
+    </div>
+
+    <!-- View Switcher Tabs -->
+    <div class="inspector-tabs-nav">
+      <button class="inspector-tab-btn active" data-tab="horizon">🌄 360° Skyline Mask</button>
+      <button class="inspector-tab-btn" data-tab="slope">📈 Crater Slope Profile</button>
+      <button class="inspector-tab-btn" data-tab="solar">☀️ Solar Stay Window</button>
+      <button class="inspector-tab-btn" data-tab="comms">📡 Direct-to-Earth Comms</button>
+    </div>
+
+    <!-- Primary Visualization Stage -->
+    <div class="inspector-stage" id="inspector-stage">
+      <!-- Populated dynamically by inspection_modal.js based on active tab -->
+    </div>
+
+    <!-- Telemetry Status & Action Footer -->
+    <div class="inspector-footer">
+      <div class="inspector-telemetry-status" id="inspector-telemetry-status">
+        <span class="telemetry-pill pill-ok" id="inspector-los-pill">✓ Line of Sight Maintained</span>
+        <span class="telemetry-detail" id="inspector-clearance-detail">Terrain clearance: <strong>+2.4°</strong> above eastern rim peaks</span>
+      </div>
+
+      <div class="inspector-footer-actions">
+        <button class="btn-inspector-action" id="btn-inspector-copy-coords">📋 Copy Coords</button>
+        <button class="btn-inspector-action btn-primary" id="btn-inspector-focus-3d">Focus 3D Viewport</button>
+      </div>
+    </div>
+
+  </div>
+</div>

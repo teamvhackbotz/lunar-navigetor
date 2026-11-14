@@ -1,0 +1,33 @@
+<!-- ==========================================================================
+     Lunar Landing Site Navigator - Celestial Triad Mini-Map
+     File: components/minimap_triad/minimap_triad.html
+     Role: Interactive celestial diagram visualizing Sun-Earth-Moon orbital geometry,
+           libration wobble, and reference frame perspectives (Moon/Earth/Sun).
+     ========================================================================== -->
+
+<!-- Pinned widget container; clicking toggles through reference frame modes -->
+<div class="minimap-triad" id="minimap-triad-box" title="Click to cycle reference frame (Moon / Earth / Sun)">
+  <!-- Header: Title and active central reference body -->
+  <div class="minimap-header">
+    <span class="minimap-title">Celestial Triad</span>
+    <span class="minimap-mode" id="minimap-mode-label">Center: Moon ▾</span>
+  </div>
+
+  <!-- Orbital Canvas Area: Concentric dashed rings and celestial emoji nodes -->
+  <div class="triad-canvas-mock">
+    <div class="orbit-ring ring-sun"></div>
+    <div class="orbit-ring ring-earth"></div>
+    
+    <!-- Central primary body (default: Moon 🌕) -->
+    <div class="body-center moon-node" id="triad-center-node" title="Moon (Center)">🌕</div>
+    <!-- Orbiting secondary body (default: Earth 🌍 with libration wobble) -->
+    <div class="body-orbiting earth-node" id="triad-earth-node" title="Earth (Libration Wobble)">🌍</div>
+    <!-- Distant tertiary body (default: Sun ☀️ defining illumination vector) -->
+    <div class="body-orbiting sun-node" id="triad-sun-node" title="Sun (Solar Vector)">☀️</div>
+  </div>
+
+  <!-- Footer context note -->
+  <div class="minimap-footer">
+    <span id="triad-subtext">Visualizing Earth's Libration Wobble</span>
+  </div>
+</div>

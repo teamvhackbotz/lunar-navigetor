@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Site Inspector - Standalone Test Harness</title>
+  <!-- Global design system styles -->
+  <link rel="stylesheet" href="../../styles.css">
+  <!-- Active operational theme stylesheet -->
+  <link rel="stylesheet" id="theme-stylesheet" href="../../themes/theme_earth.css">
+  <!-- Inspector component styles -->
+  <link rel="stylesheet" href="inspection_modal.css">
+  <!-- Shared Theme Manager -->
+  <script src="../../themes/theme_manager.js"></script>
+  <style>
+    body { background: var(--bg-deep-space, #141618); padding: 40px; font-family: sans-serif; color: var(--text-primary, #ede8e1); }
+    .btn-test { padding: 8px 14px; background: var(--accent-terracotta, #c87d55); border: none; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-test:hover { background: #d68a62; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 900px; margin: 0 auto;">
+    <h2 style="font-size: 18px; margin-bottom: 6px;">Site Inspector — Standalone Test Harness</h2>
+    <p style="font-size: 13px; color: var(--text-muted, #8c867c); margin-bottom: 20px;">
+      Test the high-resolution workspace: launch candidate inspections, test interactive azimuth crosshair scrub, and test Centered Modal vs. Draggable HUD modes.
+    </p>
+
+    <!-- Test Trigger Buttons -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+      <button class="btn-test" id="btn-test-shackleton">⛶ Inspect Peak Near Shackleton (Horizon)</button>
+      <button class="btn-test" id="btn-test-ridge">⛶ Inspect Connecting Ridge (Slope)</button>
+      <button class="btn-test" id="btn-test-malapert">⛶ Inspect Malapert Massif (Comms)</button>
+    </div>
+
+    <!-- Simulated Timeline Time Scrubber -->
+    <div style="margin-bottom: 24px; padding: 12px 16px; background: var(--bg-surface-dark, #1e2022); border: 1px solid var(--border-subtle, #3a3c3f); border-radius: 6px; display: flex; align-items: center; gap: 14px;">
+      <span style="font-size: 12px; font-weight: 600; color: var(--accent-sand, #c99e52);">Simulate Timeline Scrubber:</span>
+      <input type="range" id="test-time-scrubber" min="0" max="100" value="0" style="flex: 1; cursor: pointer;">
+      <span id="test-time-val" style="font-family: monospace; font-size: 12px; min-width: 45px;">0%</span>
+    </div>
+
+    <!-- Micro-frontend mount container -->
+    <div id="mount-inspection-modal"></div>
+
+    <!-- Real-time EventBus logging console -->
+    <div id="event-log" style="margin-top:30px; padding:15px; background:var(--bg-surface-dark, #1e2022); border:1px solid var(--border-subtle, #3a3c3f); border-radius:6px; font-family:monospace; font-size:12px; color:var(--text-secondary, #beb7ac);">
+      <strong>Event Bus Output:</strong>
+      <ul id="log-list" style="margin:8px 0 0; padding-left:20px; max-height: 140px; overflow-y: auto;">
+        <li>Listening for events...</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Shared core event bus and math dependencies -->
+  <script src="../../core/event_bus.js"></script>
+  <script src="../../core/coord_math.js"></script>
+  <script>
+    const logList = document.getElementById("log-list");
+    function logEvent(name, data) {
+      const li = document.createElement("li");
+      li.textContent = `[${new Date().toLocaleTimeString()}] ${name}: ${JSON.stringify(data)}`;
+      logList.prepend(li);
+    }
+
+    if (window.eventBus) {
+      window.eventBus.on("site:marked", d => logEvent("site:marked", d));
+      window.eventBus.on("inspectmode:changed", d => logEvent("inspectmode:changed", d));
+    }
+
+    const scrubber = document.getElementById("test-time-scrubber");
+    const valText = document.getElementById("test-time-val");
+    if (scrubber) {
+      scrubber.addEventListener("input", (e) => {
+        const val = parseInt(e.target.value, 10);
+        valText.textContent = `${val}%`;
+        if (window.eventBus) {
+          window.eventBus.emit("time:changed", { sliderValue: val });
+        }
+      });
+    }
+
+    // Button triggers
+    document.getElementById("btn-test-shackleton").addEventListener("click", () => {
+      if (window.eventBus) window.eventBus.emit("card:inspect", { siteKey: "shackleton", tab: "horizon" });
+    });
+    document.getElementById("btn-test-ridge").addEventListener("click", () => {
+      if (window.eventBus) window.eventBus.emit("card:inspect", { siteKey: "ridge", tab: "slope" });
+    });
+    document.getElementById("btn-test-malapert").addEventListener("click", () => {
+      if (window.eventBus) window.eventBus.emit("card:inspect", { siteKey: "malapert", tab: "comms" });
+    });
+
+    // Asynchronously fetch and inject component markup and script
+    fetch("inspection_modal.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("mount-inspection-modal").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "inspection_modal.js";
+        document.body.appendChild(script);
+      });
+  </script>
+</body>
+</html>

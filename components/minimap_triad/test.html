@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Celestial Triad Mini-Map - Standalone Test Harness</title>
+  <!-- Global design system styles -->
+  <link rel="stylesheet" href="../../styles.css">
+  <!-- Minimap triad component styles -->
+  <link rel="stylesheet" href="minimap_triad.css">
+</head>
+<body style="background:#141618; margin:0; padding:20px; font-family:sans-serif; color:#eee;">
+  <h2 style="font-size:14px; color:#c99e52; margin-bottom:12px;">Minimap Triad Standalone Test Harness</h2>
+  <div style="position:relative; width:400px; height:300px; background:#1b1d20; border:1px solid #3a3c3f; border-radius:8px;">
+    <!-- Micro-frontend mount container -->
+    <div id="mount-minimap-triad"></div>
+  </div>
+  <div style="margin-top:20px; font-size:12px; color:#8c867c;">
+    Click the widget to cycle reference frame (Moon / Earth / Sun).
+  </div>
+
+  <!-- Shared EventBus dependency -->
+  <script src="../../core/event_bus.js"></script>
+  <script>
+    // Asynchronously fetch and inject component markup and script for isolated testing
+    fetch("minimap_triad.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("mount-minimap-triad").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "minimap_triad.js";
+        document.body.appendChild(script);
+      });
+  </script>
+</body>
+</html>

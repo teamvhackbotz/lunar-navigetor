@@ -1,0 +1,28 @@
+<!-- ==========================================================================
+     COMPONENT: Three.js 3D Moon Viewport (components/moon_3d/)
+     TEMPLATE: moon_3d.html
+     
+     ROLE:
+     The central 3D stage of the Lunar Landing Site Navigator cockpit:
+     - Mounts an interactive Three.js WebGL canvas rendering a 3D Moon sphere.
+     - Textured with authentic NASA LROC global lunar albedo imagery.
+     - Supports free rotation, zoom, dynamic timeline-driven solar illumination,
+       and click-to-mark raycasting anywhere on the lunar surface.
+     ========================================================================== -->
+
+<!-- Main Viewport Shell: Occupies full central stage between top nav (54px) and bottom cockpit (92px) -->
+<main class="main-viewport" id="moon-3d-viewport" aria-label="3D Lunar Surface Viewport">
+  <div class="viewport-stage" id="viewport-stage">
+    
+    <!-- Three.js WebGL Canvas Mount: moon_3d.js injects the WebGLRenderer <canvas> here -->
+    <div id="moon-webgl-canvas" class="moon-webgl-canvas" aria-label="Interactive 3D Moon Canvas"></div>
+
+    <!-- 2D Surface Pin Overlay (Fallback/HTML Tooltip synced with 3D pin) -->
+    <div class="surface-pin" id="active-moon-pin" style="display: none;" aria-live="polite">
+      <span class="pin-marker"></span>
+      <span class="pin-label">Connecting Ridge</span>
+    </div>
+
+  </div>
+</main>
+

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dr. Raj AI Assistant - Standalone Test Harness</title>
+  <!-- Global design system styles -->
+  <link rel="stylesheet" href="../../styles.css">
+  <!-- Dr. Raj AI component styles -->
+  <link rel="stylesheet" href="ai_dr_raj.css">
+</head>
+<body style="background:#141618; margin:0; padding:30px; font-family:sans-serif; color:#eee;">
+  <h2 style="font-size:16px; color:#c99e52; margin-bottom:8px;">Dr. Raj AI Analyst - Standalone Test Harness</h2>
+  <p style="font-size:13px; color:#8c867c; margin-bottom:20px;">
+    Test AI dialog queries, quick chips, and response to external site selection events.
+  </p>
+
+  <!-- Interactive buttons to simulate external EventBus site selection events -->
+  <div style="display:flex; gap:10px; margin-bottom:20px;">
+    <button id="btn-select-site-1" style="padding:6px 12px; background:#1e2022; border:1px solid #3a3c3f; color:#e2ded9; border-radius:4px; cursor:pointer;">
+      Simulate Selecting Site 1 (Shackleton)
+    </button>
+    <button id="btn-select-site-3" style="padding:6px 12px; background:#1e2022; border:1px solid #3a3c3f; color:#e2ded9; border-radius:4px; cursor:pointer;">
+      Simulate Selecting Site 3 (Malapert)
+    </button>
+  </div>
+
+  <!-- Micro-frontend mount container -->
+  <div id="mount-ai-dr-raj"></div>
+
+  <!-- Shared EventBus dependency -->
+  <script src="../../core/event_bus.js"></script>
+  <script>
+    // Simulate external site selection triggers
+    document.getElementById("btn-select-site-1").addEventListener("click", () => {
+      if (window.eventBus) window.eventBus.emit("site:selected", { siteId: "site-1" });
+    });
+    document.getElementById("btn-select-site-3").addEventListener("click", () => {
+      if (window.eventBus) window.eventBus.emit("site:selected", { siteId: "site-3" });
+    });
+
+    // Asynchronously fetch and inject component markup and script for isolated testing
+    fetch("ai_dr_raj.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("mount-ai-dr-raj").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "ai_dr_raj.js";
+        document.body.appendChild(script);
+
+        // Auto-display chat window in test harness so it is immediately visible
+        setTimeout(() => {
+          const chatWin = document.getElementById("ai-chat-window");
+          if (chatWin) chatWin.style.display = "flex";
+        }, 100);
+      });
+  </script>
+</body>
+</html>
