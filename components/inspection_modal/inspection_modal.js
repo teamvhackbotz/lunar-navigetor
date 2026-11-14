@@ -498,7 +498,13 @@
    */
   function renderSkylineView(site) {
     const h = site.skyline;
+    // Match tracker positions to the chart axes: 0–360° azimuth and +15° to -5° elevation.
+    const sunLeftPct = (h.sunAz / 360) * 100;
+    const earthLeftPct = (h.earthAz / 360) * 100;
+    const sunTopPct = Math.max(4, Math.min(96, 72.5 - (h.sunEl * 4.5)));
+    const earthTopPct = Math.max(4, Math.min(96, 72.5 - (h.earthEl * 4.5)));
     return `
+      <div class="inspector-axis-title-y">Elevation (°)</div>
       <div class="inspector-skyline-wrap" id="inspector-skyline-wrap">
         <!-- Vertical Elevation Y-Axis -->
         <div class="inspector-y-axis">
@@ -526,18 +532,19 @@
         <div class="inspector-crosshair-badge" id="inspector-crosshair-badge">Az: 0° | El: 0.0°</div>
 
         <!-- Dynamic Celestial Trackers -->
-        <div class="inspector-celestial-tracker" id="inspector-sun-tracker" style="left: ${(h.sunAz/360)*100}%; top: ${55 - (h.sunEl * 3.2)}%;">
+        <div class="inspector-celestial-tracker" id="inspector-sun-tracker" style="left: ${sunLeftPct}%; top: ${sunTopPct}%;">
           <span>☀️</span>
           <span class="tracker-tag" id="inspector-sun-tag">Sun (+${h.sunEl}°)</span>
         </div>
 
-        <div class="inspector-celestial-tracker" id="inspector-earth-tracker" style="left: ${(h.earthAz/360)*100}%; top: ${55 - (h.earthEl * 3.2)}%;">
+        <div class="inspector-celestial-tracker" id="inspector-earth-tracker" style="left: ${earthLeftPct}%; top: ${earthTopPct}%;">
           <span>🌍</span>
           <span class="tracker-tag">Earth (+${h.earthEl}°)</span>
         </div>
       </div>
 
       <!-- Azimuth X-Axis (15° increments) -->
+      <div class="inspector-axis-title-x">Azimuth (°)</div>
       <div class="inspector-azimuth-axis">
         <span>0° (N)</span>
         <span>45° (NE)</span>
@@ -578,15 +585,27 @@
   function renderSlopeView(site) {
     const s = site.slope;
     return `
-      <div class="inspector-skyline-wrap" style="height: 180px;">
+      <div class="inspector-skyline-wrap inspector-profile-wrap" style="height: 180px;">
+        <div class="inspector-profile-y-ticks qualitative" aria-hidden="true">
+          <span>High</span><span>Mid</span><span>Low</span>
+        </div>
         <svg viewBox="0 0 520 200" preserveAspectRatio="none">
-          <line x1="0" y1="100" x2="520" y2="100" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 4" />
+          <g class="inspector-chart-grid">
+            <line x1="0" y1="15" x2="520" y2="15" />
+            <line x1="0" y1="100" x2="520" y2="100" />
+            <line x1="0" y1="185" x2="520" y2="185" />
+            <line x1="1" y1="0" x2="1" y2="200" />
+            <line x1="260" y1="0" x2="260" y2="200" />
+            <line x1="519" y1="0" x2="519" y2="200" />
+          </g>
           <path d="${s.svgPath}" fill="none" stroke="var(--accent-sage, #7d967e)" stroke-width="3.5" />
           <circle cx="${s.touchdownX}" cy="${s.touchdownY}" r="7" fill="var(--accent-terracotta, #c87d55)" stroke="#fff" stroke-width="1.5" />
           <text x="${s.touchdownX + 12}" y="${s.touchdownY - 8}" fill="#ede8e1" font-size="12" font-weight="600" font-family="sans-serif">Touchdown Target (${s.slopeVal})</text>
           <text x="350" y="180" fill="var(--text-muted, #8c867c)" font-size="11" font-family="sans-serif">Permanently Shadowed Cold Trap (PSR)</text>
         </svg>
       </div>
+      <div class="inspector-profile-axis-caption"><span>Relative elevation</span><span>Radial distance (%)</span></div>
+      <div class="inspector-profile-x-ticks" aria-hidden="true"><span>0</span><span>50</span><span>100</span></div>
 
       <div class="inspector-metrics-panel">
         <div class="inspector-stat-box">
@@ -615,13 +634,26 @@
   function renderSolarView(site) {
     const sol = site.solar;
     return `
-      <div class="inspector-skyline-wrap" style="height: 180px;">
+      <div class="inspector-skyline-wrap inspector-profile-wrap" style="height: 180px;">
+        <div class="inspector-profile-y-ticks solar-scale" aria-hidden="true">
+          <span>+5°</span><span>0°</span><span>-5°</span>
+        </div>
         <svg viewBox="0 0 520 200" preserveAspectRatio="none">
+          <g class="inspector-chart-grid">
+            <line x1="0" y1="15" x2="520" y2="15" />
+            <line x1="0" y1="100" x2="520" y2="100" />
+            <line x1="0" y1="185" x2="520" y2="185" />
+            <line x1="1" y1="0" x2="1" y2="200" />
+            <line x1="260" y1="0" x2="260" y2="200" />
+            <line x1="519" y1="0" x2="519" y2="200" />
+          </g>
           <line x1="0" y1="120" x2="520" y2="120" stroke="var(--accent-sand, #c99e52)" stroke-dasharray="3 3" />
           <path d="M0,140 Q130,40 260,50 T520,150" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="3" />
-          <text x="15" y="112" fill="var(--accent-sand, #c99e52)" font-size="10" font-family="sans-serif">0° Local Solar Horizon</text>
+          <text x="45" y="112" fill="var(--accent-sand, #c99e52)" font-size="10" font-family="sans-serif">0° Local Solar Horizon</text>
         </svg>
       </div>
+      <div class="inspector-profile-axis-caption"><span>Solar elevation (°)</span><span>Mission day</span></div>
+      <div class="inspector-profile-x-ticks" aria-hidden="true"><span>1</span><span>7</span><span>14</span></div>
 
       <div class="inspector-metrics-panel">
         <div class="inspector-stat-box">
@@ -683,6 +715,7 @@
     wrap.addEventListener("mousemove", (e) => {
       const rect = wrap.getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      // Convert the crosshair's horizontal fraction into the chart's 0–360° azimuth.
       const pct = x / rect.width;
       const az = Math.round(pct * 360);
 

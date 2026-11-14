@@ -336,13 +336,17 @@
 
     if (tab === "horizon") {
       const h = site.horizon;
+      // Map azimuth across 0–360° and elevation across the +15° to -5° axis.
       const sunLeftPct = Math.round((h.sunAz / 360) * 100);
       const earthLeftPct = Math.round((h.earthAz / 360) * 100);
-      const sunTopPct = Math.max(8, Math.min(75, Math.round(55 - (h.sunEl * 3.5))));
-      const earthTopPct = Math.max(8, Math.min(75, Math.round(55 - (h.earthEl * 3.5))));
+      const sunTopPct = Math.max(4, Math.min(96, 72.5 - (h.sunEl * 4.5)));
+      const earthTopPct = Math.max(4, Math.min(96, 72.5 - (h.earthEl * 4.5)));
 
       return `
-        <div class="subcard-chart-wrap">
+        <div class="subcard-chart-wrap has-y-axis">
+          <div class="subcard-y-axis-ticks horizon-scale" aria-hidden="true">
+            <span>+15°</span><span>+10°</span><span>+5°</span><span>0°</span><span>-5°</span>
+          </div>
           <div class="subcard-zero-line" title="Astronomical Horizon Zero Datum (0°)"></div>
           <svg viewBox="0 0 360 80" preserveAspectRatio="none">
             <path d="${h.svgPath}" fill="#33302c" stroke="#5c554e" stroke-width="1.2"></path>
@@ -350,6 +354,7 @@
           <div class="subcard-tracker" id="tracker-sun-${siteKey}" style="left: ${sunLeftPct}%; top: ${sunTopPct}%;" title="Sun (${h.sunEl > 0 ? '+' : ''}${h.sunEl}° El, ${h.sunAz}° Az)">☀️</div>
           <div class="subcard-tracker" id="tracker-earth-${siteKey}" style="left: ${earthLeftPct}%; top: ${earthTopPct}%;" title="Earth (+${h.earthEl}° El, ${h.earthAz}° Az)">🌍</div>
         </div>
+        <div class="subcard-axis-caption"><span>Elevation (°)</span><span>Azimuth (°)</span></div>
         <div class="subcard-azimuth-axis">
           <span>0°(N)</span>
           <span>90°(E)</span>
@@ -366,14 +371,27 @@
     if (tab === "slope") {
       const s = site.slope;
       return `
-        <div class="subcard-chart-wrap" style="height: 75px;">
+        <div class="subcard-chart-wrap has-y-axis" style="height: 75px;">
+          <div class="subcard-y-axis-ticks qualitative" aria-hidden="true">
+            <span>High</span><span>Mid</span><span>Low</span>
+          </div>
           <svg viewBox="0 0 300 80" preserveAspectRatio="none">
+            <g class="subcard-chart-grid">
+              <line x1="0" y1="8" x2="300" y2="8"></line>
+              <line x1="0" y1="40" x2="300" y2="40"></line>
+              <line x1="0" y1="72" x2="300" y2="72"></line>
+              <line x1="0" y1="0" x2="0" y2="80"></line>
+              <line x1="150" y1="0" x2="150" y2="80"></line>
+              <line x1="299" y1="0" x2="299" y2="80"></line>
+            </g>
             <path d="${s.svgPath}" fill="none" stroke="var(--accent-sage, #7d967e)" stroke-width="2.5"></path>
             <circle cx="${s.touchdownX}" cy="${s.touchdownY}" r="4.5" fill="var(--accent-terracotta, #c87d55)"></circle>
             <text x="${s.touchdownX + 8}" y="${s.touchdownY - 2}" fill="var(--text-primary, #ede8e1)" font-size="8.5" font-family="sans-serif">Touchdown</text>
             <text x="175" y="74" fill="var(--text-muted, #8c867c)" font-size="8" font-family="sans-serif">Dark Floor (PSR)</text>
           </svg>
         </div>
+        <div class="subcard-axis-caption"><span>Relative elevation</span><span>Radial distance (%)</span></div>
+        <div class="subcard-profile-x-ticks" aria-hidden="true"><span>0</span><span>50</span><span>100</span></div>
         <div class="subcard-slope-stat-grid">
           <div class="subcard-stat-item">
             <span class="subcard-stat-label">Touchdown Slope</span>
@@ -398,12 +416,25 @@
     if (tab === "solar") {
       const sol = site.solar;
       return `
-        <div class="subcard-chart-wrap" style="height: 75px;">
-          <div class="subcard-zero-line" style="top: 60%;"></div>
+        <div class="subcard-chart-wrap has-y-axis" style="height: 75px;">
+          <div class="subcard-y-axis-ticks solar-scale" aria-hidden="true">
+            <span>+5°</span><span>0°</span><span>-5°</span>
+          </div>
+          <div class="subcard-zero-line" style="top: 72.5%;"></div>
           <svg viewBox="0 0 360 80" preserveAspectRatio="none">
+            <g class="subcard-chart-grid">
+              <line x1="0" y1="4" x2="360" y2="4"></line>
+              <line x1="0" y1="58" x2="360" y2="58"></line>
+              <line x1="0" y1="76" x2="360" y2="76"></line>
+              <line x1="0" y1="0" x2="0" y2="80"></line>
+              <line x1="180" y1="0" x2="180" y2="80"></line>
+              <line x1="359" y1="0" x2="359" y2="80"></line>
+            </g>
             <path d="${sol.svgPath}" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="2"></path>
           </svg>
         </div>
+        <div class="subcard-axis-caption"><span>Solar elevation (°)</span><span>Mission day</span></div>
+        <div class="subcard-profile-x-ticks" aria-hidden="true"><span>1</span><span>7</span><span>14</span></div>
         <div class="subcard-slope-stat-grid">
           <div class="subcard-stat-item">
             <span class="subcard-stat-label">Daylight Ratio</span>
@@ -568,6 +599,323 @@
     } else {
       if (emptyMsg) emptyMsg.remove();
     }
+  }
+
+  const COMPARISON_START_MS = Date.UTC(2026, 10, 1, 0, 0, 0);
+  const COMPARISON_END_MS = Date.UTC(2026, 11, 1, 0, 0, 0);
+  const HOUR_MS = 60 * 60 * 1000;
+
+  function formatUtcInputValue(epochMs) {
+    return new Date(epochMs).toISOString().slice(0, 16);
+  }
+
+  function parseUtcInputValue(value) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+    if (!match) return NaN;
+    return Date.UTC(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]),
+      Number(match[4]),
+      Number(match[5])
+    );
+  }
+
+  function setComparisonStatus(message, isError) {
+    const status = document.getElementById("comparison-status");
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle("is-error", Boolean(isError));
+  }
+
+  function readComparisonRange() {
+    const fromInput = document.getElementById("comparison-from");
+    const toInput = document.getElementById("comparison-to");
+    const startMs = fromInput ? parseUtcInputValue(fromInput.value) : NaN;
+    const endMs = toInput ? parseUtcInputValue(toInput.value) : NaN;
+
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+      throw new Error("Enter both comparison dates and times.");
+    }
+    if (startMs < COMPARISON_START_MS || endMs > COMPARISON_END_MS) {
+      throw new Error("The selected time window must be within November 2026 UTC.");
+    }
+    if (endMs <= startMs) {
+      throw new Error("The To time must be later than the From time.");
+    }
+    if (startMs % HOUR_MS !== 0 || endMs % HOUR_MS !== 0) {
+      throw new Error("Choose whole-hour times to match the available telemetry.");
+    }
+
+    return { startMs, endMs };
+  }
+
+  function getTelemetryWindow() {
+    const physics = window.LunarPhysics;
+    const catalog = physics && physics.getCatalog ? physics.getCatalog() : null;
+    const profiles = catalog ? Object.values(catalog) : [];
+    const profile = profiles.find(site => site && site.november_2026_series);
+    const series = profile && profile.november_2026_series;
+    if (!series) {
+      throw new Error("Hourly telemetry has not loaded. Check the data connection and try again.");
+    }
+
+    const startMs = Number(series.start_epoch_ms);
+    const stepHours = Number(series.step_hours);
+    const hoursCount = Number(series.hours_count);
+    if (!Number.isFinite(startMs) || !Number.isFinite(stepHours) || stepHours <= 0 ||
+        !Number.isInteger(hoursCount) || hoursCount <= 0) {
+      throw new Error("The loaded telemetry does not include a valid time range.");
+    }
+    return { startMs, stepHours, hoursCount };
+  }
+
+  function getSiteProfileForComparison(physics, lat, lon) {
+    const match = physics.findSite({ lat, lon });
+    if (match && match.coordinates && match.november_2026_series) {
+      const latDiff = Math.abs(match.coordinates.lat - lat);
+      const lonDiff = Math.abs(((match.coordinates.lon - lon + 540) % 360) - 180);
+      if (latDiff < 0.05 && lonDiff < 0.05) return Promise.resolve(match);
+    }
+    return physics.evaluateCustomCoordinates(lat, lon);
+  }
+
+  function getSlopeStatus(slope) {
+    if (!Number.isFinite(slope)) return "NOT_EVALUATED";
+    if (slope <= 5) return "GO";
+    if (slope <= 10) return "MARGINAL";
+    return "NO_GO";
+  }
+
+  function formatDurationHours(hours) {
+    return hours >= 24 ? `${(hours / 24).toFixed(1)} d` : `${hours.toFixed(1)} h`;
+  }
+
+  function analyzeSiteForRange(profile, range, windowData, siteName) {
+    const rawSlope = profile && profile.terrain
+      ? Number(profile.terrain.slope_touchdown_deg)
+      : NaN;
+    const slope = Number.isFinite(rawSlope) ? rawSlope : null;
+    const result = {
+      siteName,
+      slope,
+      slopeStatus: getSlopeStatus(slope),
+      available: false
+    };
+
+    const series = profile && profile.november_2026_series;
+    if (!series) return result;
+
+    const seriesStartMs = Number.isFinite(Number(series.start_epoch_ms))
+      ? Number(series.start_epoch_ms)
+      : windowData.startMs;
+    const stepHours = Number.isFinite(Number(series.step_hours))
+      ? Number(series.step_hours)
+      : windowData.stepHours;
+    const hoursCount = Number.isInteger(Number(series.hours_count))
+      ? Number(series.hours_count)
+      : windowData.hoursCount;
+    const stepMs = stepHours * HOUR_MS;
+    const startOffset = (range.startMs - seriesStartMs) / stepMs;
+    const endOffset = (range.endMs - seriesStartMs) / stepMs;
+    const sunVisible = series.sun_visible;
+    const earthVisible = series.earth_visible;
+    const sunElevation = series.sun_el;
+
+    if (!Number.isInteger(startOffset) || !Number.isInteger(endOffset) ||
+        startOffset < 0 || endOffset > hoursCount || endOffset <= startOffset ||
+        !Array.isArray(sunVisible) || !Array.isArray(earthVisible) ||
+        !Array.isArray(sunElevation) || sunVisible.length < endOffset ||
+        earthVisible.length < endOffset || sunElevation.length < endOffset) {
+      throw new Error("The site's hourly telemetry does not cover the selected window.");
+    }
+
+    let sunlitSamples = 0;
+    let earthVisibleSamples = 0;
+    let maxSunElevation = -Infinity;
+    for (let index = startOffset; index < endOffset; index += 1) {
+      if (sunVisible[index]) sunlitSamples += 1;
+      if (earthVisible[index]) earthVisibleSamples += 1;
+      const elevation = Number(sunElevation[index]);
+      if (Number.isFinite(elevation)) maxSunElevation = Math.max(maxSunElevation, elevation);
+    }
+
+    const sampleCount = endOffset - startOffset;
+    result.available = true;
+    result.sunlitHours = sunlitSamples * stepHours;
+    result.sunlitPercent = (sunlitSamples / sampleCount) * 100;
+    result.earthVisibleHours = earthVisibleSamples * stepHours;
+    result.earthVisiblePercent = (earthVisibleSamples / sampleCount) * 100;
+    result.maxSunElevation = Number.isFinite(maxSunElevation) ? maxSunElevation : null;
+    return result;
+  }
+
+  function updateComparisonCard(column, result) {
+    const card = column.querySelector(".site-card");
+    if (!card) return;
+    const metrics = card.querySelectorAll(".metric-item");
+    const values = [
+      result.slope === null
+        ? "Not available"
+        : `${result.slope.toFixed(1)}° · ${result.slopeStatus.replace("_", "-")}`,
+      result.maxSunElevation === null || result.maxSunElevation === undefined
+        ? "Unavailable"
+        : `${result.maxSunElevation > 0 ? "+" : ""}${result.maxSunElevation.toFixed(2)}°`,
+      result.available
+        ? `${formatDurationHours(result.sunlitHours)} · ${Math.round(result.sunlitPercent)}%`
+        : "Unavailable",
+      result.available
+        ? `${Math.round(result.earthVisiblePercent)}% · ${formatDurationHours(result.earthVisibleHours)}`
+        : "Unavailable"
+    ];
+    const labels = ["Touchdown Slope", "Max Sun Elevation", "Sunlit in Window", "Earth Visibility"];
+    const slopeClass = {
+      GO: "status-safe",
+      MARGINAL: "status-warning",
+      NO_GO: "status-danger"
+    }[result.slopeStatus] || "";
+
+    metrics.forEach((metric, index) => {
+      const label = metric.querySelector(".metric-label");
+      const value = metric.querySelector(".metric-value");
+      if (label) label.textContent = labels[index];
+      if (value) {
+        value.textContent = values[index] || "Unavailable";
+        value.classList.remove("status-safe", "status-warning", "status-danger");
+        if (index === 0 && slopeClass) value.classList.add(slopeClass);
+      }
+    });
+
+    const previewLabel = card.querySelector(".preview-label");
+    const previewText = previewLabel && previewLabel.querySelector("span:last-child");
+    const previewTitle = previewLabel && previewLabel.querySelector("span:first-child");
+    const fill = card.querySelector(".preview-bar-fill");
+    if (previewTitle) previewTitle.textContent = "Sunlight in selected window";
+    if (previewText) {
+      previewText.textContent = result.available
+        ? `${Math.round(result.sunlitPercent)}% · ${formatDurationHours(result.sunlitHours)}`
+        : "Unavailable";
+    }
+    if (fill) fill.style.width = result.available ? `${result.sunlitPercent}%` : "0%";
+    column.dataset.comparisonAvailable = result.available ? "true" : "false";
+  }
+
+  function compareSortOrder(a, b) {
+    if (a.result.available !== b.result.available) return a.result.available ? -1 : 1;
+    const statusOrder = { GO: 0, MARGINAL: 1, NO_GO: 2, NOT_EVALUATED: 3 };
+    const statusDiff = statusOrder[a.result.slopeStatus] - statusOrder[b.result.slopeStatus];
+    if (statusDiff !== 0) return statusDiff;
+    if (a.result.available && b.result.available) {
+      if (a.result.sunlitPercent !== b.result.sunlitPercent) {
+        return b.result.sunlitPercent - a.result.sunlitPercent;
+      }
+      if (a.result.earthVisiblePercent !== b.result.earthVisiblePercent) {
+        return b.result.earthVisiblePercent - a.result.earthVisiblePercent;
+      }
+    }
+    if (a.result.slope !== null && b.result.slope !== null && a.result.slope !== b.result.slope) {
+      return a.result.slope - b.result.slope;
+    }
+    return a.result.siteName.localeCompare(b.result.siteName);
+  }
+
+  async function runSiteComparison() {
+    const button = document.getElementById("btn-compare-sites");
+    const track = document.getElementById("carousel-track");
+    if (!button || !track) return;
+
+    let range;
+    let windowData;
+    try {
+      range = readComparisonRange();
+      const physics = window.LunarPhysics;
+      if (!physics) throw new Error("Lunar telemetry is unavailable on this page.");
+      if (!physics.isLoaded()) await physics.init();
+      if (!physics.isLoaded()) {
+        throw new Error("Hourly telemetry has not loaded. Check the data connection and try again.");
+      }
+      windowData = getTelemetryWindow();
+      const startOffset = (range.startMs - windowData.startMs) / (windowData.stepHours * HOUR_MS);
+      const endOffset = (range.endMs - windowData.startMs) / (windowData.stepHours * HOUR_MS);
+      if (!Number.isInteger(startOffset) || !Number.isInteger(endOffset) ||
+          startOffset < 0 || endOffset > windowData.hoursCount) {
+        throw new Error("The selected time window is outside the available November 2026 telemetry.");
+      }
+    } catch (error) {
+      setComparisonStatus(error.message, true);
+      return;
+    }
+
+    const columns = Array.from(track.querySelectorAll(".site-card-column"));
+    if (columns.length < 2) {
+      setComparisonStatus("Mark at least two candidate locations before comparing.", true);
+      return;
+    }
+
+    button.disabled = true;
+    const physics = window.LunarPhysics;
+    const ranked = [];
+    const unavailable = [];
+
+    for (let index = 0; index < columns.length; index += 1) {
+      const column = columns[index];
+      const card = column.querySelector(".site-card");
+      const siteName = card ? (card.dataset.name || column.dataset.siteId) : column.dataset.siteId;
+      const lat = card ? Number(card.dataset.lat) : NaN;
+      const lon = card ? Number(card.dataset.lon) : NaN;
+      setComparisonStatus(`Comparing ${index + 1} of ${columns.length}: ${siteName}…`, false);
+
+      try {
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+          throw new Error("The candidate card has invalid coordinates.");
+        }
+        const profile = await getSiteProfileForComparison(physics, lat, lon);
+        const result = analyzeSiteForRange(profile, range, windowData, siteName);
+        updateComparisonCard(column, result);
+        ranked.push({ column, result });
+        if (!result.available) unavailable.push(siteName);
+      } catch (error) {
+        console.error(`[ComparisonCards] Could not compare ${siteName}:`, error);
+        const result = {
+          siteName,
+          slope: null,
+          slopeStatus: "NOT_EVALUATED",
+          available: false
+        };
+        updateComparisonCard(column, result);
+        ranked.push({ column, result });
+        unavailable.push(siteName);
+      }
+    }
+
+    ranked.sort(compareSortOrder);
+    ranked.forEach(({ column }) => track.appendChild(column));
+    updateToolbarUI();
+    const startLabel = new Date(range.startMs).toISOString().replace("T", " ").slice(0, 16);
+    const endLabel = new Date(range.endMs).toISOString().replace("T", " ").slice(0, 16);
+    const unavailableNote = unavailable.length
+      ? ` Hourly telemetry unavailable for ${unavailable.length}: ${unavailable.join(", ")}.`
+      : "";
+    setComparisonStatus(
+      `Ranked ${ranked.length} sites for ${startLabel} to ${endLabel} UTC: slope class, then sunlit time and Earth visibility. Roughness, dispersion, and touchdown velocity are not assessed.${unavailableNote}`,
+      unavailable.length > 0
+    );
+    button.disabled = false;
+  }
+
+  function initComparisonControls() {
+    const fromInput = document.getElementById("comparison-from");
+    const toInput = document.getElementById("comparison-to");
+    const button = document.getElementById("btn-compare-sites");
+    if (!fromInput || !toInput || !button) return;
+
+    fromInput.min = formatUtcInputValue(COMPARISON_START_MS);
+    fromInput.max = formatUtcInputValue(COMPARISON_END_MS - HOUR_MS);
+    fromInput.value = formatUtcInputValue(COMPARISON_START_MS);
+    toInput.min = formatUtcInputValue(COMPARISON_START_MS + HOUR_MS);
+    toInput.max = formatUtcInputValue(COMPARISON_END_MS);
+    toInput.value = formatUtcInputValue(COMPARISON_END_MS);
+    button.addEventListener("click", runSiteComparison);
   }
 
   /**
@@ -1040,6 +1388,7 @@
 
     if (undoBtn) undoBtn.addEventListener("click", () => undo());
     if (redoBtn) redoBtn.addEventListener("click", () => redo());
+    initComparisonControls();
 
     // Enable mouse wheel horizontal scrolling on the comparison cards carousel
     if (track) {
