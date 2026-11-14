@@ -54,6 +54,73 @@
 }
 
 /* --------------------------------------------------------------------------
+   2b. FastAPI Telemetry Connection Badge
+   -------------------------------------------------------------------------- */
+.backend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono, "SF Mono", Consolas, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s ease;
+  margin-left: 6px;
+}
+
+.backend-pill .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.backend-pill.online {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #10b981;
+}
+
+.backend-pill.online .status-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.backend-pill.offline {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.backend-pill.offline .status-dot {
+  background: #888;
+  box-shadow: none;
+}
+
+.backend-pill.connecting {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #f59e0b;
+}
+
+.backend-pill.connecting .status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
+  animation: pulse-dot 1s infinite alternate;
+}
+
+@keyframes pulse-dot {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
    3. Center Action Group (Clear/Empty)
    -------------------------------------------------------------------------- */
 .nav-center-action {

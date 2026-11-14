@@ -219,7 +219,18 @@
       // Provide automatic tactical briefing when a site is selected
       window.eventBus.on("site:selected", (data) => {
         const siteId = data.siteId || data.id;
-        const intel = SITE_INTEL[siteId] || `Tactical analysis for site ${siteId}: coordinates registered. Reviewing horizon silhouette and line-of-sight comms.`;
+        let intel = SITE_INTEL[siteId];
+
+        if (!intel && window.LunarPhysics) {
+          const raw = window.LunarPhysics.findSite(data);
+          if (raw) {
+            intel = `Tactical Brief on <strong>${raw.name}</strong> (${Math.abs(raw.coordinates.lat).toFixed(2)}° ${raw.coordinates.lat < 0 ? 'S' : 'N'}, ${raw.coordinates.lon.toFixed(1)}° E): Elevation is +${raw.coordinates.elevation_m.toLocaleString()} m with a ${raw.terrain.slope_touchdown_deg}° touchdown slope (${raw.terrain.slope_status}). Daylight is ${Math.round(raw.summary_metrics.daylight_pct)}% across November 2026 with ${raw.summary_metrics.continuous_sunlight_max_hrs}h continuous solar stay. Direct-to-Earth comms margin is +${raw.summary_metrics.rf_margin_db} dB (${raw.summary_metrics.dte_comms_uptime_pct}% uptime). Nearest cold trap is ${raw.terrain.psr_name} at ${raw.terrain.dist_to_psr_km} km.`;
+          }
+        }
+
+        if (!intel) {
+          intel = `Tactical analysis for ${data.name || siteId}: coordinates registered. Reviewing horizon silhouette and line-of-sight comms.`;
+        }
 
         // If chat is open, post message; if closed, pulse notification dot
         if (chatWindow && chatWindow.style.display !== "none") {

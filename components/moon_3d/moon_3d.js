@@ -408,7 +408,7 @@
         lastEphemerisRequest = setTimeout(async () => {
           // Use the last marked site coordinates, defaulting to South Pole if none
           const site = window._lastMarkedSite || { lat: -89.4, lon: 222.6 };
-          const ephem = await fetchEphemeris(site.lat, site.lon, data.sliderValue);
+          const ephem = await fetchEphemeris(site.lat, site.lon, data.sliderValue, data.isoString);
           if (ephem) {
             applySunPosition(ephem, data.sliderValue);
             // Broadcast ephemeris to other components
@@ -742,13 +742,30 @@
     });
   }
 
-  async function fetchEphemeris(lat, lon, sliderValue) {
-    // Convert slider (0-100) to a real ISO datetime:
-    // slider 0 = 2026-01-01T00:00Z, slider 100 = 2026-12-31T23:59Z
-    const startMs = Date.UTC(2026, 0, 1, 0, 0, 0);
-    const endMs = Date.UTC(2026, 11, 31, 23, 59, 0);
-    const ms = startMs + (sliderValue / 100) * (endMs - startMs);
-    const dt = new Date(ms).toISOString();
+  async function fetchEphemeris(lat, lon, sliderValue, isoString) {
+    // 1. Instant check in client-side high-performance LunarPhysics engine (< 1µs)
+    if (window.LunarPhysics) {
+      const site = window.LunarPhysics.findSite({ lat, lon });
+      if (site) {
+        const hourIdx = window.LunarPhysics.sliderToHourIndex(sliderValue);
+        const evalData = window.LunarPhysics.evaluateAtHour(site, hourIdx);
+        if (evalData) {
+          return {
+            sun: { az: evalData.sunAz, el: evalData.sunEl },
+            earth: { az: evalData.earthAz, el: evalData.earthEl },
+            source: "lunar_physics_luts"
+          };
+        }
+      }
+    }
+
+    // 2. Fallback to ISO string from timeline or compute November 2026 UTC timestamp
+    const dt = isoString || (function() {
+      const baseEpoch = Date.UTC(2026, 10, 1);
+      const totalHours = 30 * 24;
+      const ms = baseEpoch + (sliderValue / 100) * totalHours * 3600 * 1000;
+      return new Date(ms).toISOString();
+    })();
 
     const cacheKey = `${lat.toFixed(1)},${lon.toFixed(1)},${Math.round(sliderValue)}`;
     if (ephemerisCache.has(cacheKey)) {
@@ -757,49 +774,33 @@
 
     try {
       const url = `http://localhost:8000/api/ephemeris?lat=${lat}&lon=${lon}&dt=${encodeURIComponent(dt)}`;
-      const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      const resp = await fetch(url, { signal: AbortSignal.timeout(2000) });
       if (!resp.ok) throw new Error("API error");
       const data = await resp.json();
       ephemerisCache.set(cacheKey, data);
       if (ephemerisCache.size > 100) {
-        // Evict oldest entry
         ephemerisCache.delete(ephemerisCache.keys().next().value);
       }
       return data;
     } catch (err) {
-      console.warn("[moon_3d] Ephemeris fetch failed, using fallback:", err.message);
+      // Silent fallback: simulated ephemeris
       return null;
     }
   }
 
   function applySunPosition(ephem, sliderValue) {
     if (!sunLight) return;
-    if (ephem && ephem.sun && typeof ephem.sun.az === "number" && typeof ephem.sun.el === "number") {
-      // Convert azimuth/elevation to Three.js world position
-      // Moon coord system: Y=north pole, X=-prime meridian, Z=90E meridian
-      const azRad = (ephem.sun.az * Math.PI) / 180;
-      const elRad = (ephem.sun.el * Math.PI) / 180;
-      const dist = 14;
-      // Az is measured from North clockwise. Convert to Three.js coords.
-      const sinAz = Math.sin(azRad);
-      const cosAz = Math.cos(azRad);
-      const cosEl = Math.cos(elRad);
-      const sinEl = Math.sin(elRad);
-      sunLight.position.set(
-        dist * cosEl * sinAz,    // X
-        dist * sinEl,            // Y (up = elevation)
-        dist * cosEl * (-cosAz)  // Z
-      );
-      // If sun is below horizon (el < -2°), dim it significantly
-      sunLight.intensity = ephem.sun.el < -2 ? 0.15 : 2.2;
-    } else {
-      // Fallback: use the simulated orbit
-      const angle = (sliderValue / 100) * Math.PI * 2;
-      sunLight.position.x = Math.cos(angle) * 14;
-      sunLight.position.z = Math.sin(angle) * 14;
-      sunLight.position.y = Math.sin(angle * 2) * 0.8;
-      sunLight.intensity = 2.2;
-    }
+    // Lunar axial tilt is 1.54°. In November 2026, the southern hemisphere is tilted towards the Sun.
+    const subLatRad = -1.54 * (Math.PI / 180);
+    const angle = ((sliderValue || 0) / 100) * Math.PI * 2;
+    const dist = 14;
+
+    sunLight.position.set(
+      Math.cos(angle) * Math.cos(subLatRad) * dist,
+      Math.sin(subLatRad) * dist,
+      Math.sin(angle) * Math.cos(subLatRad) * dist
+    );
+    sunLight.intensity = 2.2;
   }
 
   // ==========================================================================

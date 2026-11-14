@@ -502,12 +502,14 @@
 /* North Pole Mosaic */
 .disc-north {
   background-image: url('https://trek.nasa.gov/api/wmts?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=LRO_WAC_Mosaic_Global_303ppd_v02&STYLES=&FORMAT=image%2Fjpeg&TRANSPARENT=false&SRS=EPSG%3A32661&BBOX=-1000000%2C-1000000%2C1000000%2C1000000&WIDTH=1024&HEIGHT=1024'),
+                    url('../../static/images/moon_north_pole.png'),
                     radial-gradient(circle, #2d2f33 0%, #17181a 90%);
 }
 
 /* South Pole Mosaic */
 .disc-south {
   background-image: url('https://trek.nasa.gov/api/wmts?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=LRO_WAC_Mosaic_Global_303ppd_v02&STYLES=&FORMAT=image%2Fjpeg&TRANSPARENT=false&SRS=EPSG%3A32761&BBOX=-1000000%2C-1000000%2C1000000%2C1000000&WIDTH=1024&HEIGHT=1024'),
+                    url('../../static/images/moon_south_pole.png'),
                     radial-gradient(circle, #2d2f33 0%, #17181a 90%);
 }
 
@@ -601,6 +603,8 @@
   width: auto;
   background-color: #141618;
   background-image: url('https://trek.nasa.gov/api/wmts?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=LRO_WAC_Mosaic_Global_303ppd_v02&STYLES=&FORMAT=image%2Fjpeg&TRANSPARENT=false&SRS=EPSG%3A4326&BBOX=-180%2C-90%2C180%2C90&WIDTH=2048&HEIGHT=1024'),
+                    url('../../static/images/moon_8k.jpg'),
+                    url('../../static/images/moon_equirectangular.jpg'),
                     radial-gradient(circle at 50% 50%, #25272a 0%, #151618 100%);
   background-size: cover;
   background-position: center;

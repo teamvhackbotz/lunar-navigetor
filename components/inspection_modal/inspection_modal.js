@@ -224,7 +224,7 @@
     // 5. Copy Coordinates Button
     if (copyCoordsBtn) {
       copyCoordsBtn.addEventListener("click", () => {
-        const site = INSPECTOR_DATA[activeSiteKey];
+        const site = getInspectorSite(activeSiteKey);
         if (site && navigator.clipboard) {
           navigator.clipboard.writeText(`${site.lat}, ${site.lon}`).then(() => {
             const originalText = copyCoordsBtn.textContent;
@@ -238,7 +238,7 @@
     // 6. Focus 3D Viewport Button
     if (focus3dBtn) {
       focus3dBtn.addEventListener("click", () => {
-        const site = INSPECTOR_DATA[activeSiteKey];
+        const site = getInspectorSite(activeSiteKey);
         if (site && window.eventBus) {
           window.eventBus.emit("site:marked", {
             lat: site.lat,
@@ -349,12 +349,73 @@
   }
 
   /**
+   * Resolves site dataset using authentic NASA LunarPhysics data when available.
+   */
+  function getInspectorSite(siteKey) {
+    if (window.LunarPhysics) {
+      const raw = window.LunarPhysics.findSite(siteKey);
+      if (raw) {
+        const hourIdx = window.LunarPhysics.sliderToHourIndex(timelineProgress);
+        const evalData = window.LunarPhysics.evaluateAtHour(raw, hourIdx);
+        return {
+          tag: raw.type,
+          name: raw.name,
+          coords: `${Math.abs(raw.coordinates.lat).toFixed(2)}° ${raw.coordinates.lat < 0 ? 'S' : 'N'} · ${raw.coordinates.lon.toFixed(1)}° E · +${raw.coordinates.elevation_m.toLocaleString()} m`,
+          lat: raw.coordinates.lat,
+          lon: raw.coordinates.lon,
+          elevationMeters: `+${raw.coordinates.elevation_m.toLocaleString()} m`,
+          skyline: {
+            svgPath: raw.terrain.skyline_svg_path,
+            sunAz: evalData ? evalData.sunAz : 180,
+            sunEl: evalData ? evalData.sunEl : 1.2,
+            earthAz: evalData ? evalData.earthAz : 240,
+            earthEl: evalData ? evalData.earthEl : 3.2,
+            clearance: evalData && evalData.isSunVis ? `+${evalData.sunEl}° above terrain horizon` : "Below terrain silhouette (Shadow)",
+            statusPill: evalData && evalData.isSunVis ? "✓ Line of Sight Maintained" : "✗ Topographic Shadow",
+            pillClass: evalData && evalData.isSunVis ? "pill-ok" : "pill-warn"
+          },
+          slope: {
+            svgPath: raw.terrain.slope_svg_path,
+            touchdownX: 240,
+            touchdownY: 75,
+            slopeVal: `${raw.terrain.slope_touchdown_deg}°`,
+            slopeStatus: `${raw.terrain.slope_status} (< ${raw.terrain.slope_touchdown_deg < 5 ? '5°' : '8°'})`,
+            distIce: `${raw.terrain.dist_to_psr_km} km`,
+            hazardDesc: `${raw.terrain.max_gradient_deg}° max gradient (${raw.terrain.psr_name})`
+          },
+          solar: {
+            daylightPct: `${Math.round(raw.summary_metrics.daylight_pct)}% Daylight`,
+            peakEl: `+${(evalData ? evalData.sunEl + 1.2 : 2.0).toFixed(1)}° (Solar Transit)`,
+            continuousStay: `${raw.summary_metrics.continuous_sunlight_max_hrs} hrs continuous`,
+            shadowIngress: evalData ? `${evalData.nextSunsetHrs}h remaining` : "N/A"
+          },
+          comms: {
+            earthElev: `+${evalData ? evalData.earthEl : 3.0}° (${evalData && evalData.isEarthVis ? 'Stable' : 'Occluded'})`,
+            rfMargin: `+${raw.summary_metrics.rf_margin_db} dB`,
+            dsnLock: "Canberra / Goldstone Active",
+            librationBox: "±6.7° Lat / ±7.9° Lon"
+          }
+        };
+      }
+    }
+    return INSPECTOR_DATA[siteKey] || INSPECTOR_DATA.shackleton;
+  }
+
+  /**
    * Opens the inspector for a specific site and view tab.
    */
   function openInspector(siteKey, tab) {
-    activeSiteKey = INSPECTOR_DATA[siteKey] ? siteKey : "shackleton";
+    activeSiteKey = siteKey || "shackleton";
     activeTab = tab || "horizon";
-    const site = INSPECTOR_DATA[activeSiteKey];
+
+    // Proactively query FastAPI backend /api/sites/{site_id} endpoint
+    if (window.LunarPhysics && window.LunarPhysics.fetchSiteDetail) {
+      window.LunarPhysics.fetchSiteDetail(activeSiteKey).then(() => {
+        renderActiveView();
+      });
+    }
+
+    const site = getInspectorSite(activeSiteKey);
 
     // Update header fields
     const tagEl = document.getElementById("inspector-site-tag");
@@ -405,7 +466,7 @@
    */
   function renderActiveView() {
     const stage = document.getElementById("inspector-stage");
-    const site = INSPECTOR_DATA[activeSiteKey];
+    const site = getInspectorSite(activeSiteKey);
     if (!stage || !site) return;
 
     if (activeTab === "horizon") {
@@ -649,7 +710,7 @@
   function updateLiveSunTracker() {
     const sunTracker = document.getElementById("inspector-sun-tracker");
     const sunTag = document.getElementById("inspector-sun-tag");
-    const site = INSPECTOR_DATA[activeSiteKey];
+    const site = getInspectorSite(activeSiteKey);
     if (!sunTracker || !site) return;
 
     const initialAz = site.skyline.sunAz || 180;
