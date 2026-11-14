@@ -1,7 +1,7 @@
 /* ==========================================================================
    Lunar Landing Site Navigator - Global Timeline & Cockpit Dock
    File: components/timeline/timeline.css
-   Role: Layout, button styles, typography, and SVG scale styling for the bottom dock
+   Role: Layout, button styles, typography, SVG scale, and timeline configuration editing
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -10,11 +10,9 @@
    Stacks above the 3D globe canvas (z: 1) and comparison cards (z: 90) at z-index: 100.
    -------------------------------------------------------------------------- */
 .bottom-cockpit-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: var(--height-bottom-cockpit, 92px);
+  position: relative;
+  width: 100%;
+  height: 100%;
   background: var(--bg-surface-dark, #1e2022);
   border-top: 1px solid var(--border-subtle, #3a3c3f);
   display: flex;
@@ -57,7 +55,7 @@
 .btn-play.playing { background: var(--accent-sand, #c99e52); border-color: var(--accent-sand, #c99e52); color: #000; }
 
 /* Simulation speed multiplier pill buttons */
-.speed-selector { display: flex; align-items: center; gap: 3px; margin-left: 6px; }
+.speed-selector { display: flex; align-items: center; gap: 3px; margin-left: 6px; margin-right: 4px; }
 .speed-label { font-size: 10px; color: var(--text-muted, #8c867c); }
 .btn-speed {
   font-size: 10px; padding: 2px 6px;
@@ -77,13 +75,14 @@
   font-size: 11px;
   font-family: var(--font-mono, monospace);
 }
-.status-clock { color: var(--accent-sand, #c99e52); font-weight: 600; }
-.status-coord { color: var(--text-primary, #ede8e1); }
-.status-phase { color: var(--text-muted, #8c867c); }
+.status-clock { color: var(--accent-sand, #c99e52); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; transition: color 0.15s ease; }
+.status-clock:hover { color: var(--accent-terracotta, #c87d55); }
+.status-coord { color: var(--text-primary, #ede8e1); display: inline-flex; align-items: center; gap: 5px; }
+.status-phase { color: var(--text-muted, #8c867c); display: inline-flex; align-items: center; gap: 5px; }
 .status-divider { color: var(--border-medium, #4e4f52); }
 
 /* --------------------------------------------------------------------------
-   4. Mission Tools Group (Left)
+   4. Mission Tools Group (Right)
    Interactive tool buttons (Mark Site pin drop, 2D Maps drawer, Dr. Raj AI).
    -------------------------------------------------------------------------- */
 .toolbar-tools-group { display: flex; align-items: center; gap: 6px; }
@@ -102,6 +101,20 @@
 }
 .label-tool { cursor: pointer; }
 
+/* Edit Timeline trigger button in toolbar */
+.btn-edit-timeline {
+  border-color: var(--border-medium, #4e4f52);
+  gap: 4px;
+}
+.btn-edit-timeline:hover {
+  border-color: var(--accent-terracotta, #c87d55);
+}
+.btn-edit-timeline.active {
+  background: var(--accent-terracotta, #c87d55) !important;
+  border-color: var(--accent-terracotta, #c87d55) !important;
+  color: #fff !important;
+}
+
 /* --------------------------------------------------------------------------
    5. Tier 2: Lower Timeline & Precision Scale Strip (Height: 48px)
    Houses the calendar meta labels, SVG graduation tick ruler, and range slider.
@@ -118,17 +131,29 @@
 .timeline-meta-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 9px;
   font-family: var(--font-mono, monospace);
   color: var(--text-muted, #8c867c);
   margin-bottom: 2px;
 }
+.timeline-date-edge {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.timeline-date-edge:hover {
+  color: var(--text-primary, #ede8e1);
+}
 .timeline-marker-event { color: var(--accent-sand, #c99e52); }
+.timeline-interval-indicator {
+  color: var(--accent-slate, #5f798a);
+  font-weight: 600;
+}
 
-/* SVG scale ruler displaying sub-day tick graduations */
+/* SVG scale ruler displaying equal interval tick graduations */
 .timeline-precision-ruler {
   width: 100%;
-  height: 10px;
+  height: 8px;
   margin-bottom: 2px;
 }
 .ruler-svg {
@@ -136,13 +161,299 @@
   height: 100%;
   display: block;
 }
+.ruler-svg line {
+  stroke-width: 0.65px !important;
+  stroke-linecap: round;
+}
 
 /* Scrubber container & native slider input */
 .timeline-track-container { width: 100%; }
 .full-width-slider {
   width: 100%;
-  height: 6px;
-  accent-color: var(--accent-terracotta, #c87d55); /* Terracotta thumb and filled track */
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
   cursor: pointer;
   display: block;
+}
+.full-width-slider:focus { outline: none; }
+.full-width-slider:focus-visible::-webkit-slider-thumb {
+  filter: brightness(1.2);
+}
+.full-width-slider:focus-visible::-moz-range-thumb {
+  filter: brightness(1.2);
+}
+.full-width-slider::-webkit-slider-runnable-track {
+  height: 2px;
+  border: 0;
+  border-radius: 2px;
+  background: rgba(237, 232, 225, 0.28);
+}
+.full-width-slider::-moz-range-track {
+  height: 2px;
+  border: 0;
+  border-radius: 2px;
+  background: rgba(237, 232, 225, 0.28);
+}
+.full-width-slider::-webkit-slider-thumb {
+  width: 2px;
+  height: 12px;
+  box-sizing: border-box;
+  margin-top: -5px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: 0;
+  background: var(--accent-terracotta, #c87d55);
+  box-shadow: none;
+}
+.full-width-slider::-moz-range-thumb {
+  width: 2px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  background: var(--accent-terracotta, #c87d55);
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. Floating Timeline Configuration Popover Panel
+   -------------------------------------------------------------------------- */
+.timeline-edit-popover {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 16px;
+  width: 520px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-surface-dark, #1e2022);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px;
+  z-index: 105;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  animation: timelinePopoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes timelinePopoverFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.timeline-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+}
+
+.timeline-edit-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #ede8e1);
+  letter-spacing: 0.2px;
+}
+
+.timeline-edit-actions-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-interval-pill {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(200, 125, 85, 0.15);
+  color: var(--accent-terracotta, #c87d55);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(200, 125, 85, 0.3);
+}
+
+.timeline-edit-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #8c867c);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background-color 0.15s;
+}
+.timeline-edit-close:hover {
+  color: var(--text-primary, #ede8e1);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.timeline-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.timeline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.timeline-field label {
+  font-size: 11px;
+  color: var(--text-secondary, #beb7ac);
+  font-weight: 500;
+}
+
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.field-hint {
+  font-size: 10px;
+  color: var(--text-muted, #8c867c);
+}
+
+.timeline-input {
+  background: var(--bg-cockpit, #17181a);
+  border: 1px solid var(--border-medium, #4e4f52);
+  color: var(--text-primary, #ede8e1);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.timeline-input:focus {
+  border-color: var(--accent-terracotta, #c87d55);
+  box-shadow: 0 0 0 1px var(--accent-terracotta, #c87d55);
+}
+.timeline-input[aria-invalid="true"] {
+  border-color: #d66b64;
+}
+
+.timeline-interval-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.interval-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.btn-interval-preset {
+  font-size: 10px;
+  padding: 3px 6px;
+  background: var(--bg-card, #27292b);
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 3px;
+  color: var(--text-secondary, #beb7ac);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-interval-preset:hover {
+  border-color: var(--accent-terracotta, #c87d55);
+  color: var(--text-primary, #ede8e1);
+}
+.btn-interval-preset.active {
+  background: var(--accent-terracotta, #c87d55);
+  border-color: var(--accent-terracotta, #c87d55);
+  color: #fff;
+}
+
+.timeline-edit-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+}
+
+.btn-timeline-reset {
+  background: transparent;
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  color: var(--text-muted, #8c867c);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-timeline-reset:hover {
+  color: var(--text-primary, #ede8e1);
+  border-color: var(--border-medium, #4e4f52);
+}
+
+.btn-timeline-apply {
+  background: var(--accent-terracotta, #c87d55);
+  border: 1px solid var(--accent-terracotta, #c87d55);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-timeline-apply:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 900px) {
+  :root { --height-bottom-cockpit: 116px; }
+
+  .mission-toolbar {
+    height: 68px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 32px 28px;
+    gap: 0 6px;
+    padding: 4px 8px;
+  }
+
+  .toolbar-playback-group {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 4px;
+  }
+
+  .toolbar-tools-group {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 4px;
+  }
+
+  .toolbar-tools-group .btn-tool {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  .toolbar-center-status {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    font-size: 10px;
+  }
 }

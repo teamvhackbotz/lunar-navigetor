@@ -5,7 +5,7 @@
  * Role: Global hotkey listeners driving:
  *       1. Raw Arrow Keys (↑, ↓, ←, →): Precision fine-tuning & nudging of active pin.
  *       2. Alt + Arrow Keys: Cockpit window & drawer docking toggles.
- *       3. Ctrl + Arrow Keys: Mission timeline 1-hour scrubbing.
+ *       3. Ctrl + Arrow Keys: Mission timeline interval stepping.
  *       4. Spacebar: Continuous simulation play/pause.
  *       5. Slash (/): Quick landing site search command palette.
  *       6. Shift + ?: Dr. Raj AI flight analyst assistant.
@@ -26,8 +26,8 @@ const CockpitShortcuts = (function() {
     toggleLeftDrawer: { key: "Alt+ArrowLeft", label: "Toggle Left Drawer (Site A)", description: "Open/close left horizon profile" },
     toggleRightDrawer: { key: "Alt+ArrowRight", label: "Toggle Right Drawer (Site B)", description: "Open/close right horizon profile" },
     playPause: { key: "Space", label: "Play / Pause Time Simulation", description: "Toggle timeline continuous playback" },
-    stepBack: { key: "Ctrl+ArrowLeft", label: "Step Time Backward", description: "Step back 1 hour in simulation time" },
-    stepForward: { key: "Ctrl+ArrowRight", label: "Step Time Forward", description: "Step forward 1 hour in simulation time" },
+    stepBack: { key: "Ctrl+ArrowLeft", label: "Step Time Backward", description: "Step back one configured interval in simulation time" },
+    stepForward: { key: "Ctrl+ArrowRight", label: "Step Time Forward", description: "Step forward one configured interval in simulation time" },
     openSearch: { key: "/", label: "Quick Site Search", description: "Open command palette site search" },
     undoCard: { key: "Ctrl+Z", label: "Undo Card Action", description: "Restore closed or removed candidate comparison card" },
     redoCard: { key: "Ctrl+Y", label: "Redo Card Action", description: "Reapply undone comparison card action" },
