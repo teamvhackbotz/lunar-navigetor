@@ -1,122 +1,28 @@
-/**
- * ==============================================================================
- * Lunar Navigator Design System - Modern Minimalist Icon Suite
- * File: static/icons/icons.css
- * ==============================================================================
- */
-
-:root {
-  --icon-size-xs: 14px;
-  --icon-size-sm: 16px;
-  --icon-size-md: 20px;
-  --icon-size-lg: 24px;
-  --icon-size-xl: 32px;
-  --icon-size-2xl: 48px;
-
-  --icon-stroke-thin: 1.25px;
-  --icon-stroke-normal: 1.75px;
-  --icon-stroke-bold: 2.25px;
-
-  --icon-transition: stroke 0.18s cubic-bezier(0.16, 1, 0.3, 1), 
-                      transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-                      color 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+/* Bottom toolbar: icon-only controls */
+.icon-toolbar-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
-/* Base Universal Icon Class */
-.icon {
-  display: inline-block;
-  width: var(--icon-size-md);
-  height: var(--icon-size-md);
-  min-width: var(--icon-size-md);
-  min-height: var(--icon-size-md);
-  stroke-width: var(--icon-stroke-normal);
-  stroke: currentColor;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vertical-align: -0.125em;
-  flex-shrink: 0;
-  transition: var(--icon-transition);
-  shape-rendering: geometricPrecision;
-}
-
-/* Sizing Modifiers */
-.icon-xs  { width: var(--icon-size-xs);  height: var(--icon-size-xs);  min-width: var(--icon-size-xs);  min-height: var(--icon-size-xs); }
-.icon-sm  { width: var(--icon-size-sm);  height: var(--icon-size-sm);  min-width: var(--icon-size-sm);  min-height: var(--icon-size-sm); }
-.icon-md  { width: var(--icon-size-md);  height: var(--icon-size-md);  min-width: var(--icon-size-md);  min-height: var(--icon-size-md); }
-.icon-lg  { width: var(--icon-size-lg);  height: var(--icon-size-lg);  min-width: var(--icon-size-lg);  min-height: var(--icon-size-lg); }
-.icon-xl  { width: var(--icon-size-xl);  height: var(--icon-size-xl);  min-width: var(--icon-size-xl);  min-height: var(--icon-size-xl); }
-.icon-2xl { width: var(--icon-size-2xl); height: var(--icon-size-2xl); min-width: var(--icon-size-2xl); min-height: var(--icon-size-2xl); }
-
-/* Stroke Width Modifiers */
-.icon-thin   { stroke-width: var(--icon-stroke-thin); }
-.icon-normal { stroke-width: var(--icon-stroke-normal); }
-.icon-bold   { stroke-width: var(--icon-stroke-bold); }
-
-/* Palette Accents (Aligned with Lunar Navigator Theme Tokens) */
-.icon-terracotta { color: var(--accent-terracotta, #c87d55); }
-.icon-sand       { color: var(--accent-sand, #c99e52); }
-.icon-sage       { color: var(--accent-sage, #7d967e); }
-.icon-slate      { color: var(--accent-slate, #5f798a); }
-.icon-danger     { color: var(--accent-danger, #b8544f); }
-.icon-muted      { color: var(--text-muted, #8c867c); }
-.icon-primary    { color: var(--text-primary, #ede8e1); }
-.icon-secondary  { color: var(--text-secondary, #beb7ac); }
-
-/* Interactive Buttons & Micro-Animations */
-.btn-icon-tile {
+.icon-toolbar-group .btn-tool.icon-only {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  background: var(--bg-card, rgba(39, 41, 43, 0.92));
-  border: 1px solid var(--border-subtle, #3a3c3f);
-  color: var(--text-primary, #ede8e1);
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
 }
 
-.btn-icon-tile:hover {
-  background: var(--bg-card-hover, rgba(49, 51, 54, 0.96));
-  border-color: var(--accent-terracotta, #c87d55);
-  transform: translateY(-1px);
-}
-
-.btn-icon-tile:hover .icon {
-  color: var(--accent-terracotta, #c87d55);
-}
-
-.btn-icon-tile:active {
-  transform: translateY(0);
-}
-
-.btn-icon-tile.icon-only {
-  padding: 8px;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-}
-
-/* Animations */
-.icon-spin {
-  animation: icon-spin-kf 1s linear infinite;
-}
-
-@keyframes icon-spin-kf {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-.icon-pulse {
-  animation: icon-pulse-kf 2s ease-in-out infinite;
-}
-
-@keyframes icon-pulse-kf {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.92); }
+.icon-toolbar-group .btn-tool.icon-only .icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
