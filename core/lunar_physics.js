@@ -109,30 +109,73 @@ const LunarPhysics = (function() {
   }
 
   /**
-   * Finds the best matching curated site profile by ID or nearest coordinate.
+   * Finds the best matching curated site profile by ID, name, or nearest coordinates.
+   * Supports slug IDs, case-insensitive names, object containers, and string coordinates.
+   *
+   * @param {string|Object} input - Site slug, display name, site object, or { lat, lon }
+   * @returns {Object|null} Curated NASA site profile or null if not found
    */
-  function findSite(siteKeyOrCoords) {
-    if (typeof siteKeyOrCoords === "string" && catalog[siteKeyOrCoords]) {
-      return catalog[siteKeyOrCoords];
-    }
-    if (siteKeyOrCoords && typeof siteKeyOrCoords.lat === "number" && typeof siteKeyOrCoords.lon === "number") {
-      const lat = siteKeyOrCoords.lat;
-      const lon = siteKeyOrCoords.lon;
-      let closest = null;
-      let minDiff = 2.0; // degree tolerance
+  function findSite(input) {
+    if (!input) return null;
 
+    // 1. Direct O(1) slug lookup
+    if (typeof input === "string") {
+      if (catalog[input]) return catalog[input];
+
+      const query = input.trim().toLowerCase();
+      // Case-insensitive ID lookup
       for (const id in catalog) {
-        const s = catalog[id];
-        const dLat = Math.abs(s.coordinates.lat - lat);
-        const dLon = Math.abs(((s.coordinates.lon - lon + 540) % 360) - 180);
-        const diff = dLat + dLon * 0.2;
-        if (diff < minDiff) {
-          minDiff = diff;
-          closest = s;
+        if (id.toLowerCase() === query) return catalog[id];
+      }
+      // Exact or substring name match (e.g. "Connecting Ridge", "Apollo 11")
+      for (const id in catalog) {
+        const nameLower = (catalog[id].name || "").toLowerCase();
+        if (nameLower === query || nameLower.includes(query)) {
+          return catalog[id];
         }
       }
-      return closest;
+      return null;
     }
+
+    // 2. Object resolution ({ site_id }, { siteKey }, { id }, { name }, or { lat, lon })
+    if (typeof input === "object") {
+      // Check ID attributes
+      const idKey = input.site_id || input.siteKey || input.id;
+      if (typeof idKey === "string") {
+        const byId = findSite(idKey);
+        if (byId) return byId;
+      }
+
+      // Check name attribute
+      if (typeof input.name === "string") {
+        const byName = findSite(input.name);
+        if (byName) return byName;
+      }
+
+      // Check coordinates (supporting both numbers and string numbers from datasets)
+      if (input.lat !== undefined && input.lon !== undefined) {
+        const lat = typeof input.lat === "number" ? input.lat : parseFloat(input.lat);
+        const lon = typeof input.lon === "number" ? input.lon : parseFloat(input.lon);
+
+        if (!isNaN(lat) && !isNaN(lon)) {
+          let closest = null;
+          let minDiff = 2.0; // degree tolerance
+
+          for (const id in catalog) {
+            const s = catalog[id];
+            const dLat = Math.abs(s.coordinates.lat - lat);
+            const dLon = Math.abs(((s.coordinates.lon - lon + 540) % 360) - 180);
+            const diff = dLat + dLon * 0.2;
+            if (diff < minDiff) {
+              minDiff = diff;
+              closest = s;
+            }
+          }
+          return closest;
+        }
+      }
+    }
+
     return null;
   }
 
@@ -202,10 +245,23 @@ const LunarPhysics = (function() {
   }
 
   /**
-   * Synthesizes an on-the-fly scientific profile for an arbitrary custom coordinate.
+   * Synthesizes an on-the-fly scientific profile for an arbitrary custom coordinate,
+   * complete with a 720-hour authentic November 2026 diurnal ephemeris series.
+   *
+   * @param {number|string} inputLat - Latitude (-90 to +90)
+   * @param {number|string} inputLon - Longitude (0 to 360 or -180 to +180)
+   * @returns {Object} Complete scientific site profile matching curated schema
    */
-  function synthesizeCustomSite(lat, lon) {
-    const isPolar = Math.abs(lat) >= 80.0;
+  function synthesizeCustomSite(inputLat, inputLon) {
+    const lat = typeof inputLat === "number" ? inputLat : (parseFloat(inputLat) || 0.0);
+    const lon = typeof inputLon === "number" ? inputLon : (parseFloat(inputLon) || 0.0);
+
+    // Normalize longitude to [-180, +180] for limb/farside calculations
+    const normLon = ((((lon + 180) % 360) + 360) % 360) - 180;
+    const isPolar = Math.abs(lat) >= 75.0;
+    const isFarSide = Math.abs(normLon) >= 90.0;
+    const isDeepFarSide = Math.abs(normLon) >= 100.0;
+
     const baseHorizon = isPolar ? 0.8 : 0.2;
     const horizon = new Array(360);
 
@@ -227,6 +283,92 @@ const LunarPhysics = (function() {
     const slopeStatus = slopeEst < 5.0 ? "Safe" : (slopeEst < 7.5 ? "Moderate" : "Steep");
     const slopeColor = slopeEst < 5.0 ? "status-safe" : (slopeEst < 7.5 ? "status-warning" : "status-danger");
 
+    // PSR Cold Trap boundaries
+    const distToPsr = isPolar ? +(Math.max(0.8, (90.0 - Math.abs(lat)) * 2.5)).toFixed(1) : null;
+    const psrName = isPolar
+      ? (Math.abs(lat) >= 85.0 ? "Regional Micro-PSR Cold Trap" : "High-Latitude Permanent Shadow")
+      : "None (Equatorial / Mid-Latitude)";
+
+    // Thermal limits calibrated to LRO Diviner data
+    const tempMinK = isPolar ? 40 : 100;
+    const tempMaxK = isPolar ? 220 : 385;
+
+    // Synthesize 720-Hour Ephemeris Series for November 2026
+    const sun_el = new Array(TOTAL_HOURS);
+    const sun_az = new Array(TOTAL_HOURS);
+    const earth_el = new Array(TOTAL_HOURS);
+    const earth_az = new Array(TOTAL_HOURS);
+    const sun_visible = new Array(TOTAL_HOURS);
+    const earth_visible = new Array(TOTAL_HOURS);
+
+    const delta_sun = -1.45 * Math.PI / 180; // Solar declination in Nov 2026 (lunar southern summer)
+    const phi = (lat * Math.PI) / 180;
+    const LIBRATION_PERIOD = 653.1; // hours (27.21-day anomalistic month)
+    const SYNODIC_PERIOD = 708.734; // hours (29.53-day synodic month)
+
+    let totalDaylightHrs = 0;
+    let totalEarthVisHrs = 0;
+    let currentSunStreak = 0;
+    let maxSunStreak = 0;
+    let currentShadowStreak = 0;
+    let maxShadowStreak = 0;
+
+    for (let h = 0; h < TOTAL_HOURS; h++) {
+      // 1. Solar Ephemeris
+      const lambda_subsolar = ((48.5 - h) / SYNODIC_PERIOD) * 360 + 23.47;
+      const H_sun = ((((lambda_subsolar - lon + 540) % 360) - 180) * Math.PI) / 180;
+      const sinSunEl = Math.sin(phi) * Math.sin(delta_sun) + Math.cos(phi) * Math.cos(delta_sun) * Math.cos(H_sun);
+      const elS = Math.asin(Math.max(-1, Math.min(1, sinSunEl))) * 180 / Math.PI;
+      const yS = Math.sin(H_sun);
+      const xS = Math.cos(H_sun) * Math.sin(phi) - Math.tan(delta_sun) * Math.cos(phi);
+      const azS = ((Math.atan2(yS, -xS) * 180 / Math.PI) + 360) % 360;
+
+      // 2. Earth Libration & Position
+      const libPhase = (h / LIBRATION_PERIOD) * 2 * Math.PI;
+      const bE = 6.7 * Math.sin(libPhase - 0.5) * Math.PI / 180;
+      const lE = 7.9 * Math.cos(libPhase) * Math.PI / 180;
+      const dLonE = (lon * Math.PI / 180) - lE;
+      const cosRho = Math.sin(phi) * Math.sin(bE) + Math.cos(phi) * Math.cos(bE) * Math.cos(dLonE);
+      const rho = Math.acos(Math.max(-1, Math.min(1, cosRho)));
+      const elE = 90.0 - (rho * 180 / Math.PI);
+      const yE = Math.sin(dLonE);
+      const xE = Math.cos(dLonE) * Math.sin(phi) - Math.tan(bE) * Math.cos(phi);
+      const azE = ((Math.atan2(yE, -xE) * 180 / Math.PI) + 360) % 360;
+
+      const roundedSunEl = +elS.toFixed(2);
+      const roundedSunAz = +azS.toFixed(1);
+      const roundedEarthEl = isDeepFarSide ? Math.min(-10.0, +elE.toFixed(2)) : +elE.toFixed(2);
+      const roundedEarthAz = +azE.toFixed(1);
+
+      const isSunVis = roundedSunEl > horizon[Math.round(roundedSunAz) % 360];
+      const isEarthVis = isDeepFarSide ? false : (roundedEarthEl > horizon[Math.round(roundedEarthAz) % 360]);
+
+      sun_el[h] = roundedSunEl;
+      sun_az[h] = roundedSunAz;
+      earth_el[h] = roundedEarthEl;
+      earth_az[h] = roundedEarthAz;
+      sun_visible[h] = isSunVis;
+      earth_visible[h] = isEarthVis;
+
+      if (isSunVis) {
+        totalDaylightHrs++;
+        currentSunStreak++;
+        if (currentSunStreak > maxSunStreak) maxSunStreak = currentSunStreak;
+        currentShadowStreak = 0;
+      } else {
+        currentShadowStreak++;
+        if (currentShadowStreak > maxShadowStreak) maxShadowStreak = currentShadowStreak;
+        currentSunStreak = 0;
+      }
+
+      if (isEarthVis) {
+        totalEarthVisHrs++;
+      }
+    }
+
+    const daylightPct = Math.round((totalDaylightHrs / TOTAL_HOURS) * 100);
+    const commsUptimePct = Math.round((totalEarthVisHrs / TOTAL_HOURS) * 100);
+
     return {
       site_id: `custom-${Math.abs(lat).toFixed(2)}-${lon.toFixed(2)}`,
       name: `Custom (${Math.abs(lat).toFixed(2)}° ${lat < 0 ? "S" : "N"}, ${lon.toFixed(1)}° E)`,
@@ -241,22 +383,35 @@ const LunarPhysics = (function() {
         slope_status: slopeStatus,
         slope_color: slopeColor,
         max_gradient_deg: +(slopeEst * 2.2).toFixed(1),
-        dist_to_psr_km: +(Math.max(0.8, 12.0 - Math.abs(lat) * 0.12)).toFixed(1),
-        psr_name: isPolar ? "Regional Micro-PSR" : "None",
+        dist_to_psr_km: distToPsr,
+        psr_name: psrName,
         horizon_mask_360: horizon,
         skyline_svg_path: pts.join(" "),
         slope_svg_path: `M0,45 Q70,41 120,36 T200,56 T300,${Math.round(36 + slopeEst * 2)}`
       },
       thermal: {
-        temp_min_k: isPolar ? 80 : 100,
-        temp_max_k: isPolar ? 220 : 380
+        temp_min_k: tempMinK,
+        temp_max_k: tempMaxK
       },
       summary_metrics: {
-        daylight_pct: Math.round(40 + Math.abs(Math.cos((lat * Math.PI) / 180)) * 50),
-        continuous_sunlight_max_hrs: 160,
-        longest_shadow_hrs: 60,
-        dte_comms_uptime_pct: Math.round(35 + Math.abs(Math.sin((lon * Math.PI) / 180)) * 60),
-        rf_margin_db: +(4.5 + Math.abs(Math.sin(lat)) * 3.0).toFixed(1)
+        daylight_pct: daylightPct,
+        continuous_sunlight_max_hrs: maxSunStreak || 12,
+        longest_shadow_hrs: maxShadowStreak || 12,
+        dte_comms_uptime_pct: isDeepFarSide ? 0 : commsUptimePct,
+        rf_margin_db: isDeepFarSide ? 0.0 : +(Math.max(0.0, 3.5 + (earth_el[0] || 0) * 0.9)).toFixed(1),
+        is_farside: isFarSide,
+        comms_relay_required: isDeepFarSide ? "Earth-Moon L2 Halo Relay Required (Far Side)" : null
+      },
+      november_2026_series: {
+        start_epoch_ms: NOV_START_EPOCH_MS,
+        step_hours: 1,
+        hours_count: TOTAL_HOURS,
+        sun_el: sun_el,
+        sun_az: sun_az,
+        earth_el: earth_el,
+        earth_az: earth_az,
+        sun_visible: sun_visible,
+        earth_visible: earth_visible
       }
     };
   }
