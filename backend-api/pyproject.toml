@@ -3,10 +3,8 @@ name = "backend-api"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-authors = [
-    { name = "winterx64", email = "itswinterx64@gmail.com" }
-]
-requires-python = ">=3.14"
+authors = [{ name = "winterx64", email = "itswinterx64@gmail.com" }]
+requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.162.7",
     "pydantic-settings>=2.16.3",
