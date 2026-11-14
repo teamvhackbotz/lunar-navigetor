@@ -21,6 +21,7 @@ const CoordMath = (function() {
   const KNOWN_SITES = [
     { name: "Peak Near Shackleton", lat: -89.6, lon: 129.2, type: "Artemis III" },
     { name: "Connecting Ridge", lat: -89.4, lon: 222.6, type: "CLPS IM-2" },
+    { name: "CSA Lunar Rover (LEAP)", lat: -89.2, lon: 218.0, type: "🇨🇦 CSA / Canadensys" },
     { name: "Faustini Rim A", lat: -87.1, lon: 67.0, type: "Artemis III" },
     { name: "Malapert Massif", lat: -85.9, lon: 2.9, type: "Artemis III" },
     { name: "Nobile Rim 2", lat: -84.2, lon: 60.7, type: "Artemis III" },
@@ -28,6 +29,7 @@ const CoordMath = (function() {
     { name: "Chandrayaan-3", lat: -69.37, lon: 32.35, type: "ISRO Milestone" },
     { name: "Apollo 11", lat: 0.674, lon: 23.473, type: "Apollo Baseline" },
     { name: "Apollo 17", lat: 20.191, lon: 30.772, type: "Apollo Baseline" },
+    { name: "Artemis II Flyby", lat: 0.0, lon: 180.0, type: "🇨🇦 Jeremy Hansen Trajectory" },
     { name: "Hermite Crater (North)", lat: 86.0, lon: 270.0, type: "North Cold Trap" }
   ];
 

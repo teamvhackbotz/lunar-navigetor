@@ -1,0 +1,746 @@
+/**
+ * ==============================================================================
+ * Lunar Navigator Design System - Icons Helper Utility
+ * File: static/icons/icons.js
+ * ==============================================================================
+ */
+
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    define([], factory);
+  } else if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.Icons = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
+
+  const ICONS_MAP = {
+  "navigation": {
+    "title": "Navigation Pointer",
+    "category": "Navigation",
+    "tags": [
+      "nav",
+      "direction",
+      "arrow",
+      "telemetry",
+      "pointer"
+    ],
+    "body": "<polygon points=\"3 11 22 2 13 21 11 13 3 11\"/>"
+  },
+  "home": {
+    "title": "Home",
+    "category": "Navigation",
+    "tags": [
+      "main",
+      "dashboard",
+      "house",
+      "cockpit"
+    ],
+    "body": "<path d=\"M3 10.5L12 3L21 10.5V20C21 20.55 20.55 21 20 21H15C14.45 21 14 20.55 14 20V15C14 14.45 13.55 14 13 14H11C10.45 14 10 14.45 10 15V20C10 20.55 9.55 21 9 21H4C3.45 21 3 20.55 3 20V10.5Z\"/>"
+  },
+  "location": {
+    "title": "Location Pin",
+    "category": "Navigation",
+    "tags": [
+      "pin",
+      "marker",
+      "site",
+      "target",
+      "place"
+    ],
+    "body": "<path d=\"M12 21C16 17 20 13.42 20 10C20 5.58 16.42 2 12 2C7.58 2 4 5.58 4 10C4 13.42 8 17 12 21Z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/>"
+  },
+  "map": {
+    "title": "Terrain Map",
+    "category": "Navigation",
+    "tags": [
+      "map",
+      "topography",
+      "surface",
+      "cartography"
+    ],
+    "body": "<path d=\"M3 6L9 3L15 6L21 3V18L15 21L9 18L3 21V6Z\"/><path d=\"M9 3V18\"/><path d=\"M15 6V21\"/>"
+  },
+  "compass": {
+    "title": "Compass",
+    "category": "Navigation",
+    "tags": [
+      "bearing",
+      "azimuth",
+      "orientation",
+      "cardinal",
+      "direction"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><polygon points=\"16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76\"/>"
+  },
+  "target": {
+    "title": "Crosshair / Target",
+    "category": "Navigation",
+    "tags": [
+      "landing",
+      "focus",
+      "coordinates",
+      "crosshair",
+      "reticle"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><line x1=\"12\" y1=\"2\" x2=\"12\" y2=\"5\"/><line x1=\"12\" y1=\"19\" x2=\"12\" y2=\"22\"/><line x1=\"2\" y1=\"12\" x2=\"5\" y2=\"12\"/><line x1=\"19\" y1=\"12\" x2=\"22\" y2=\"12\"/>"
+  },
+  "globe": {
+    "title": "Globe",
+    "category": "Navigation",
+    "tags": [
+      "sphere",
+      "world",
+      "planet",
+      "lunar-globe",
+      "coordinates"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\"/><path d=\"M12 3A14 14 0 0 1 16 12A14 14 0 0 1 12 21A14 14 0 0 1 8 12A14 14 0 0 1 12 3Z\"/>"
+  },
+  "layers": {
+    "title": "Map Layers",
+    "category": "Navigation",
+    "tags": [
+      "layers",
+      "elevation",
+      "contour",
+      "overlays",
+      "slope"
+    ],
+    "body": "<polygon points=\"12 2 2 7 12 12 22 7 12 2\"/><polyline points=\"2 12 12 17 22 12\"/><polyline points=\"2 17 12 22 22 17\"/>"
+  },
+  "route": {
+    "title": "Mission Route",
+    "category": "Navigation",
+    "tags": [
+      "path",
+      "traverse",
+      "waypoints",
+      "rover"
+    ],
+    "body": "<circle cx=\"6\" cy=\"19\" r=\"3\"/><circle cx=\"18\" cy=\"5\" r=\"3\"/><path d=\"M12 19H8\"/><path d=\"M12 5H16\"/><path d=\"M12 19A7 7 0 0 0 12 5\"/>"
+  },
+  "search": {
+    "title": "Search",
+    "category": "Actions",
+    "tags": [
+      "find",
+      "lookup",
+      "palette",
+      "query",
+      "explore"
+    ],
+    "body": "<circle cx=\"11\" cy=\"11\" r=\"7\"/><line x1=\"20\" y1=\"20\" x2=\"16.2\" y2=\"16.2\"/>"
+  },
+  "add": {
+    "title": "Add / Plus",
+    "category": "Actions",
+    "tags": [
+      "create",
+      "new",
+      "insert",
+      "plus"
+    ],
+    "body": "<line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/>"
+  },
+  "add-circle": {
+    "title": "Add Circle",
+    "category": "Actions",
+    "tags": [
+      "create",
+      "new",
+      "button",
+      "plus-circle"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"16\"/><line x1=\"8\" y1=\"12\" x2=\"16\" y2=\"12\"/>"
+  },
+  "edit": {
+    "title": "Edit",
+    "category": "Actions",
+    "tags": [
+      "pencil",
+      "modify",
+      "pen",
+      "write",
+      "rename"
+    ],
+    "body": "<path d=\"M17 3A2.83 2.83 0 1 1 21 7L7.5 20.5L2 22L3.5 16.5L17 3Z\"/><path d=\"M15 5L19 9\"/>"
+  },
+  "delete": {
+    "title": "Delete",
+    "category": "Actions",
+    "tags": [
+      "trash",
+      "remove",
+      "bin",
+      "discard"
+    ],
+    "body": "<path d=\"M3 6H21\"/><path d=\"M8 6V4A2 2 0 0 1 10 2H14A2 2 0 0 1 16 4V6\"/><path d=\"M19 6V20A2 2 0 0 1 17 22H7A2 2 0 0 1 5 20V6\"/><line x1=\"10\" y1=\"11\" x2=\"10\" y2=\"17\"/><line x1=\"14\" y1=\"11\" x2=\"14\" y2=\"17\"/>"
+  },
+  "close": {
+    "title": "Close / Dismiss",
+    "category": "Actions",
+    "tags": [
+      "x",
+      "cancel",
+      "dismiss",
+      "exit",
+      "modal"
+    ],
+    "body": "<line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/>"
+  },
+  "check": {
+    "title": "Checkmark",
+    "category": "Actions",
+    "tags": [
+      "confirm",
+      "done",
+      "success",
+      "accept"
+    ],
+    "body": "<polyline points=\"20 6 9 17 4 12\"/>"
+  },
+  "check-circle": {
+    "title": "Check Circle",
+    "category": "Actions",
+    "tags": [
+      "success",
+      "verified",
+      "approved"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><polyline points=\"16 9 11 14 8 11\"/>"
+  },
+  "filter": {
+    "title": "Filter",
+    "category": "Actions",
+    "tags": [
+      "funnel",
+      "sort",
+      "refine",
+      "criteria"
+    ],
+    "body": "<polygon points=\"22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3\"/>"
+  },
+  "refresh": {
+    "title": "Refresh / Sync",
+    "category": "Actions",
+    "tags": [
+      "reload",
+      "sync",
+      "reset",
+      "update"
+    ],
+    "body": "<path d=\"M21.5 2V7H16.5\"/><path d=\"M2.5 22V17H7.5\"/><path d=\"M20.49 15A9 9 0 0 1 5.64 19.36L2.5 17\"/><path d=\"M3.51 9A9 9 0 0 1 18.36 4.64L21.5 7\"/>"
+  },
+  "copy": {
+    "title": "Copy",
+    "category": "Actions",
+    "tags": [
+      "clipboard",
+      "duplicate",
+      "clone"
+    ],
+    "body": "<rect x=\"8\" y=\"8\" width=\"13\" height=\"13\" rx=\"2\"/><path d=\"M4 16H3A2 2 0 0 1 1 14V3A2 2 0 0 1 3 1H14A2 2 0 0 1 16 3V4\"/>"
+  },
+  "share": {
+    "title": "Share",
+    "category": "Actions",
+    "tags": [
+      "send",
+      "export",
+      "nodes",
+      "network"
+    ],
+    "body": "<circle cx=\"18\" cy=\"5\" r=\"3\"/><circle cx=\"6\" cy=\"12\" r=\"3\"/><circle cx=\"18\" cy=\"19\" r=\"3\"/><line x1=\"8.59\" y1=\"13.51\" x2=\"15.42\" y2=\"17.49\"/><line x1=\"15.41\" y1=\"6.51\" x2=\"8.59\" y2=\"10.49\"/>"
+  },
+  "download": {
+    "title": "Download",
+    "category": "Actions",
+    "tags": [
+      "save",
+      "export",
+      "arrow-down",
+      "file"
+    ],
+    "body": "<path d=\"M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/>"
+  },
+  "upload": {
+    "title": "Upload",
+    "category": "Actions",
+    "tags": [
+      "import",
+      "load",
+      "arrow-up"
+    ],
+    "body": "<path d=\"M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"/>"
+  },
+  "profile": {
+    "title": "User Profile",
+    "category": "System",
+    "tags": [
+      "user",
+      "account",
+      "avatar",
+      "astronaut",
+      "person"
+    ],
+    "body": "<circle cx=\"12\" cy=\"7\" r=\"4\"/><path d=\"M5.5 21C5.5 17.41 8.41 14.5 12 14.5C15.59 14.5 18.5 17.41 18.5 21\"/>"
+  },
+  "settings": {
+    "title": "Settings",
+    "category": "System",
+    "tags": [
+      "gear",
+      "cog",
+      "preferences",
+      "configuration",
+      "options"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15A1.65 1.65 0 0 0 19.73 16.82L20.1 17.19A2 2 0 1 1 17.27 20.02L16.9 19.65A1.65 1.65 0 0 0 15.08 19.32A1.65 1.65 0 0 0 14 20.88V21.4A2 2 0 1 1 10 21.4V20.88A1.65 1.65 0 0 0 8.92 19.32A1.65 1.65 0 0 0 7.1 19.65L6.73 20.02A2 2 0 1 1 3.9 17.19L4.27 16.82A1.65 1.65 0 0 0 3.94 15A1.65 1.65 0 0 0 2.38 13.92H1.86A2 2 0 1 1 1.86 9.92H2.38A1.65 1.65 0 0 0 3.94 8.84A1.65 1.65 0 0 0 3.61 7.02L3.24 6.65A2 2 0 1 1 6.07 3.82L6.44 4.19A1.65 1.65 0 0 0 8.26 4.52A1.65 1.65 0 0 0 9.34 2.96V2.44A2 2 0 1 1 13.34 2.44V2.96A1.65 1.65 0 0 0 14.42 4.52A1.65 1.65 0 0 0 16.24 4.19L16.61 3.82A2 2 0 1 1 19.44 6.65L19.07 7.02A1.65 1.65 0 0 0 19.4 8.84A1.65 1.65 0 0 0 20.96 9.92H21.48A2 2 0 1 1 21.48 13.92H20.96A1.65 1.65 0 0 0 19.4 15Z\"/>"
+  },
+  "sliders": {
+    "title": "Adjustment Sliders",
+    "category": "System",
+    "tags": [
+      "controls",
+      "parameters",
+      "tuning",
+      "options",
+      "filters"
+    ],
+    "body": "<line x1=\"4\" y1=\"6\" x2=\"14\" y2=\"6\"/><line x1=\"18\" y1=\"6\" x2=\"20\" y2=\"6\"/><circle cx=\"16\" cy=\"6\" r=\"2\"/><line x1=\"4\" y1=\"12\" x2=\"8\" y2=\"12\"/><line x1=\"12\" y1=\"12\" x2=\"20\" y2=\"12\"/><circle cx=\"10\" cy=\"12\" r=\"2\"/><line x1=\"4\" y1=\"18\" x2=\"16\" y2=\"18\"/><line x1=\"20\" y1=\"18\" x2=\"20\" y2=\"18\"/><circle cx=\"18\" cy=\"18\" r=\"2\"/>"
+  },
+  "notifications": {
+    "title": "Notifications / Bell",
+    "category": "System",
+    "tags": [
+      "alerts",
+      "bell",
+      "messages",
+      "updates"
+    ],
+    "body": "<path d=\"M18 8A6 6 0 0 0 6 8C6 15 3 17 3 17H21S18 15 18 8\"/><path d=\"M10.3 21A1.94 1.94 0 0 0 13.7 21\"/>"
+  },
+  "menu": {
+    "title": "Menu / Drawer",
+    "category": "System",
+    "tags": [
+      "hamburger",
+      "drawer",
+      "sidebar",
+      "navigation"
+    ],
+    "body": "<line x1=\"3\" y1=\"6\" x2=\"21\" y2=\"6\"/><line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\"/><line x1=\"3\" y1=\"18\" x2=\"21\" y2=\"18\"/>"
+  },
+  "info": {
+    "title": "Information",
+    "category": "System",
+    "tags": [
+      "details",
+      "about",
+      "help",
+      "tooltip"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"/><circle cx=\"12\" cy=\"8\" r=\"0.75\" fill=\"currentColor\"/>"
+  },
+  "alert-triangle": {
+    "title": "Warning Alert",
+    "category": "System",
+    "tags": [
+      "warning",
+      "caution",
+      "hazard",
+      "alert",
+      "slope-warning"
+    ],
+    "body": "<path d=\"M10.29 3.86L1.82 18A2 2 0 0 0 3.55 21H20.45A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><circle cx=\"12\" cy=\"17\" r=\"0.75\" fill=\"currentColor\"/>"
+  },
+  "help-circle": {
+    "title": "Help",
+    "category": "System",
+    "tags": [
+      "question",
+      "faq",
+      "support",
+      "guidance"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M9.09 9A3 3 0 0 1 15 10C15 12 12 13 12 14\"/><circle cx=\"12\" cy=\"17\" r=\"0.75\" fill=\"currentColor\"/>"
+  },
+  "lock": {
+    "title": "Lock / Secured",
+    "category": "System",
+    "tags": [
+      "security",
+      "protect",
+      "private",
+      "safety"
+    ],
+    "body": "<rect x=\"4\" y=\"11\" width=\"16\" height=\"11\" rx=\"2\"/><path d=\"M7 11V7A5 5 0 0 1 17 7V11\"/>"
+  },
+  "unlock": {
+    "title": "Unlock",
+    "category": "System",
+    "tags": [
+      "open",
+      "unsecured",
+      "access"
+    ],
+    "body": "<rect x=\"4\" y=\"11\" width=\"16\" height=\"11\" rx=\"2\"/><path d=\"M7 11V7A5 5 0 0 1 17 7\"/>"
+  },
+  "eye": {
+    "title": "Eye / Inspector",
+    "category": "View",
+    "tags": [
+      "view",
+      "visible",
+      "inspect",
+      "preview",
+      "site-details"
+    ],
+    "body": "<path d=\"M1 12C3.5 6.5 7.5 4 12 4C16.5 4 20.5 6.5 23 12C20.5 17.5 16.5 20 12 20C7.5 20 3.5 17.5 1 12Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>"
+  },
+  "eye-off": {
+    "title": "Eye Off / Hidden",
+    "category": "View",
+    "tags": [
+      "hidden",
+      "invisible",
+      "hide",
+      "layer-toggle"
+    ],
+    "body": "<path d=\"M17.94 17.94A10.07 10.07 0 0 1 12 20C7.5 20 3.5 17.5 1 12C2.26 9.49 4.25 7.55 6.64 6.42\"/><path d=\"M9.9 4.24A9.12 9.12 0 0 1 12 4C16.5 4 20.5 6.5 23 12C21.84 14.31 20.06 16.14 17.94 17.94\"/><line x1=\"1\" y1=\"1\" x2=\"23\" y2=\"23\"/>"
+  },
+  "chevron-down": {
+    "title": "Chevron Down",
+    "category": "View",
+    "tags": [
+      "arrow",
+      "expand",
+      "dropdown",
+      "collapse"
+    ],
+    "body": "<polyline points=\"6 9 12 15 18 9\"/>"
+  },
+  "chevron-up": {
+    "title": "Chevron Up",
+    "category": "View",
+    "tags": [
+      "arrow",
+      "collapse",
+      "accordion"
+    ],
+    "body": "<polyline points=\"18 15 12 9 6 15\"/>"
+  },
+  "chevron-left": {
+    "title": "Chevron Left",
+    "category": "View",
+    "tags": [
+      "arrow",
+      "back",
+      "previous"
+    ],
+    "body": "<polyline points=\"15 18 9 12 15 6\"/>"
+  },
+  "chevron-right": {
+    "title": "Chevron Right",
+    "category": "View",
+    "tags": [
+      "arrow",
+      "forward",
+      "next"
+    ],
+    "body": "<polyline points=\"9 18 15 12 9 6\"/>"
+  },
+  "maximize": {
+    "title": "Maximize / Fullscreen",
+    "category": "View",
+    "tags": [
+      "expand",
+      "fullscreen",
+      "viewport"
+    ],
+    "body": "<path d=\"M8 3H4A1 1 0 0 0 3 4V8\"/><path d=\"M16 3H20A1 1 0 0 1 21 4V8\"/><path d=\"M8 21H4A1 1 0 0 1 3 20V16\"/><path d=\"M16 21H20A1 1 0 0 0 21 20V16\"/>"
+  },
+  "minimize": {
+    "title": "Minimize / Exit Fullscreen",
+    "category": "View",
+    "tags": [
+      "collapse",
+      "window",
+      "restore"
+    ],
+    "body": "<path d=\"M4 8H8V4\"/><path d=\"M20 8H16V4\"/><path d=\"M4 16H8V20\"/><path d=\"M20 16H16V20\"/>"
+  },
+  "arrow-up-right": {
+    "title": "External Link",
+    "category": "View",
+    "tags": [
+      "launch",
+      "outbound",
+      "window",
+      "open"
+    ],
+    "body": "<line x1=\"7\" y1=\"17\" x2=\"17\" y2=\"7\"/><polyline points=\"7 7 17 7 17 17\"/>"
+  },
+  "grab": {
+    "title": "Grab / Pan Hand",
+    "category": "View",
+    "tags": [
+      "hand",
+      "pan",
+      "drag",
+      "rotate",
+      "viewport-tool"
+    ],
+    "body": "<path d=\"M18 11V6A1.5 1.5 0 0 0 15 6V11\"/><path d=\"M15 9V4.5A1.5 1.5 0 0 0 12 4.5V11\"/><path d=\"M12 9V5.5A1.5 1.5 0 0 0 9 5.5V13\"/><path d=\"M9 11.5V9A1.5 1.5 0 0 0 6 9V15C6 18.3 8.7 21 12 21C15.9 21 19 17.9 19 14V11A1.5 1.5 0 0 0 16 11\"/>"
+  },
+  "play": {
+    "title": "Play Simulation",
+    "category": "Media & Time",
+    "tags": [
+      "play",
+      "start",
+      "run",
+      "temporal"
+    ],
+    "body": "<polygon points=\"6 4 20 12 6 20 6 4\"/>"
+  },
+  "pause": {
+    "title": "Pause Simulation",
+    "category": "Media & Time",
+    "tags": [
+      "pause",
+      "stop",
+      "freeze"
+    ],
+    "body": "<rect x=\"6\" y=\"4\" width=\"4\" height=\"16\" rx=\"1\"/><rect x=\"14\" y=\"4\" width=\"4\" height=\"16\" rx=\"1\"/>"
+  },
+  "step-forward": {
+    "title": "Step Forward (+1h)",
+    "category": "Media & Time",
+    "tags": [
+      "next",
+      "step",
+      "advance",
+      "time-step"
+    ],
+    "body": "<polygon points=\"5 4 15 12 5 20 5 4\"/><line x1=\"19\" y1=\"4\" x2=\"19\" y2=\"20\"/>"
+  },
+  "step-back": {
+    "title": "Step Back (-1h)",
+    "category": "Media & Time",
+    "tags": [
+      "prev",
+      "step",
+      "rewind",
+      "time-step"
+    ],
+    "body": "<polygon points=\"19 20 9 12 19 4 19 20\"/><line x1=\"5\" y1=\"4\" x2=\"5\" y2=\"20\"/>"
+  },
+  "clock": {
+    "title": "Mission Clock",
+    "category": "Media & Time",
+    "tags": [
+      "time",
+      "utc",
+      "timeline",
+      "chronometer",
+      "ephemeris"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><polyline points=\"12 7 12 12 15 14\"/>"
+  },
+  "calendar": {
+    "title": "Calendar Window",
+    "category": "Media & Time",
+    "tags": [
+      "date",
+      "launch-window",
+      "schedule",
+      "mission-day"
+    ],
+    "body": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><line x1=\"16\" y1=\"2\" x2=\"16\" y2=\"6\"/><line x1=\"8\" y1=\"2\" x2=\"8\" y2=\"6\"/><line x1=\"3\" y1=\"10\" x2=\"21\" y2=\"10\"/>"
+  },
+  "moon": {
+    "title": "Lunar / Night",
+    "category": "Mission",
+    "tags": [
+      "moon",
+      "selenographic",
+      "lunar-phase",
+      "night",
+      "dark-theme"
+    ],
+    "body": "<path d=\"M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79Z\"/>"
+  },
+  "sun": {
+    "title": "Solar / Day",
+    "category": "Mission",
+    "tags": [
+      "sun",
+      "illumination",
+      "solar-vector",
+      "daylight",
+      "light-theme"
+    ],
+    "body": "<circle cx=\"12\" cy=\"12\" r=\"4\"/><line x1=\"12\" y1=\"2\" x2=\"12\" y2=\"4\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"22\"/><line x1=\"4.93\" y1=\"4.93\" x2=\"6.34\" y2=\"6.34\"/><line x1=\"17.66\" y1=\"17.66\" x2=\"19.07\" y2=\"19.07\"/><line x1=\"2\" y1=\"12\" x2=\"4\" y2=\"12\"/><line x1=\"20\" y1=\"12\" x2=\"22\" y2=\"12\"/><line x1=\"4.93\" y1=\"19.07\" x2=\"6.34\" y2=\"17.66\"/><line x1=\"17.66\" y1=\"6.34\" x2=\"19.07\" y2=\"4.93\"/>"
+  },
+  "sparkles": {
+    "title": "AI Analyst / Sparkles",
+    "category": "Mission",
+    "tags": [
+      "ai",
+      "assistant",
+      "dr-raj",
+      "intelligence",
+      "analysis",
+      "magic"
+    ],
+    "body": "<path d=\"M12 2L14.2 9.8L22 12L14.2 14.2L12 22L9.8 14.2L2 12L9.8 9.8L12 2Z\"/><path d=\"M19 3L19.8 5.2L22 6L19.8 6.8L19 9L18.2 6.8L16 6L18.2 5.2L19 3Z\"/>"
+  },
+  "rocket": {
+    "title": "Mission Launch / Rocket",
+    "category": "Mission",
+    "tags": [
+      "artemis",
+      "launch",
+      "trajectory",
+      "spacecraft",
+      "orbit"
+    ],
+    "body": "<path d=\"M4.5 16.5C3.5 17.5 3 20 3 21C4 21 6.5 20.5 7.5 19.5L9.5 17.5L6.5 14.5L4.5 16.5Z\"/><path d=\"M14.5 4.5C11.5 2.5 8 3.5 6.5 5C5 6.5 4 10 6 13L11 18C14 20 17.5 19 19 17.5C20.5 16 21.5 12.5 19.5 9.5L14.5 4.5Z\"/><circle cx=\"14\" cy=\"10\" r=\"1.5\"/>"
+  },
+  "bookmark": {
+    "title": "Bookmark / Candidate",
+    "category": "Mission",
+    "tags": [
+      "favorite",
+      "save",
+      "candidate-site",
+      "pinned"
+    ],
+    "body": "<path d=\"M19 21L12 16L5 21V5A2 2 0 0 1 7 3H17A2 2 0 0 1 19 5V21Z\"/>"
+  },
+  "star": {
+    "title": "Star / Primary Choice",
+    "category": "Mission",
+    "tags": [
+      "rating",
+      "primary",
+      "recommended",
+      "best"
+    ],
+    "body": "<polygon points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\"/>"
+  },
+  "folder": {
+    "title": "Mission Dossier / Folder",
+    "category": "Mission",
+    "tags": [
+      "directory",
+      "files",
+      "dossier",
+      "archive"
+    ],
+    "body": "<path d=\"M22 19A2 2 0 0 1 20 21H4A2 2 0 0 1 2 19V5A2 2 0 0 1 4 3H9L11 6H20A2 2 0 0 1 22 8V19Z\"/>"
+  },
+  "file": {
+    "title": "Telemetry File / Document",
+    "category": "Mission",
+    "tags": [
+      "report",
+      "site-data",
+      "sheet",
+      "spec"
+    ],
+    "body": "<path d=\"M14 2H6A2 2 0 0 0 4 4V20A2 2 0 0 0 6 22H18A2 2 0 0 0 20 20V8L14 2Z\"/><polyline points=\"14 2 14 8 20 8\"/>"
+  }
+};
+
+  const Icons = {
+    /**
+     * Get raw SVG string for a given icon name
+     */
+    svg: function (name, options = {}) {
+      const icon = ICONS_MAP[name];
+      if (!icon) {
+        console.warn('[Icons] Icon not found: ' + name);
+        return '';
+      }
+      const sizeClass = options.size ? 'icon-' + options.size : '';
+      const customClass = options.class || '';
+      const strokeClass = options.stroke ? 'icon-' + options.stroke : '';
+      const colorClass = options.color ? 'icon-' + options.color : '';
+      const ariaLabel = options.title || icon.title;
+      const combinedClass = ['icon', 'icon-' + name, sizeClass, strokeClass, colorClass, customClass].filter(Boolean).join(' ');
+
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="' + combinedClass + '" role="img" aria-label="' + ariaLabel + '">' +
+        icon.body +
+      '</svg>';
+    },
+
+    /**
+     * Render SVG element directly into DOM node
+     */
+    render: function (name, options = {}) {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = this.svg(name, options).trim();
+      return wrapper.firstElementChild;
+    },
+
+    /**
+     * Auto-replace elements with [data-icon="icon-name"] attribute
+     */
+    replace: function (container = document) {
+      const elements = container.querySelectorAll('[data-icon]');
+      elements.forEach(el => {
+        const iconName = el.getAttribute('data-icon');
+        const size = el.getAttribute('data-icon-size') || '';
+        const color = el.getAttribute('data-icon-color') || '';
+        const stroke = el.getAttribute('data-icon-stroke') || '';
+        const extraClass = el.getAttribute('data-icon-class') || '';
+
+        const svgMarkup = this.svg(iconName, {
+          size: size,
+          color: color,
+          stroke: stroke,
+          class: extraClass
+        });
+
+        if (svgMarkup) {
+          el.innerHTML = svgMarkup;
+          el.removeAttribute('data-icon');
+        }
+      });
+    },
+
+    /**
+     * List all available icons with metadata
+     */
+    list: function () {
+      return Object.keys(ICONS_MAP).map(key => ({
+        name: key,
+        title: ICONS_MAP[key].title,
+        category: ICONS_MAP[key].category,
+        tags: ICONS_MAP[key].tags
+      }));
+    },
+
+    /**
+     * Retrieve icon definition
+     */
+    get: function (name) {
+      return ICONS_MAP[name] || null;
+    }
+  };
+
+  // Auto-run replacement if DOM is ready, or hook on DOMContentLoaded
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => Icons.replace());
+    } else {
+      setTimeout(() => Icons.replace(), 0);
+    }
+  }
+
+  return Icons;
+});

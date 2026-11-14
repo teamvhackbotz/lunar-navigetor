@@ -106,6 +106,27 @@
           </div>
 
           <div class="settings-grid">
+            <!-- Texture Resolution & Clarity -->
+            <div class="setting-item">
+              <label class="setting-label" for="setting-texture-resolution">Lunar Texture Clarity</label>
+              <select id="setting-texture-resolution" class="setting-select">
+                <option value="8k" selected>8K Ultra-HD (8192×4096 · NASA LROC Mosaic)</option>
+                <option value="4k">4K High-Res (4096×2048 · Balanced Fidelity)</option>
+                <option value="2k">2K Baseline (1024×512 · Maximum Performance)</option>
+              </select>
+            </div>
+
+            <!-- 3D Normal Mapping Relief Intensity -->
+            <div class="setting-item">
+              <label class="setting-label" for="setting-relief-intensity">Topographic Normal Relief</label>
+              <select id="setting-relief-intensity" class="setting-select">
+                <option value="1.0">Exaggerated (1.0x Deep Crater Walls)</option>
+                <option value="0.8" selected>Standard (0.8x Balanced Shadows)</option>
+                <option value="0.4">Subtle (0.4x Smooth Regolith)</option>
+                <option value="0.0">Off (Flat Color Albedo Only)</option>
+              </select>
+            </div>
+
             <!-- Vertical Elevation Exaggeration -->
             <div class="setting-item">
               <label class="setting-label" for="setting-terrain-exag">Vertical Terrain Exaggeration</label>

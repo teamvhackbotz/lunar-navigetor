@@ -765,9 +765,36 @@ DR. RAJ PERSONALITY:
 
       // Auto-brief when a site is selected on the map/globe
       window.eventBus.on("site:selected", (data) => {
-        const siteId   = data.siteId || data.id;
-        const siteName = data.name   || siteId;
-        const context  = `The operator just selected the site "${siteName}" on the map (ID: ${siteId}). Give a short tactical briefing on this site — solar illumination, DTE comms, and any hazards.`;
+        const selectedSite = data || {};
+        const siteId = selectedSite.siteId || selectedSite.id || "unknown";
+        const siteName = selectedSite.name || siteId;
+        let siteEvidence = "";
+
+        if (window.LunarPhysics &&
+            Number.isFinite(selectedSite.lat) &&
+            Number.isFinite(selectedSite.lon)) {
+          const raw = window.LunarPhysics.findSite(selectedSite);
+          if (raw) {
+            const metrics = [];
+            if (raw.coordinates && Number.isFinite(raw.coordinates.elevation_m)) {
+              metrics.push(`elevation ${raw.coordinates.elevation_m.toLocaleString()} m`);
+            }
+            if (raw.terrain && Number.isFinite(raw.terrain.slope_touchdown_deg)) {
+              metrics.push(`touchdown slope ${raw.terrain.slope_touchdown_deg}° (${raw.terrain.slope_status || "status unavailable"})`);
+            }
+            if (raw.summary_metrics && Number.isFinite(raw.summary_metrics.daylight_pct)) {
+              metrics.push(`daylight ${Math.round(raw.summary_metrics.daylight_pct)}%`);
+            }
+            if (raw.summary_metrics && Number.isFinite(raw.summary_metrics.rf_margin_db)) {
+              metrics.push(`DTE margin ${raw.summary_metrics.rf_margin_db} dB`);
+            }
+            siteEvidence = metrics.length
+              ? ` Local LunarPhysics catalog data for ${raw.name}: ${metrics.join(", ")}. Verify these values against mission-approved data.`
+              : ` A LunarPhysics profile for ${raw.name} was found, but it contains no summary metrics.`;
+          }
+        }
+
+        const context = `The operator selected "${siteName}" on the map (ID: ${siteId}). Provide a concise tactical brief on illumination, DTE communications, and terrain hazards using only available evidence.${siteEvidence || " No coordinates or telemetry profile were provided; state the limitation rather than inventing measurements."}`;
 
         if (notifDot) notifDot.style.display = "none";
         openChat();

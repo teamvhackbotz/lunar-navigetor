@@ -32,22 +32,24 @@
   // ==========================================================================
   const TARGET_CATALOGS = {
     south: {
-      title: "Artemis Candidates",
+      title: "Artemis & Polar Targets",
       badge: "70°S – 90°S",
       targets: [
         { name: "Connecting Ridge", lat: -89.4, lon: 222.6, badge: "4.2° Safe" },
+        { name: "CSA Lunar Rover (LEAP)", lat: -89.2, lon: 218.0, badge: "🇨🇦 CSA / Canadensys" },
         { name: "Peak Near Shackleton", lat: -89.6, lon: 129.2, badge: "6.8° Safe" },
         { name: "Malapert Massif", lat: -85.9, lon: 2.9, badge: "8.1° Steep" },
         { name: "Amundsen Rim", lat: -84.5, lon: 105.0, badge: "6.4° Mod" }
       ]
     },
     global: {
-      title: "Historical Missions",
+      title: "Historical & Modern Missions",
       badge: "Global Baselines",
       targets: [
         { name: "Apollo 11", lat: 0.67, lon: 23.47, badge: "Mare Tranquillitatis" },
         { name: "Apollo 17", lat: 20.19, lon: 30.77, badge: "Taurus-Littrow" },
         { name: "Chandrayaan-3", lat: -69.37, lon: 32.35, badge: "Shiv Shakti Point" },
+        { name: "Artemis II Flyby", lat: 0.0, lon: 180.0, badge: "🇨🇦 Jeremy Hansen" },
         { name: "Surveyor 1", lat: -2.47, lon: 316.66, badge: "Oceanus Procellarum" }
       ]
     },
@@ -79,10 +81,176 @@
   let lastMarkedSite = { lat: -89.4, lon: 222.6, name: "Connecting Ridge" };
 
   // ==========================================================================
+  // 2B. 2D ZOOM & PAN SUBSYSTEM (1.0x to 5.0x per projection)
+  // ==========================================================================
+  const MIN_ZOOM = 1.0;
+  const MAX_ZOOM = 5.0;
+  const ZOOM_STEP = 0.5;
+
+  const zoomStates = {
+    south: { zoom: 1.0, panX: 0, panY: 0 },
+    global: { zoom: 1.0, panX: 0, panY: 0 },
+    north: { zoom: 1.0, panX: 0, panY: 0 }
+  };
+
+  let isPanning = false;
+  let hasMoved = false;
+  let panStartX = 0;
+  let panStartY = 0;
+  let initialPanX = 0;
+  let initialPanY = 0;
+
+  function applyZoomTransform(projection, isDragging = false) {
+    const proj = projection || activeProjection;
+    const state = zoomStates[proj];
+    if (!state) return;
+
+    let el = null;
+    if (proj === "south") el = document.getElementById("south-polar-map-disc");
+    else if (proj === "global") el = document.getElementById("rect-map-canvas-mock");
+    else if (proj === "north") el = document.getElementById("north-polar-map-disc");
+
+    if (el) {
+      if (state.zoom <= 1.001) {
+        state.zoom = 1.0;
+        state.panX = 0;
+        state.panY = 0;
+        el.style.transform = "";
+        el.classList.remove("is-zoomed", "is-dragging");
+      } else {
+        // Clamp panning so the map remains anchored
+        const baseW = el.offsetWidth || 300;
+        const baseH = el.offsetHeight || 300;
+        const maxPanX = (baseW * (state.zoom - 1)) / 2 + 60;
+        const maxPanY = (baseH * (state.zoom - 1)) / 2 + 60;
+        state.panX = Math.max(-maxPanX, Math.min(maxPanX, state.panX));
+        state.panY = Math.max(-maxPanY, Math.min(maxPanY, state.panY));
+
+        el.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+        el.classList.add("is-zoomed");
+        el.classList.toggle("is-dragging", isDragging);
+      }
+    }
+
+    // Update Header Zoom Controls UI
+    const badge = document.getElementById("map-zoom-display");
+    const btnIn = document.getElementById("btn-map-zoom-in");
+    const btnOut = document.getElementById("btn-map-zoom-out");
+
+    if (badge) badge.textContent = `${state.zoom.toFixed(1)}×`;
+    if (btnOut) btnOut.disabled = (state.zoom <= MIN_ZOOM);
+    if (btnIn) btnIn.disabled = (state.zoom >= MAX_ZOOM);
+  }
+
+  function zoomIn() {
+    const state = zoomStates[activeProjection];
+    if (state && state.zoom < MAX_ZOOM) {
+      state.zoom = Math.min(MAX_ZOOM, Math.round((state.zoom + ZOOM_STEP) * 10) / 10);
+      applyZoomTransform(activeProjection);
+    }
+  }
+
+  function zoomOut() {
+    const state = zoomStates[activeProjection];
+    if (state && state.zoom > MIN_ZOOM) {
+      state.zoom = Math.max(MIN_ZOOM, Math.round((state.zoom - ZOOM_STEP) * 10) / 10);
+      if (state.zoom <= 1.001) {
+        state.panX = 0;
+        state.panY = 0;
+      }
+      applyZoomTransform(activeProjection);
+    }
+  }
+
+  function resetZoom() {
+    const state = zoomStates[activeProjection];
+    if (state) {
+      state.zoom = 1.0;
+      state.panX = 0;
+      state.panY = 0;
+      applyZoomTransform(activeProjection);
+    }
+  }
+
+  function initMapPanEvents() {
+    const mapCenterStage = document.getElementById("map-center-stage");
+    if (!mapCenterStage) return;
+
+    mapCenterStage.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return; // Only drag with left mouse button
+      const state = zoomStates[activeProjection];
+      if (!state || state.zoom <= 1.0) return;
+
+      isPanning = true;
+      hasMoved = false;
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      initialPanX = state.panX;
+      initialPanY = state.panY;
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isPanning) return;
+      const state = zoomStates[activeProjection];
+      if (!state) return;
+
+      const dx = e.clientX - panStartX;
+      const dy = e.clientY - panStartY;
+      if (Math.hypot(dx, dy) > 4) {
+        hasMoved = true;
+        state.panX = initialPanX + dx;
+        state.panY = initialPanY + dy;
+        applyZoomTransform(activeProjection, true);
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (isPanning) {
+        isPanning = false;
+        applyZoomTransform(activeProjection, false);
+      }
+    });
+
+    // Mouse Wheel Zooming on 2D map viewport
+    mapCenterStage.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const state = zoomStates[activeProjection];
+      if (!state) return;
+
+      const wheelStep = 0.25;
+      if (e.deltaY < 0) {
+        state.zoom = Math.min(MAX_ZOOM, Math.round((state.zoom + wheelStep) * 100) / 100);
+      } else {
+        state.zoom = Math.max(MIN_ZOOM, Math.round((state.zoom - wheelStep) * 100) / 100);
+      }
+      applyZoomTransform(activeProjection);
+    }, { passive: false });
+
+    // Keyboard Shortcuts: + to zoom in, - to zoom out, 0 / R to reset
+    window.addEventListener("keydown", (e) => {
+      const drawerToggle = document.getElementById("toggle-bottom-map");
+      if (!drawerToggle || !drawerToggle.checked) return;
+      if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
+
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        zoomIn();
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        zoomOut();
+      } else if (e.key === "0" || e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        resetZoom();
+      }
+    });
+  }
+
+  // ==========================================================================
   // 3. INITIALIZATION
   // ==========================================================================
   function initMap2D() {
     bindHeaderControls();
+    initMapPanEvents();
     bindViewportClickListeners();
     loadPreferences();
 
@@ -94,19 +262,18 @@
         updateTelemetryRightWing(data);
       });
 
-      // Settings Modal layout changes
-      window.eventBus.on("map2d:set_layout", (layout) => {
-        if (layout.mode) viewMode = layout.mode;
-        if (layout.projection) activeProjection = layout.projection;
-        if (typeof layout.leftWing === "boolean") leftWingExpanded = layout.leftWing;
-        if (typeof layout.rightWing === "boolean") rightWingExpanded = layout.rightWing;
-        if (typeof layout.wings === "boolean") {
-          leftWingExpanded = layout.wings;
-          rightWingExpanded = layout.wings;
+      // Texture resolution synchronizer (updates 2D basemap sharpness & header pill)
+      window.eventBus.on("texture:resolution", (data) => {
+        if (data && data.resolution) {
+          const flatCanvas = document.getElementById("rect-map-canvas-mock");
+          const clarityBadge = document.getElementById("map-clarity-badge");
+          if (flatCanvas) {
+            flatCanvas.classList.toggle("res-4k", data.resolution === "4k");
+          }
+          if (clarityBadge) {
+            clarityBadge.innerHTML = `✨ <strong>${data.resolution.toUpperCase()} ${data.resolution === "8k" ? "UHD" : "HD"}</strong>`;
+          }
         }
-        if (typeof layout.maximized === "boolean") isMaximized = layout.maximized;
-
-        applyPresentationState();
       });
     }
 
@@ -183,6 +350,16 @@
         savePreferences();
       });
     }
+
+    // Zoom In, Zoom Out, Reset Controls
+    const btnZoomIn = document.getElementById("btn-map-zoom-in");
+    if (btnZoomIn) btnZoomIn.addEventListener("click", zoomIn);
+
+    const btnZoomOut = document.getElementById("btn-map-zoom-out");
+    if (btnZoomOut) btnZoomOut.addEventListener("click", zoomOut);
+
+    const btnZoomReset = document.getElementById("btn-map-zoom-reset");
+    if (btnZoomReset) btnZoomReset.addEventListener("click", resetZoom);
   }
 
   // ==========================================================================
@@ -240,6 +417,7 @@
     // 5. Apply Wings and Maximize States
     applyWingsState();
     applyMaximizeState();
+    applyZoomTransform(activeProjection);
 
     // 6. Broadcast view change
     if (window.eventBus) {
@@ -458,41 +636,67 @@
     // North Polar Disc (70°N – 90°N)
     if (northDisc) {
       northDisc.addEventListener("click", (e) => {
+        if (hasMoved) {
+          hasMoved = false;
+          return;
+        }
         const rect = northDisc.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const cx = rect.width / 2;
-        const cy = rect.height / 2;
-        const r = (rect.width / 2) - 8;
+        const u = (e.clientX - rect.left) / rect.width;
+        const v = (e.clientY - rect.top) / rect.height;
+        const baseSize = northDisc.offsetWidth || 290;
+        const x = u * baseSize;
+        const y = v * baseSize;
+        const cx = baseSize / 2;
+        const cy = baseSize / 2;
+        const r = (baseSize / 2) - 8;
 
         const coord = window.CoordMath.polarNorthToLatLon(x, y, cx, cy, r, 70.0);
-        handlePointSelected(coord, "map-2d-north-polar");
+        if (coord) {
+          handlePointSelected(coord, "map-2d-north-polar");
+        }
       });
     }
 
     // South Polar Disc (70°S – 90°S)
     if (southDisc) {
       southDisc.addEventListener("click", (e) => {
+        if (hasMoved) {
+          hasMoved = false;
+          return;
+        }
         const rect = southDisc.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const cx = rect.width / 2;
-        const cy = rect.height / 2;
-        const r = (rect.width / 2) - 8;
+        const u = (e.clientX - rect.left) / rect.width;
+        const v = (e.clientY - rect.top) / rect.height;
+        const baseSize = southDisc.offsetWidth || 290;
+        const x = u * baseSize;
+        const y = v * baseSize;
+        const cx = baseSize / 2;
+        const cy = baseSize / 2;
+        const r = (baseSize / 2) - 8;
 
         const coord = window.CoordMath.polarSouthToLatLon(x, y, cx, cy, r, -70.0);
-        handlePointSelected(coord, "map-2d-south-polar");
+        if (coord) {
+          handlePointSelected(coord, "map-2d-south-polar");
+        }
       });
     }
 
     // Center Global Equirectangular Flat Map
     if (rectMap) {
       rectMap.addEventListener("click", (e) => {
+        if (hasMoved) {
+          hasMoved = false;
+          return;
+        }
         const rect = rectMap.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const coord = window.CoordMath.rectToLatLon(x, y, rect.width, rect.height);
-        handlePointSelected(coord, "map-2d-rect");
+        const u = (e.clientX - rect.left) / rect.width;
+        const v = (e.clientY - rect.top) / rect.height;
+        if (u >= 0 && u <= 1 && v >= 0 && v <= 1) {
+          const lon = u * 360 - 180;
+          const lat = 90 - v * 180;
+          const normLon = (lon + 360) % 360;
+          handlePointSelected({ lat, lon: normLon }, "map-2d-rect");
+        }
       });
     }
   }
@@ -546,10 +750,10 @@
     const northDisc = document.getElementById("north-polar-map-disc");
     const northPin = document.getElementById("north-polar-active-pin");
     if (northDisc && northPin) {
-      const rect = northDisc.getBoundingClientRect();
-      const cx = rect.width / 2;
-      const cy = rect.height / 2;
-      const r = (rect.width / 2) - 8;
+      const baseW = northDisc.offsetWidth || 290;
+      const cx = baseW / 2;
+      const cy = baseW / 2;
+      const r = (baseW / 2) - 8;
 
       const numLabel = data.number ? `#${data.number} ` : "";
       if (data.lat >= 70.0) {
@@ -567,10 +771,10 @@
     const southDisc = document.getElementById("south-polar-map-disc");
     const southPin = document.getElementById("south-polar-active-pin");
     if (southDisc && southPin) {
-      const rect = southDisc.getBoundingClientRect();
-      const cx = rect.width / 2;
-      const cy = rect.height / 2;
-      const r = (rect.width / 2) - 8;
+      const baseW = southDisc.offsetWidth || 290;
+      const cx = baseW / 2;
+      const cy = baseW / 2;
+      const r = (baseW / 2) - 8;
 
       const numLabel = data.number ? `#${data.number} ` : "";
       if (data.lat <= -70.0) {
@@ -588,12 +792,12 @@
     const rectMap = document.getElementById("rect-map-canvas-mock");
     const rectPin = document.getElementById("rect-active-pin");
     if (rectMap && rectPin) {
-      const rect = rectMap.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        const pos = window.CoordMath.latLonToRect(data.lat, data.lon, rect.width, rect.height);
-        rectPin.style.left = `${pos.x}px`;
-        rectPin.style.top = `${pos.y}px`;
-      }
+      let normLon = ((data.lon + 180) % 360) - 180;
+      if (normLon < -180) normLon += 360;
+      const u = (normLon + 180) / 360;
+      const v = (90 - data.lat) / 180;
+      rectPin.style.left = `${(u * 100).toFixed(2)}%`;
+      rectPin.style.top = `${(v * 100).toFixed(2)}%`;
     }
   }
 

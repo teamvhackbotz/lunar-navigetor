@@ -235,6 +235,7 @@
   position: relative;
   width: 100%;
   height: 200px;
+  flex-shrink: 0;
   background: var(--bg-deep-space, #141618);
   border: 1px solid var(--border-subtle, #3a3c3f);
   border-radius: 6px;
@@ -274,6 +275,98 @@
   font-family: var(--font-mono, monospace);
   color: var(--text-muted, #8c867c);
   border-bottom: 1px solid var(--border-subtle, #3a3c3f);
+}
+
+.inspector-axis-title-y {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 8px;
+  color: var(--text-muted, #8c867c);
+  font: 9px var(--font-mono, monospace);
+}
+
+.inspector-axis-title-x,
+.inspector-profile-axis-caption,
+.inspector-profile-x-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8px;
+  color: var(--text-muted, #8c867c);
+  font: 10px var(--font-mono, monospace);
+}
+
+.inspector-axis-title-x {
+  justify-content: flex-end;
+  font-size: 9px;
+}
+
+.inspector-profile-axis-caption {
+  font-size: 10px;
+}
+
+.inspector-profile-axis-caption span:first-child {
+  font-weight: 600;
+}
+
+.inspector-profile-x-ticks {
+  padding-left: 42px;
+  padding-right: 16px;
+  font-size: 9px;
+}
+
+.inspector-profile-y-ticks {
+  position: absolute;
+  inset: 4px auto 4px 4px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 34px;
+  padding: 3px;
+  box-sizing: border-box;
+  background: linear-gradient(90deg, rgba(20, 22, 24, 0.9), rgba(20, 22, 24, 0.45));
+  color: var(--text-muted, #8c867c);
+  font: 9px var(--font-mono, monospace);
+  text-align: right;
+  pointer-events: none;
+}
+
+/* Keep solar-elevation tick positions aligned with the plotted zero-horizon line. */
+.inspector-profile-y-ticks.solar-scale {
+  display: block;
+}
+
+.inspector-profile-y-ticks.solar-scale span {
+  position: absolute;
+  right: 3px;
+  transform: translateY(-50%);
+}
+
+.inspector-profile-y-ticks.solar-scale span:nth-child(1) { top: 7.5%; }
+.inspector-profile-y-ticks.solar-scale span:nth-child(2) { top: 60%; }
+.inspector-profile-y-ticks.solar-scale span:nth-child(3) { top: 92.5%; }
+
+.inspector-chart-grid line {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-dasharray: 2 4;
+  stroke-width: 1;
+}
+
+/* Solar Stay Timeline Scrubber Cursor & Dot */
+#inspector-solar-cursor-line {
+  stroke: var(--accent-cyan, #5bc0be);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(91, 192, 190, 0.5));
+}
+
+#inspector-solar-cursor-dot {
+  fill: var(--accent-cyan, #5bc0be);
+  stroke: #ffffff;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 6px rgba(91, 192, 190, 0.8));
+  pointer-events: none;
 }
 
 /* Interactive Crosshair Tracking Guide */

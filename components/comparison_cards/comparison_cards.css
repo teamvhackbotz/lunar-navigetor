@@ -100,6 +100,51 @@
   gap: 6px;
 }
 
+.cards-comparison-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 48px 6px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.comparison-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--text-secondary, #beb7ac);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.comparison-date-field input {
+  min-width: 168px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-subtle, #3a3c3f);
+  border-radius: 4px;
+  background: rgba(30, 32, 34, 0.9);
+  color: var(--text-primary, #ede8e1);
+  font: 10px var(--font-mono, monospace);
+  color-scheme: dark;
+}
+
+.comparison-status {
+  flex: 1 1 240px;
+  min-width: 180px;
+  max-width: 560px;
+  padding-bottom: 4px;
+  color: var(--text-muted, #8c867c);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.comparison-status.is-error {
+  color: var(--status-danger, #e06c75);
+}
+
 .btn-cards-tool {
   display: inline-flex;
   align-items: center;
@@ -474,14 +519,82 @@
   display: block;
 }
 
+.subcard-chart-grid line {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-dasharray: 2 3;
+  stroke-width: 0.7;
+}
+
+.subcard-chart-wrap.has-y-axis .subcard-y-axis-ticks {
+  position: absolute;
+  z-index: 2;
+  inset: 3px auto 3px 2px;
+  width: 27px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2px 3px 2px 1px;
+  box-sizing: border-box;
+  background: linear-gradient(90deg, rgba(20, 22, 24, 0.9), rgba(20, 22, 24, 0.45));
+  color: var(--text-muted, #8c867c);
+  font: 7px var(--font-mono, monospace);
+  text-align: right;
+  pointer-events: none;
+}
+
+/* Align the elevation labels to the +15° through -5° horizon scale. */
+.subcard-y-axis-ticks.horizon-scale,
+.subcard-y-axis-ticks.solar-scale {
+  display: block;
+}
+
+.subcard-y-axis-ticks.horizon-scale span,
+.subcard-y-axis-ticks.solar-scale span {
+  position: absolute;
+  right: 3px;
+  transform: translateY(-50%);
+}
+
+.subcard-y-axis-ticks.horizon-scale span:nth-child(1) { top: 5%; }
+.subcard-y-axis-ticks.horizon-scale span:nth-child(2) { top: 27.5%; }
+.subcard-y-axis-ticks.horizon-scale span:nth-child(3) { top: 50%; }
+.subcard-y-axis-ticks.horizon-scale span:nth-child(4) { top: 72.5%; }
+.subcard-y-axis-ticks.horizon-scale span:nth-child(5) { top: 95%; }
+.subcard-y-axis-ticks.solar-scale span:nth-child(1) { top: 5%; }
+.subcard-y-axis-ticks.solar-scale span:nth-child(2) { top: 72.5%; }
+.subcard-y-axis-ticks.solar-scale span:nth-child(3) { top: 95%; }
+
+.subcard-y-axis-ticks.qualitative {
+  justify-content: space-between;
+  text-align: left;
+}
+
 .subcard-zero-line {
   position: absolute;
   left: 0;
   right: 0;
-  top: 55%;
+  top: 72.5%;
   height: 1px;
   border-top: 1px dashed rgba(255, 255, 255, 0.25);
   pointer-events: none;
+}
+
+.subcard-axis-caption,
+.subcard-profile-x-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+  color: var(--text-muted, #8c867c);
+  font: 8px var(--font-mono, monospace);
+}
+
+.subcard-axis-caption span:first-child {
+  font-weight: 600;
+}
+
+.subcard-profile-x-ticks {
+  padding-left: 29px;
+  padding-right: 6px;
 }
 
 .subcard-azimuth-axis {
@@ -581,4 +694,15 @@
   border-radius: 4px;
   font-size: 11px;
   cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .cards-comparison-controls {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .comparison-date-field input {
+    min-width: 145px;
+  }
 }

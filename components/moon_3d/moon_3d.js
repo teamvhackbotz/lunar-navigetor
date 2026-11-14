@@ -2,72 +2,37 @@
  * ============================================================================
  * COMPONENT: Three.js 3D Moon Viewport (components/moon_3d/)
  * SCRIPT: moon_3d.js
- * 
- * ROLE:
- * Renders the primary interactive 3D WebGL lunar globe using Three.js:
- * - Spherical 3D Moon model with NASA LROC high-resolution albedo texture.
- * - OrbitControls for rotation, pitch, and zoom focusing on the South Pole.
- * - Dynamic solar illumination that orbits based on mission timeline progression.
- * - Raycaster click-to-pin system converting 3D ray intersections to lunar (lat, lon).
- * - Real-time surface pin marker with normal vector orientation to the sphere.
- * 
- * DATA FLOW & EVENTBUS INTEGRATION:
- * 📥 DATA IN (Listens to):
- *    - "site:marked"  -> Payload: { lat: number, lon: number, name: string }
- *                        Updates the 3D surface pin position and normal orientation.
- *    - "time:changed" -> Payload: { sliderValue: number (0-100), timeISO: string }
- *                        Orbits the directional sunlight around the lunar ecliptic plane
- *                        with a 1.54° axial tilt simulation.
- * 
- * 📤 DATA OUT (Emits):
- *    - "site:marked"  -> Payload: { lat: number, lon: number, name: string, source: "moon-3d" }
- *                        Fires when the user clicks anywhere on the 3D lunar surface.
  * ============================================================================
  */
 
-(function() {
-  // ==========================================================================
-  // 1. SCENE STATE & CONSTANTS
-  // ==========================================================================
+(function () {
   let scene, camera, renderer, controls;
   let moonMesh, sunLight;
   const pinsMap = new Map();
   let pinsContainer = null;
-  
-  // Standard WebGL world radius of the lunar sphere
+  let lastEphemerisRequest = null;
+  let ephemerisCache = new Map();
+
   const MOON_RADIUS = 2.5;
 
-  // ==========================================================================
-  // 2. THREE.JS INITIALIZATION
-  // ==========================================================================
   function initThreeMoon() {
     const container = document.getElementById("moon-webgl-canvas");
     if (!container) return;
 
-    // Guard: Retry if Three.js CDN has not finished loading asynchronously
     if (typeof THREE === "undefined") {
-      console.warn("[moon_3d] Three.js not loaded. Retrying in 200ms...");
       setTimeout(initThreeMoon, 200);
       return;
     }
 
     const width = container.clientWidth || window.innerWidth;
-    const height = container.clientHeight || (window.innerHeight - 92);
+    const height = container.clientHeight || window.innerHeight - 92;
 
-    // ------------------------------------------------------------------------
-    // A. Scene & Perspective Camera
-    // Positioned to provide an oblique perspective focused on the lunar South Pole
-    // ------------------------------------------------------------------------
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    // Camera placed at (0, -3.8, 4.5) to look directly at the Artemis exploration zone
-    camera.position.set(0, -3.8, 4.5);
 
-    // ------------------------------------------------------------------------
-    // B. WebGL Renderer
-    // Antialiased, transparent background, with ACES Filmic tone mapping for
-    // photorealistic deep-space contrast between sunlit crests and dark shadows.
-    // ------------------------------------------------------------------------
+    // MATCH REFERENCE VIEW: Centered full-globe framing
+    camera.position.set(0, 0, 5.5);
+
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -77,92 +42,174 @@
     container.innerHTML = "";
     container.appendChild(renderer.domElement);
 
-    // ------------------------------------------------------------------------
-    // C. OrbitControls
-    // Smooth inertial damping for user interaction (drag to rotate, scroll to zoom)
-    // ------------------------------------------------------------------------
     if (typeof THREE.OrbitControls !== "undefined") {
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
-      // CRITICAL: Disable panning so the Moon never drifts off-center into the black void
       controls.enablePan = false;
       controls.screenSpacePanning = false;
-      // Clamp zoom range so user cannot clip through the surface or zoom too far out
       controls.minDistance = 3.0;
       controls.maxDistance = 10.0;
-      controls.target.set(0, 0, 0); // Focus point is locked to the center of the Moon
+      controls.target.set(0, 0, 0);
     }
 
-    // Helper: Resets camera position and target back to nominal South Pole view
     function recenterMoon() {
       if (!camera || !controls) return;
-      camera.position.set(0, -3.8, 4.5);
+      camera.position.set(0, 0, 5.5);
       controls.target.set(0, 0, 0);
       controls.update();
       if (renderer && scene) renderer.render(scene, camera);
     }
 
-    // ------------------------------------------------------------------------
-    // D. Lighting Environment
-    // 1. Ambient Light: Simulates low-level cislunar starlight / earthshine in shadows.
-    // 2. Directional Sun Light: Strong parallel light source simulating solar illumination.
-    // ------------------------------------------------------------------------
     const ambientLight = new THREE.AmbientLight(0x22242a, 0.5);
     scene.add(ambientLight);
 
-    sunLight = new THREE.DirectionalLight(0xfff7ea, 2.2);
-    sunLight.position.set(12, 1.5, 8);
+    // MATCH REFERENCE LIGHTING: Dynamic directional sunlight
+    sunLight = new THREE.DirectionalLight(0xfff7ea, 2.4);
+    sunLight.position.set(15, 3.5, 0);
     scene.add(sunLight);
 
-    // ------------------------------------------------------------------------
-    // E. Moon Mesh & Texture Mapping
-    // 64x64 segment UV sphere textured with NASA LROC global cylindrical mosaic.
-    // ------------------------------------------------------------------------
-    const textureLoader = new THREE.TextureLoader();
-    const moonTexture = textureLoader.load(
-      "static/images/moon_equirectangular.jpg",
-      () => renderer.render(scene, camera) // Re-render immediately on texture arrival
-    );
-    moonTexture.wrapS = THREE.ClampToEdgeWrapping;
-    moonTexture.wrapT = THREE.ClampToEdgeWrapping;
+    let currentSunAngle = 0;
 
-    const geometry = new THREE.SphereGeometry(MOON_RADIUS, 64, 64);
+    function updateSunPosition(angle) {
+      if (!sunLight) return;
+      const radius = 15;
+      sunLight.position.x = Math.cos(angle) * radius;
+      sunLight.position.z = Math.sin(angle) * radius;
+      sunLight.position.y = 3.5;
+    }
+
+    const textureLoader = new THREE.TextureLoader();
+    const maxAnisotropy = renderer.capabilities.getMaxAnisotropy
+      ? renderer.capabilities.getMaxAnisotropy()
+      : 8;
+    let activeResolution =
+      localStorage.getItem("moon_texture_resolution") || "8k";
+
+    function configureTexture(tex) {
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.anisotropy = maxAnisotropy;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = true;
+      tex.needsUpdate = true;
+    }
+
+    const assetBase =
+      window.location.pathname &&
+      window.location.pathname.includes("/components/")
+        ? "../../"
+        : "";
+
+    const normalTexture = textureLoader.load(
+      `${assetBase}static/images/moon_normal.png`,
+      () => {
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      },
+    );
+    configureTexture(normalTexture);
+
+    const geometry = new THREE.SphereGeometry(MOON_RADIUS, 128, 128);
     const material = new THREE.MeshStandardMaterial({
-      map: moonTexture,
-      roughness: 0.88,  // Lunar regolith is highly diffuse (rough scattering)
-      metalness: 0.05
+      roughness: 0.85,
+      metalness: 0.04,
+      normalMap: normalTexture,
+      normalScale: new THREE.Vector2(0.8, 0.8),
     });
 
     moonMesh = new THREE.Mesh(geometry, material);
     scene.add(moonMesh);
 
-    // ------------------------------------------------------------------------
-    // F. Multi-Site 3D Surface Pins Container
-    // Holds all candidate landing site markers with matching card numbers.
-    // ------------------------------------------------------------------------
+    function updateHUDUI(res, state) {
+      const dot = document.querySelector("#hud-clarity-status .hud-status-dot");
+      const text = document.getElementById("hud-res-text");
+      const buttons = document.querySelectorAll(
+        ".clarity-switcher-group .hud-pill-btn",
+      );
+
+      if (buttons) {
+        buttons.forEach((btn) =>
+          btn.classList.toggle("active", btn.dataset.res === res),
+        );
+      }
+      if (text) {
+        text.textContent =
+          state === "loading"
+            ? `LOADING ${res.toUpperCase()}...`
+            : res === "8k"
+              ? "8K ULTRA-HD"
+              : "4K HIGH-RES";
+      }
+      if (dot) {
+        dot.className =
+          "hud-status-dot " + (state === "loading" ? "loading" : "pulse");
+      }
+    }
+
+    function applyTextureResolution(res) {
+      activeResolution = res;
+      localStorage.setItem("moon_texture_resolution", res);
+      updateHUDUI(res, "loading");
+
+      const file =
+        res === "8k"
+          ? `${assetBase}static/images/moon_8k.jpg`
+          : `${assetBase}static/images/moon_4k.jpg`;
+
+      textureLoader.load(
+        file,
+        (loadedTex) => {
+          configureTexture(loadedTex);
+          material.map = loadedTex;
+          material.needsUpdate = true;
+          updateHUDUI(res, "ready");
+          if (renderer && scene && camera) renderer.render(scene, camera);
+        },
+        undefined,
+        () => {
+          updateHUDUI(res, "ready");
+        },
+      );
+    }
+
+    textureLoader.load(
+      `${assetBase}static/images/moon_4k.jpg`,
+      (fastTex) => {
+        configureTexture(fastTex);
+        material.map = fastTex;
+        material.needsUpdate = true;
+        if (activeResolution === "8k") {
+          applyTextureResolution("8k");
+        } else {
+          updateHUDUI("4k", "ready");
+        }
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      },
+      undefined,
+      () => {
+        applyTextureResolution(activeResolution);
+      },
+    );
+
     pinsContainer = new THREE.Group();
     scene.add(pinsContainer);
 
-    // ------------------------------------------------------------------------
-    // G. Tool State: Grab (Default) vs. Mark Tool
-    // In Grab mode: dragging rotates the globe, clicks never drop pins.
-    // In Mark mode: OrbitControls disabled, clicks immediately drop pins.
-    // ------------------------------------------------------------------------
     let currentTool = window.currentCockpitTool || "grab";
     let isDragging = false;
-    let downX = 0, downY = 0;
+    let downX = 0,
+      downY = 0;
 
     function updateCursor() {
-      const cur = (currentTool === "mark") ? "crosshair" : (isDragging ? "grabbing" : "grab");
-      if (renderer && renderer.domElement) renderer.domElement.style.cursor = cur;
+      const cur =
+        currentTool === "mark" ? "crosshair" : isDragging ? "grabbing" : "grab";
+      if (renderer && renderer.domElement)
+        renderer.domElement.style.cursor = cur;
       if (container) {
         container.style.cursor = cur;
         container.classList.toggle("tool-mark", currentTool === "mark");
       }
-      if (controls) {
-        controls.enabled = (currentTool === "grab");
-      }
+      if (controls) controls.enabled = currentTool === "grab";
     }
     updateCursor();
 
@@ -185,11 +232,9 @@
 
     renderer.domElement.addEventListener("click", (e) => {
       const tool = currentTool || window.currentCockpitTool || "grab";
-
       if (tool === "mark") {
-        // MARK MODE: Raycast click on lunar surface to drop a new site
         const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
-        if (dist > 12) return; // Ignore if user dragged across screen
+        if (dist > 12) return;
 
         const rect = renderer.domElement.getBoundingClientRect();
         mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -201,102 +246,98 @@
         if (intersects.length > 0) {
           const p = intersects[0].point;
           const r = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
-          const lat = 90 - (Math.acos(p.y / r) * 180 / Math.PI);
-          let lon = (Math.atan2(p.z, -p.x) * 180 / Math.PI) - 180;
+          const lat = 90 - (Math.acos(p.y / r) * 180) / Math.PI;
+          let lon = (Math.atan2(p.z, -p.x) * 180) / Math.PI - 180;
           lon = (lon + 360) % 360;
 
-          const nearest = window.CoordMath 
-            ? window.CoordMath.findNearestSite(lat, lon) 
-            : { name: `Custom (${lat.toFixed(1)}°, ${lon.toFixed(1)}°)` };
-
-          const siteData = {
-            lat,
-            lon,
-            name: nearest.name,
-            source: "moon-3d"
-          };
-
+          const nearest = window.CoordMath
+            ? window.CoordMath.findNearestState
+              ? window.CoordMath.findNearestSite(lat, lon)
+              : null
+            : null;
+          const siteName = nearest
+            ? nearest.name
+            : `Custom (${lat.toFixed(1)}°, ${lon.toFixed(1)}°)`;
           if (window.eventBus) {
-            window.eventBus.emit("site:marked", siteData);
-          }
-        }
-      } else {
-        // GRAB MODE: Raycast click on existing 3D pins to select & highlight its card
-        const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
-        if (dist > 8) return; // User dragged to rotate globe
-
-        const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-        raycaster.setFromCamera(mouse, camera);
-        if (pinsContainer) {
-          const pinIntersects = raycaster.intersectObjects(pinsContainer.children, true);
-          if (pinIntersects.length > 0) {
-            let target = pinIntersects[0].object;
-            while (target && (!target.userData || typeof target.userData.lat !== "number") && target.parent) {
-              target = target.parent;
-            }
-            if (target && target.userData && typeof target.userData.lat === "number") {
-              const u = target.userData;
-              if (window.eventBus) {
-                window.eventBus.emit("site:marked", {
-                  lat: u.lat,
-                  lon: u.lon,
-                  name: u.name,
-                  siteId: u.siteId,
-                  number: u.number,
-                  source: "moon-3d-pin-click"
-                });
-              }
-            }
+            window.eventBus.emit("site:marked", {
+              lat,
+              lon,
+              name: siteName,
+              source: "moon-3d",
+            });
           }
         }
       }
     });
 
-    // ------------------------------------------------------------------------
-    // H. Universal EventBus Subscriptions
-    // ------------------------------------------------------------------------
+    // Global timeline state listener
+    let isPlaying = false;
+
     if (window.eventBus) {
-      // Tool selection changed: Grab vs. Mark
       window.eventBus.on("tool:changed", (data) => {
         if (data && data.tool) {
           currentTool = data.tool;
           updateCursor();
         }
       });
+      window.eventBus.on("moon:recenter", recenterMoon);
 
-      // Recenter camera command
-      window.eventBus.on("moon:recenter", () => {
-        recenterMoon();
+      window.eventBus.on("timeline:play", () => {
+        isPlaying = true;
+      });
+      window.eventBus.on("timeline:pause", () => {
+        isPlaying = false;
+      });
+      window.eventBus.on("timeline:toggle", () => {
+        isPlaying = !isPlaying;
       });
 
-      // Synchronize all candidate landing site pins with comparison deck
-      window.eventBus.on("cards:synced", (data) => {
-        if (data && Array.isArray(data.cards)) {
-          syncPinsFromCards(data.cards);
-        }
-      });
-
-      // Highlight active pin when an external component selects a site
-      window.eventBus.on("site:marked", (data) => {
-        if (!data || typeof data.lat !== "number" || typeof data.lon !== "number") return;
-        updateActivePin(data.lat, data.lon);
-      });
-
-      // Dynamically revolve the Sun around the Moon as timeline progresses
       window.eventBus.on("time:changed", (data) => {
-        const angle = (data.sliderValue / 100) * Math.PI * 2;
-        sunLight.position.x = Math.cos(angle) * 14;
-        sunLight.position.z = Math.sin(angle) * 14;
-        sunLight.position.y = Math.sin(angle * 2) * 0.8;
+        if (!data) return;
+
+        // 1. Sync Moon axial rotation from new timeline epoch if provided
+        if (data.unixEpoch && moonMesh) {
+          const daysElapsed = data.unixEpoch / (1000 * 60 * 60 * 24);
+          moonMesh.rotation.y = (daysElapsed * 0.1) % (Math.PI * 2);
+          currentSunAngle = (daysElapsed / 29.53) * Math.PI * 2;
+          updateSunPosition(currentSunAngle);
+        }
+
+        // 2. Apply fallback immediately (simulated) for instant visual feedback
+        applySunPosition(null, data.sliderValue);
+
+        // 3. Then fetch real ephemeris for the active site (debounced)
+        clearTimeout(lastEphemerisRequest);
+        lastEphemerisRequest = setTimeout(async () => {
+          // Use the last marked site coordinates, defaulting to South Pole if none
+          const site = window._lastMarkedSite || { lat: -89.4, lon: 222.6 };
+          const ephem = await fetchEphemeris(site.lat, site.lon, data.sliderValue, data.isoString);
+          if (ephem) {
+            applySunPosition(ephem, data.sliderValue);
+            // Broadcast ephemeris to other components
+            if (window.eventBus) {
+              window.eventBus.emit("ephemeris:updated", ephem);
+            }
+          }
+        }, 600);
+
+        if (renderer && scene && camera) renderer.render(scene, camera);
       });
     }
 
-    // ------------------------------------------------------------------------
-    // I. Viewport Resize Handling
-    // ------------------------------------------------------------------------
+    // Also auto-detect play button clicks anywhere in the DOM as a robust fallback
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (
+        btn &&
+        (btn.classList.contains("play") ||
+          btn.querySelector(".fa-play") ||
+          btn.textContent.includes("▶"))
+      ) {
+        isPlaying = !isPlaying;
+      }
+    });
+
     window.addEventListener("resize", () => {
       if (!container || !renderer || !camera) return;
       const w = container.clientWidth;
@@ -306,52 +347,27 @@
       renderer.setSize(w, h);
     });
 
-    // ------------------------------------------------------------------------
-    // J. Continuous Animation / Render Loop
-    // ------------------------------------------------------------------------
     function animate() {
       requestAnimationFrame(animate);
-      if (controls) controls.update(); // Required for smooth damping
 
-      // Horizon culling: Hide pins when rotated to the far side of the Moon
-      if (camera && pinsMap.size > 0) {
-        pinsMap.forEach(pinEntry => {
-          if (!pinEntry.coords || !pinEntry.group) return;
-          const toCamera = camera.position.clone().sub(pinEntry.coords.vector).normalize();
-          const dot = pinEntry.coords.normal.dot(toCamera);
-          pinEntry.group.visible = (dot > 0.04);
-        });
+      // Check playback state or active play buttons/classes
+      const anyPlayBtnActive = document.querySelector(
+        '.playing, .active-play, [data-playing="true"]',
+      );
+      if (isPlaying || window.isTimelinePlaying || anyPlayBtnActive) {
+        if (moonMesh) {
+          moonMesh.rotation.y += 0.003;
+        }
+        currentSunAngle += 0.008; // Dynamically sweeps the shadow terminator across the polar craters
+        updateSunPosition(currentSunAngle);
       }
 
-      renderer.render(scene, camera);
+      if (controls) controls.update();
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
     }
     animate();
-
-    // Trigger initial synchronization of cards from DOM
-    setTimeout(() => {
-      if (window.ComparisonCards && typeof window.ComparisonCards.sync === "function") {
-        window.ComparisonCards.sync();
-      } else {
-        const cols = document.querySelectorAll(".site-card-column");
-        if (cols.length > 0 && pinsMap.size === 0) {
-          const initialCards = [];
-          cols.forEach((col, idx) => {
-            const card = col.querySelector(".site-card");
-            if (card) {
-              initialCards.push({
-                siteId: col.dataset.siteId || `site-${idx+1}`,
-                number: idx + 1,
-                name: card.dataset.name || `Site ${idx+1}`,
-                lat: parseFloat(card.dataset.lat),
-                lon: parseFloat(card.dataset.lon),
-                active: card.classList.contains("active")
-              });
-            }
-          });
-          syncPinsFromCards(initialCards);
-        }
-      }
-    }, 150);
   }
 
   // ==========================================================================
@@ -598,6 +614,67 @@
       number: 1,
       active: true
     });
+  }
+
+  async function fetchEphemeris(lat, lon, sliderValue, isoString) {
+    // 1. Instant check in client-side high-performance LunarPhysics engine (< 1µs)
+    if (window.LunarPhysics) {
+      const site = window.LunarPhysics.findSite({ lat, lon });
+      if (site) {
+        const hourIdx = window.LunarPhysics.sliderToHourIndex(sliderValue);
+        const evalData = window.LunarPhysics.evaluateAtHour(site, hourIdx);
+        if (evalData) {
+          return {
+            sun: { az: evalData.sunAz, el: evalData.sunEl },
+            earth: { az: evalData.earthAz, el: evalData.earthEl },
+            source: "lunar_physics_luts"
+          };
+        }
+      }
+    }
+
+    // 2. Fallback to ISO string from timeline or compute November 2026 UTC timestamp
+    const dt = isoString || (function() {
+      const baseEpoch = Date.UTC(2026, 10, 1);
+      const totalHours = 30 * 24;
+      const ms = baseEpoch + (sliderValue / 100) * totalHours * 3600 * 1000;
+      return new Date(ms).toISOString();
+    })();
+
+    const cacheKey = `${lat.toFixed(1)},${lon.toFixed(1)},${Math.round(sliderValue)}`;
+    if (ephemerisCache.has(cacheKey)) {
+      return ephemerisCache.get(cacheKey);
+    }
+
+    try {
+      const url = `http://localhost:8000/api/ephemeris?lat=${lat}&lon=${lon}&dt=${encodeURIComponent(dt)}`;
+      const resp = await fetch(url, { signal: AbortSignal.timeout(2000) });
+      if (!resp.ok) throw new Error("API error");
+      const data = await resp.json();
+      ephemerisCache.set(cacheKey, data);
+      if (ephemerisCache.size > 100) {
+        ephemerisCache.delete(ephemerisCache.keys().next().value);
+      }
+      return data;
+    } catch (err) {
+      // Silent fallback: simulated ephemeris
+      return null;
+    }
+  }
+
+  function applySunPosition(ephem, sliderValue) {
+    if (!sunLight) return;
+    // Lunar axial tilt is 1.54°. In November 2026, the southern hemisphere is tilted towards the Sun.
+    const subLatRad = -1.54 * (Math.PI / 180);
+    const angle = ((sliderValue || 0) / 100) * Math.PI * 2;
+    const dist = 14;
+
+    sunLight.position.set(
+      Math.cos(angle) * Math.cos(subLatRad) * dist,
+      Math.sin(subLatRad) * dist,
+      Math.sin(angle) * Math.cos(subLatRad) * dist
+    );
+    sunLight.intensity = 2.2;
   }
 
   // ==========================================================================

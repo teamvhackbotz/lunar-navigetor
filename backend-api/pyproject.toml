@@ -1,0 +1,22 @@
+[project]
+name = "backend-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [{ name = "winterx64", email = "itswinterx64@gmail.com" }]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.162.7",
+    "pydantic-settings>=2.16.3",
+    "pydantic[email]>=2.14.3",
+    "python-dotenv>=1.2.4",
+    "requests>=2.34.2",
+    "uvicorn>=0.54.0",
+]
+
+[project.scripts]
+backend-api = "backend_api:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"

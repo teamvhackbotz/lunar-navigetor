@@ -67,3 +67,17 @@ These sites serve as an essential comparison baseline. Near the equator, the Sun
 | **Apollo 15** | Hadley-Apennine | 26.132° N, 3.634° E | 66.9 hours | First Lunar Roving Vehicle (LRV); visited Hadley Rille and Apennine mountains. |
 | **Apollo 16** | Descartes Highlands | 8.973° S, 15.500° E | 71.0 hours | First mission to investigate lunar highlands. |
 | **Apollo 17** | Taurus-Littrow | 20.191° N, 30.772° E | 75.0 hours | Longest crewed lunar surface stay; Harrison Schmitt became first scientist-astronaut on the Moon. |
+
+---
+
+## 5. Canadian Space Agency (CSA) Moon Exploration Initiatives
+*Reference: [Canadian Space Agency - Moon Exploration](https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/)*
+
+Canada is a core international partner in humanity's return to the Moon through the Artemis program, developing autonomous surface robotics, orbital AI servicing systems, and astronaut crew contributions.
+
+| Mission / Initiative | Partner / Organization | Operational Region | Coordinates | Strategic Focus & Science Objectives |
+| :--- | :--- | :--- | :--- | :--- |
+| **Canadian Lunar Rover Mission** | CSA / Canadensys Aerospace / LEAP | Lunar South Pole | ~89.2° S, 218.0° E | Canada's flagship lunar surface mission. Carries 6 scientific payloads (spectrometers, radiation detectors, thermal imaging) to prospect for water ice inside permanently shadowed craters and survive harsh lunar nights. |
+| **Artemis II Lunar Mission** | CSA / NASA | Cislunar Free-Return Trajectory | High Lunar Flyby (~10,300 km) | First crewed deep-space mission in over 50 years. CSA astronaut Jeremy Hansen flies as mission specialist on a circumlunar trajectory. |
+| **Canadarm3** | CSA / MDA Space | Lunar Gateway Station | Near-Rectilinear Halo Orbit (NRHO) | Next-generation autonomous robotic system powered by artificial intelligence to maintain, repair, and inspect the Gateway station without continuous human oversight. |
+
