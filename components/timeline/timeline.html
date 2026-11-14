@@ -2,24 +2,93 @@
      Lunar Landing Site Navigator - Global Timeline & Mission Cockpit Bar
      File: components/timeline/timeline.html
      Role: Two-tiered bottom docking station driving mission time progression,
-           solar orbital simulation, coordinate readouts, and global tool toggles.
+           solar orbital simulation, coordinate readouts, timeline editing, and global tool toggles.
      ========================================================================== -->
 
 <footer class="bottom-cockpit-bar">
+
+  <!-- ========================================================================
+       TIMELINE EDIT & CONFIGURATION POPOVER
+       Floating flight-grade panel anchored above timeline for editing
+       Start Date, End Date, Simulation Time, and Interval Spacing.
+       ======================================================================== -->
+  <div class="timeline-edit-popover" id="timeline-edit-popover" style="display: none;" aria-hidden="true">
+    <div class="timeline-edit-header">
+      <div class="timeline-edit-title">
+        <svg class="icon icon-edit icon-xs icon-terracotta" viewBox="0 0 24 24"><path d="M17 3A2.83 2.83 0 1 1 21 7L7.5 20.5L2 22L3.5 16.5L17 3Z"/><path d="M15 5L19 9"/></svg>
+        <span>Timeline Configuration</span>
+      </div>
+      <div class="timeline-edit-actions-top">
+        <span class="timeline-interval-pill" id="timeline-active-interval-pill">1.5h intervals</span>
+        <button type="button" class="timeline-edit-close" id="btn-close-timeline-edit" title="Close Timeline Editor (ESC)">✕</button>
+      </div>
+    </div>
+
+    <div class="timeline-edit-grid">
+      <!-- Start Date & Time -->
+      <div class="timeline-field">
+        <label for="timeline-edit-start">Start Date & Time (UTC)</label>
+        <input type="datetime-local" id="timeline-edit-start" class="timeline-input" step="60">
+      </div>
+
+      <!-- End Date & Time -->
+      <div class="timeline-field">
+        <label for="timeline-edit-end">End Date & Time (UTC)</label>
+        <input type="datetime-local" id="timeline-edit-end" class="timeline-input" step="60">
+      </div>
+
+      <!-- Current / Scrubber Time -->
+      <div class="timeline-field">
+        <label for="timeline-edit-current">Current Simulation Time (UTC)</label>
+        <input type="datetime-local" id="timeline-edit-current" class="timeline-input" step="60">
+      </div>
+
+      <!-- Interval Spacing -->
+      <div class="timeline-field">
+        <div class="field-label-row">
+          <label for="timeline-edit-interval">Interval Spacing (Hours)</label>
+          <span class="field-hint">Default: 1.5h</span>
+        </div>
+        <div class="timeline-interval-control">
+          <input type="number" id="timeline-edit-interval" class="timeline-input" min="0.1" max="168" step="0.1" value="1.5">
+          <div class="interval-presets">
+            <button type="button" class="btn-interval-preset active" data-interval="1.5">1.5h (Default)</button>
+            <button type="button" class="btn-interval-preset" data-interval="1">1h</button>
+            <button type="button" class="btn-interval-preset" data-interval="3">3h</button>
+            <button type="button" class="btn-interval-preset" data-interval="6">6h</button>
+            <button type="button" class="btn-interval-preset" data-interval="12">12h</button>
+            <button type="button" class="btn-interval-preset" data-interval="24">24h</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-edit-footer">
+      <button type="button" class="btn-timeline-reset" id="btn-reset-timeline">Reset to Default (Nov 2026, 1.5h)</button>
+      <button type="button" class="btn-timeline-apply" id="btn-apply-timeline-edit">Done</button>
+    </div>
+  </div>
+
   <!-- ========================================================================
        TIER 1: MISSION CONTROLS & UNIVERSAL MARKING TOOLBAR (Height: 44px)
-       Provides tool triggers, UTC clock, selenographic coordinates, & media playback.
+       Provides tool triggers, UTC clock, selenographic coordinates, playback, and edit trigger.
        ======================================================================== -->
   <div class="mission-toolbar">
 
     <!-- Group 1: Temporal Simulation Playback Controls (Left) -->
     <div class="toolbar-playback-group">
-      <!-- Step backward 1 hour in simulation time -->
-      <button class="btn-media" id="btn-step-back" title="Step Back 1 Hour (Ctrl + ←)">⏮</button>
+      <!-- Step backward 1 interval in simulation time -->
+      <button class="btn-media" id="btn-step-back" title="Step Back 1 Interval (Ctrl + ←)">
+        <svg class="icon icon-step-back icon-sm" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="4" x2="5" y2="20"/></svg>
+      </button>
       <!-- Play/Pause continuous time progression loop -->
-      <button class="btn-media btn-play" id="btn-play-pause" title="Play / Pause Time Progression (Spacebar)">▶</button>
-      <!-- Step forward 1 hour in simulation time -->
-      <button class="btn-media" id="btn-step-forward" title="Step Forward 1 Hour (Ctrl + →)">⏭</button>
+      <button class="btn-media btn-play" id="btn-play-pause" title="Play / Pause Time Progression (Spacebar)">
+        <svg class="icon icon-play icon-sm" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+      </button>
+      <!-- Step forward 1 interval in simulation time -->
+      <button class="btn-media" id="btn-step-forward" title="Step Forward 1 Interval (Ctrl + →)">
+        <svg class="icon icon-step-forward icon-sm" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="4" x2="19" y2="20"/></svg>
+      </button>
 
       <!-- Simulation speed acceleration selectors (100x vs 1000x real-time) -->
       <div class="speed-selector">
@@ -27,78 +96,82 @@
         <button class="btn-speed active" data-speed="100">100×</button>
         <button class="btn-speed" data-speed="1000">1000×</button>
       </div>
+
+      <!-- Edit Timeline configuration button -->
+      <button class="btn-tool btn-edit-timeline" id="btn-edit-timeline" title="Edit Timeline (Dates, Time, Interval)">
+        <svg class="icon icon-edit icon-xs" viewBox="0 0 24 24"><path d="M17 3A2.83 2.83 0 1 1 21 7L7.5 20.5L2 22L3.5 16.5L17 3Z"/><path d="M15 5L19 9"/></svg>
+        <span>Edit</span>
+      </button>
     </div>
 
     <!-- Group 2: Live Mission Telemetry & Selenographic Coordinates (Center) -->
     <div class="toolbar-center-status">
       <!-- Universal mission clock displaying simulation UTC time -->
-      <span class="status-clock" id="status-clock">🕒 2026-11-15 14:00 UTC</span>
+      <span class="status-clock" id="status-clock" title="Click to edit simulation time">
+        <svg class="icon icon-clock icon-xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+        <span class="clock-value">2026-11-15 14:00 UTC</span>
+      </span>
       <span class="status-divider">·</span>
       <!-- Real-time coordinate and landing target badge updated via EventBus 'site:marked' -->
-      <span class="status-coord" id="active-coord-display">📍 <strong>Connecting Ridge</strong> · 89.40° S · 222.6° E</span>
+      <span class="status-coord" id="active-coord-display">
+        <svg class="icon icon-location icon-xs icon-terracotta" viewBox="0 0 24 24"><path d="M12 21C16 17 20 13.42 20 10C20 5.58 16.42 2 12 2C7.58 2 4 5.58 4 10C4 13.42 8 17 12 21Z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span><strong>Connecting Ridge</strong> · 89.40° S · 222.6° E</span>
+      </span>
       <span class="status-divider">·</span>
       <!-- Lunar day/night lighting phase indicator -->
-      <span class="status-phase">🌕 Polar Day</span>
+      <span class="status-phase">
+        <svg class="icon icon-sun icon-xs icon-sand" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
+        <span>Polar Day</span>
+      </span>
     </div>
 
     <!-- Group 3: Mission Tools (Right) -->
     <div class="toolbar-tools-group">
       <!-- Default Grab / Rotate Navigation Tool -->
       <button class="btn-tool active" id="btn-tool-grab" title="Grab / Rotate 3D Globe (G)">
-        <span>✋ Grab</span>
+        <svg class="icon icon-grab icon-sm" viewBox="0 0 24 24"><path d="M18 11V6A1.5 1.5 0 0 0 15 6V11"/><path d="M15 9V4.5A1.5 1.5 0 0 0 12 4.5V11"/><path d="M12 9V5.5A1.5 1.5 0 0 0 9 5.5V13"/><path d="M9 11.5V9A1.5 1.5 0 0 0 6 9V15C6 18.3 8.7 21 12 21C15.9 21 19 17.9 19 14V11A1.5 1.5 0 0 0 16 11"/></svg>
       </button>
 
       <!-- Interactive pin-dropping tool for marking locations on 3D globe or 2D maps -->
       <button class="btn-tool" id="btn-tool-mark" title="Mark Landing Site Pin (M)">
-        <span>📍 Mark</span>
+        <svg class="icon icon-target icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
       </button>
       
       <!-- Pure-CSS label trigger linked to #toggle-bottom-map checkbox in index.html -->
       <label for="toggle-bottom-map" class="btn-tool label-tool btn-tool-map" title="Toggle 2D Maps Drawer (Alt + ↓)">
-        <span>▲ 2D Maps</span>
+        <svg class="icon icon-map icon-sm" viewBox="0 0 24 24"><path d="M3 6L9 3L15 6L21 3V18L15 21L9 18L3 21V6Z"/><path d="M9 3V18"/><path d="M15 6V21"/></svg>
       </label>
 
       <!-- Toggles the Dr. Raj AI lunar mission assistant drawer via EventBus 'ai:toggle' -->
       <button class="btn-tool btn-tool-ai" id="btn-tool-ai" title="Toggle Dr. Raj AI Lunar Analyst (Shift + ?)">
-        <span>👨‍🚀 Dr. Raj AI</span>
+        <svg class="icon icon-sparkles icon-sm icon-sand" viewBox="0 0 24 24"><path d="M12 2L14.2 9.8L22 12L14.2 14.2L12 22L9.8 14.2L2 12L9.8 9.8L12 2Z"/><path d="M19 3L19.8 5.2L22 6L19.8 6.8L19 9L18.2 6.8L16 6L18.2 5.2L19 3Z"/></svg>
       </button>
     </div>
   </div>
 
   <!-- ========================================================================
        TIER 2: FULL-WIDTH TIMELINE WITH PRECISION SCALE RULER (Height: 48px)
-       Linear time-scrubber spanning November 2026 (Artemis III launch window).
+       Dynamic, fully editable timeline with equal interval spacing.
        ======================================================================== -->
   <div class="full-timeline-strip">
-    <!-- Milestone metadata header row -->
+    <!-- Milestone metadata header row (Dynamically updated on value change) -->
     <div class="timeline-meta-row">
-      <span class="timeline-date-edge">2026-11-01</span>
-      <span class="timeline-marker-event">🚀 Artemis III Target Window</span>
-      <span class="timeline-marker-event">❄️ Polar Solstice</span>
-      <span class="timeline-date-edge">2026-11-30</span>
+      <span class="timeline-date-edge" id="timeline-start-label" title="Timeline Start (UTC)">2026-11-01 00:00</span>
+      <span class="timeline-marker-event" id="timeline-mid-label">🚀 Artemis III Target Window</span>
+      <span class="timeline-marker-event timeline-interval-indicator" id="timeline-interval-label">⏱ 1.5h interval</span>
+      <span class="timeline-date-edge" id="timeline-end-label" title="Timeline End (UTC)">2026-11-30 23:59</span>
     </div>
     
-    <!-- Precision scale ruler with SVG graduation ticks for sub-day time reading -->
+    <!-- Precision scale ruler with SVG graduation ticks for equal interval spacing -->
     <div class="timeline-precision-ruler">
-      <svg class="ruler-svg" viewBox="0 0 1000 12" preserveAspectRatio="none">
-        <line x1="0" y1="0" x2="0" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="2"></line>
-        <line x1="100" y1="4" x2="100" y2="12" stroke="rgba(255,255,255,0.25)" stroke-width="1"></line>
-        <line x1="200" y1="2" x2="200" y2="12" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"></line>
-        <line x1="300" y1="4" x2="300" y2="12" stroke="rgba(255,255,255,0.25)" stroke-width="1"></line>
-        <line x1="400" y1="2" x2="400" y2="12" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"></line>
-        <!-- Mid-month solstice reference tick highlighted in sand gold -->
-        <line x1="500" y1="0" x2="500" y2="12" stroke="rgba(201,158,82,0.8)" stroke-width="2"></line>
-        <line x1="600" y1="4" x2="600" y2="12" stroke="rgba(255,255,255,0.25)" stroke-width="1"></line>
-        <line x1="700" y1="2" x2="700" y2="12" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"></line>
-        <line x1="800" y1="4" x2="800" y2="12" stroke="rgba(255,255,255,0.25)" stroke-width="1"></line>
-        <line x1="900" y1="2" x2="900" y2="12" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"></line>
-        <line x1="1000" y1="0" x2="1000" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="2"></line>
+      <svg class="ruler-svg" id="ruler-svg" viewBox="0 0 1000 12" preserveAspectRatio="none">
+        <!-- Dynamically generated with equal spacing between intervals -->
       </svg>
     </div>
 
     <!-- Scrubber track container with native HTML range input -->
     <div class="timeline-track-container">
-      <input type="range" class="full-width-slider" id="timeline-scrubber" min="0" max="100" value="48">
+      <input type="range" class="full-width-slider" id="timeline-scrubber" min="0" max="100" value="48" step="0.01">
     </div>
   </div>
 </footer>
