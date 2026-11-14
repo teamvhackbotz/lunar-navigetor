@@ -14,7 +14,7 @@
   let activeSiteKey = "shackleton";
   let activeTab = "horizon";
   let activeSiteData = null;
-  let timelineProgress = 0; // 0 - 100%
+  let currentSliderVal = 50; // 0 - 100
 
   // Dragging state for Floating HUD mode
   let isDragging = false;
@@ -22,131 +22,6 @@
   let dragStartY = 0;
   let initialLeft = 0;
   let initialTop = 0;
-
-  /**
-   * Reference datasets for candidate sites in high-resolution mode.
-   */
-  const INSPECTOR_DATA = {
-    shackleton: {
-      tag: "Artemis III Candidate",
-      name: "Peak Near Shackleton",
-      coords: "89.6° S · 129.2° E · +1,240 m",
-      lat: -89.6,
-      lon: 129.2,
-      elevationMeters: "+1,240 m",
-      skyline: {
-        svgPath: "M0,125 L35,115 L70,95 L110,60 L145,118 L195,128 L245,95 L295,75 L330,50 L365,110 L410,128 L460,105 L500,82 L520,125 L520,200 L0,200 Z",
-        sunAz: 162,
-        sunEl: 1.4,
-        earthAz: 259,
-        earthEl: 3.1,
-        clearance: "+2.4° above eastern rim peaks",
-        statusPill: "✓ Line of Sight Maintained",
-        pillClass: "pill-ok"
-      },
-      slope: {
-        svgPath: "M0,110 Q140,105 240,75 T420,165 T520,185",
-        touchdownX: 240,
-        touchdownY: 75,
-        slopeVal: "4.2°",
-        slopeStatus: "Safe (< 5°)",
-        distIce: "1.8 km",
-        hazardDesc: "18.4° maximum gradient on PSR descent flank"
-      },
-      solar: {
-        daylightPct: "88% Daylight (304 hrs)",
-        peakEl: "+1.9° (Dec 16, 2026)",
-        continuousStay: "144 hrs uninterrupted",
-        shadowIngress: "112h 40m remaining"
-      },
-      comms: {
-        earthElev: "+3.1° (Stable)",
-        rfMargin: "+6.2 dB (High Gain Antenna)",
-        dsnLock: "Canberra / Goldstone Active",
-        librationBox: "±6.7° Lat / ±7.9° Lon"
-      }
-    },
-
-    ridge: {
-      tag: "CLPS IM-2 Target",
-      name: "Connecting Ridge",
-      coords: "89.4° S · 222.6° E · +980 m",
-      lat: -89.4,
-      lon: 222.6,
-      elevationMeters: "+980 m",
-      skyline: {
-        svgPath: "M0,118 L50,110 L100,95 L150,85 L200,105 L260,90 L310,70 L355,80 L405,115 L455,95 L490,85 L520,118 L520,200 L0,200 Z",
-        sunAz: 138,
-        sunEl: 0.8,
-        earthAz: 242,
-        earthEl: 1.9,
-        clearance: "+0.6° grazing over southern saddle",
-        statusPill: "✓ Grazing Line of Sight",
-        pillClass: "pill-warn"
-      },
-      slope: {
-        svgPath: "M0,105 Q140,95 240,85 T420,140 T520,165",
-        touchdownX: 240,
-        touchdownY: 85,
-        slopeVal: "5.8°",
-        slopeStatus: "Moderate (5° - 8°)",
-        distIce: "2.4 km",
-        hazardDesc: "11.2° flank slope near de Gerlache rim"
-      },
-      solar: {
-        daylightPct: "68% Daylight (235 hrs)",
-        peakEl: "+1.4° (Dec 14, 2026)",
-        continuousStay: "96 hrs uninterrupted",
-        shadowIngress: "74h 10m remaining"
-      },
-      comms: {
-        earthElev: "+1.9° (Low Grazing)",
-        rfMargin: "+4.1 dB (Nominal)",
-        dsnLock: "Goldstone Active",
-        librationBox: "Diffraction risk when libration < -5.0°"
-      }
-    },
-
-    malapert: {
-      tag: "Artemis III Candidate",
-      name: "Malapert Massif",
-      coords: "85.9° S · 2.9° E · +5,020 m",
-      lat: -85.9,
-      lon: 2.9,
-      elevationMeters: "+5,020 m",
-      skyline: {
-        svgPath: "M0,145 L60,135 L120,115 L160,50 L200,30 L235,65 L290,105 L350,120 L400,85 L450,60 L490,115 L520,145 L520,200 L0,200 Z",
-        sunAz: 210,
-        sunEl: -0.2,
-        earthAz: 182,
-        earthEl: 5.4,
-        clearance: "+4.8° superior horizon clearance",
-        statusPill: "✓ Superior Earth Comms Vantage",
-        pillClass: "pill-ok"
-      },
-      slope: {
-        svgPath: "M0,70 Q140,75 240,105 T420,170 T520,185",
-        touchdownX: 240,
-        touchdownY: 105,
-        slopeVal: "8.1°",
-        slopeStatus: "Steep / Hazardous (> 8°)",
-        distIce: "4.8 km",
-        hazardDesc: "22.6° massif escarpment to north"
-      },
-      solar: {
-        daylightPct: "52% Daylight (180 hrs)",
-        peakEl: "+2.6° (Dec 18, 2026)",
-        continuousStay: "72 hrs (Early cycle shadow)",
-        shadowIngress: "Sunrise in 28h 15m"
-      },
-      comms: {
-        earthElev: "+5.4° (High Elevation)",
-        rfMargin: "+9.8 dB (High SNR)",
-        dsnLock: "Canberra / Madrid / Goldstone",
-        librationBox: "Continuous line-of-sight across 100% of cycle"
-      }
-    }
-  };
 
   /**
    * Main component initialization.
@@ -298,13 +173,16 @@
     if (window.eventBus) {
       // Subscribed to card grow/inspect trigger
       window.eventBus.on("card:inspect", (data) => {
-        openInspector(data.siteKey || "shackleton", data.tab || "horizon");
+        if (data && data.siteData) {
+          activeSiteData = data.siteData;
+        }
+        openInspector(data.siteKey || data.siteData || "shackleton", data.tab || "horizon", data.siteData);
       });
 
       // Subscribed to live timeline scrubber
       window.eventBus.on("time:changed", (data) => {
-        timelineProgress = (data.sliderValue || 0) / 100;
-        updateLiveSunTracker();
+        currentSliderVal = typeof data.sliderValue === "number" ? data.sliderValue : (window.currentSliderVal || 50);
+        updateInspectorTelemetry(currentSliderVal);
       });
 
       // Subscribed to settings modal inspect mode changes
@@ -349,73 +227,225 @@
   }
 
   /**
+   * Translates azimuth angle into a 16-point compass heading string.
+   */
+  function getCompassHeading(az) {
+    const headings = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+    const idx = Math.round((((az % 360) + 360) % 360) / 22.5) % 16;
+    return headings[idx];
+  }
+
+  /**
+   * Builds an authentic high-resolution 360° skyline SVG silhouette path from LOLA horizon mask.
+   * Scaled for viewBox="0 0 520 200" with astronomical horizon datum (0°) at y=145 (8 px/deg).
+   *
+   * @param {Array<number>} horizonMask - 360-element array of elevation angles (degrees)
+   * @returns {string} SVG path string
+   */
+  function buildHighResSkylinePath(horizonMask) {
+    if (!Array.isArray(horizonMask) || horizonMask.length === 0) {
+      return "M0,145 L520,145 L520,200 L0,200 Z";
+    }
+
+    const pts = [];
+    const totalBins = horizonMask.length; // 360
+    for (let az = 0; az <= 360; az++) {
+      const x = ((az / 360) * 520).toFixed(1);
+      const el = horizonMask[az % totalBins] !== undefined ? horizonMask[az % totalBins] : 0;
+      // y = 145 - (el * 8), clamped to [15, 195]
+      const y = Math.max(15, Math.min(195, 145 - el * 8)).toFixed(1);
+      pts.push(`${az === 0 ? "M" : "L"}${x},${y}`);
+    }
+    pts.push("L520,200 L0,200 Z");
+    return pts.join(" ");
+  }
+
+  /**
+   * Builds an authentic 720-hour monthly solar stay elevation SVG curve across November 2026.
+   * Scaled for viewBox="0 0 520 200" with astronomical horizon datum (0°) at y=120 (17 px/deg).
+   *
+   * @param {Object} siteProfile - Authentic NASA site profile containing november_2026_series
+   * @returns {string} SVG path string
+   */
+  function buildHighResSolarPath(siteProfile) {
+    if (siteProfile && siteProfile.november_2026_series && Array.isArray(siteProfile.november_2026_series.sun_el)) {
+      const sunEl = siteProfile.november_2026_series.sun_el;
+      const pts = [];
+      const totalHours = sunEl.length; // 720
+      for (let h = 0; h < totalHours; h++) {
+        const x = ((h / (totalHours - 1)) * 520).toFixed(1);
+        const el = sunEl[h] !== undefined ? sunEl[h] : 0;
+        // y: zero datum is at y=120, scale 17 px/deg, clamped to [15, 190]
+        const y = Math.max(15, Math.min(190, 120 - el * 17)).toFixed(1);
+        pts.push(`${h === 0 ? "M" : "L"}${x},${y}`);
+      }
+      return pts.join(" ");
+    }
+
+    // Fallback diurnal curve for synthetic / custom sites
+    const lat = siteProfile && siteProfile.coordinates ? siteProfile.coordinates.lat : -89.0;
+    const isPolar = Math.abs(lat) >= 80;
+    const pts = [];
+    for (let x = 0; x <= 520; x += 2) {
+      const rad = (x / 520) * Math.PI * 2;
+      const el = isPolar ? (1.2 + 0.6 * Math.sin(rad)) : (12.0 * Math.sin(rad));
+      const y = Math.max(15, Math.min(190, 120 - el * 17)).toFixed(1);
+      pts.push(`${x === 0 ? "M" : "L"}${x},${y}`);
+    }
+    return pts.join(" ");
+  }
+
+  /**
    * Resolves site dataset using authentic NASA LunarPhysics data when available.
    */
-  function getInspectorSite(siteKey) {
+  function getInspectorSite(siteKeyOrData) {
+    const input = siteKeyOrData || activeSiteData || activeSiteKey || "shackleton";
+
     if (window.LunarPhysics) {
-      const raw = window.LunarPhysics.findSite(siteKey);
+      let raw = window.LunarPhysics.findSite(input);
+
+      // If not in catalog, check if coordinates exist or synthesize
+      if (!raw) {
+        let lat = null;
+        let lon = null;
+        if (typeof input === "object" && input !== null) {
+          lat = typeof input.lat === "number" ? input.lat : parseFloat(input.lat);
+          lon = typeof input.lon === "number" ? input.lon : parseFloat(input.lon);
+        } else if (activeSiteData) {
+          lat = typeof activeSiteData.lat === "number" ? activeSiteData.lat : parseFloat(activeSiteData.lat);
+          lon = typeof activeSiteData.lon === "number" ? activeSiteData.lon : parseFloat(activeSiteData.lon);
+        }
+
+        if (typeof lat === "number" && !isNaN(lat) && typeof lon === "number" && !isNaN(lon)) {
+          raw = window.LunarPhysics.synthesizeCustomSite(lat, lon);
+        }
+      }
+
       if (raw) {
-        const hourIdx = window.LunarPhysics.sliderToHourIndex(timelineProgress);
+        const sliderVal = typeof currentSliderVal === "number" ? currentSliderVal : (window.currentSliderVal || 50);
+        const hourIdx = window.LunarPhysics.sliderToHourIndex(sliderVal);
         const evalData = window.LunarPhysics.evaluateAtHour(raw, hourIdx);
+        const coords = raw.coordinates || { lat: -89.6, lon: 129.2, elevation_m: 1240 };
+        const terrain = raw.terrain || {};
+        const metrics = raw.summary_metrics || { daylight_pct: 75, continuous_sunlight_max_hrs: 120, rf_margin_db: 5.0 };
+
+        const crestAtSun = (terrain.horizon_mask_360 && terrain.horizon_mask_360[Math.round(evalData ? evalData.sunAz : 180) % 360]) || 1.0;
+        const sunClearanceDelta = evalData ? (evalData.sunEl - crestAtSun).toFixed(1) : "1.0";
+        const clearanceDesc = evalData && evalData.isSunVis
+          ? `+${sunClearanceDelta}° above regional terrain crest`
+          : `${sunClearanceDelta}° below regional crest (Topographic Shadow)`;
+
         return {
-          tag: raw.type,
-          name: raw.name,
-          coords: `${Math.abs(raw.coordinates.lat).toFixed(2)}° ${raw.coordinates.lat < 0 ? 'S' : 'N'} · ${raw.coordinates.lon.toFixed(1)}° E · +${raw.coordinates.elevation_m.toLocaleString()} m`,
-          lat: raw.coordinates.lat,
-          lon: raw.coordinates.lon,
-          elevationMeters: `+${raw.coordinates.elevation_m.toLocaleString()} m`,
+          _raw: raw,
+          tag: raw.type || "Artemis III Candidate",
+          name: raw.name || "Candidate Site",
+          coords: `${Math.abs(coords.lat).toFixed(2)}° ${coords.lat < 0 ? 'S' : 'N'} · ${coords.lon.toFixed(1)}° E · +${coords.elevation_m.toLocaleString()} m`,
+          lat: coords.lat,
+          lon: coords.lon,
+          elevationMeters: `+${coords.elevation_m.toLocaleString()} m`,
           skyline: {
-            svgPath: raw.terrain.skyline_svg_path,
+            svgPath: buildHighResSkylinePath(terrain.horizon_mask_360),
             sunAz: evalData ? evalData.sunAz : 180,
             sunEl: evalData ? evalData.sunEl : 1.2,
             earthAz: evalData ? evalData.earthAz : 240,
             earthEl: evalData ? evalData.earthEl : 3.2,
-            clearance: evalData && evalData.isSunVis ? `+${evalData.sunEl}° above terrain horizon` : "Below terrain silhouette (Shadow)",
+            clearance: clearanceDesc,
             statusPill: evalData && evalData.isSunVis ? "✓ Line of Sight Maintained" : "✗ Topographic Shadow",
             pillClass: evalData && evalData.isSunVis ? "pill-ok" : "pill-warn"
           },
           slope: {
-            svgPath: raw.terrain.slope_svg_path,
+            svgPath: terrain.slope_svg_path || "M0,110 Q140,105 240,75 T420,165 T520,185",
             touchdownX: 240,
             touchdownY: 75,
-            slopeVal: `${raw.terrain.slope_touchdown_deg}°`,
-            slopeStatus: `${raw.terrain.slope_status} (< ${raw.terrain.slope_touchdown_deg < 5 ? '5°' : '8°'})`,
-            distIce: `${raw.terrain.dist_to_psr_km} km`,
-            hazardDesc: `${raw.terrain.max_gradient_deg}° max gradient (${raw.terrain.psr_name})`
+            slopeVal: `${terrain.slope_touchdown_deg || 4.2}°`,
+            slopeStatus: `${terrain.slope_status || 'Safe'} (< ${(terrain.slope_touchdown_deg || 4.2) < 5 ? '5°' : '8°'})`,
+            distIce: `${terrain.dist_to_psr_km || 1.8} km`,
+            hazardDesc: `${terrain.max_gradient_deg || 18.4}° max gradient (${terrain.psr_name || 'PSR Rim'})`
           },
           solar: {
-            daylightPct: `${Math.round(raw.summary_metrics.daylight_pct)}% Daylight`,
+            svgPath: buildHighResSolarPath(raw),
+            cursorX: ((hourIdx / 719) * 520).toFixed(1),
+            cursorY: evalData ? Math.max(15, Math.min(190, 120 - evalData.sunEl * 17)).toFixed(1) : "120.0",
+            liveSunEl: evalData ? `${evalData.sunEl >= 0 ? '+' : ''}${evalData.sunEl}°` : "+1.2°",
+            daylightPct: `${Math.round(metrics.daylight_pct)}% Daylight`,
             peakEl: `+${(evalData ? evalData.sunEl + 1.2 : 2.0).toFixed(1)}° (Solar Transit)`,
-            continuousStay: `${raw.summary_metrics.continuous_sunlight_max_hrs} hrs continuous`,
-            shadowIngress: evalData ? `${evalData.nextSunsetHrs}h remaining` : "N/A"
+            continuousStay: `${metrics.continuous_sunlight_max_hrs} hrs continuous`,
+            shadowIngress: evalData ? (evalData.isSunVis ? `${evalData.nextSunsetHrs}h until sunset` : `Sunrise in ${evalData.nextSunriseHrs}h`) : "N/A"
           },
           comms: {
-            earthElev: `+${evalData ? evalData.earthEl : 3.0}° (${evalData && evalData.isEarthVis ? 'Stable' : 'Occluded'})`,
-            rfMargin: `+${raw.summary_metrics.rf_margin_db} dB`,
+            earthElev: `${evalData ? (evalData.earthEl >= 0 ? '+' : '') + evalData.earthEl : '+3.0'}° (${evalData && evalData.isEarthVis ? 'Stable' : 'Occluded'})`,
+            rfMargin: `+${evalData ? evalData.rfMargin.toFixed(1) : metrics.rf_margin_db} dB`,
             dsnLock: "Canberra / Goldstone Active",
             librationBox: "±6.7° Lat / ±7.9° Lon"
           }
         };
       }
     }
-    return INSPECTOR_DATA[siteKey] || INSPECTOR_DATA.shackleton;
+
+    // Clean minimal fallback
+    return {
+      tag: "Lunar Candidate Site",
+      name: typeof input === "string" ? input : (input?.name || "Lunar Candidate"),
+      coords: "89.6° S · 129.2° E · +1,240 m",
+      lat: -89.6,
+      lon: 129.2,
+      elevationMeters: "+1,240 m",
+      skyline: {
+        svgPath: "M0,125 L520,125 L520,200 L0,200 Z",
+        sunAz: 180,
+        sunEl: 1.2,
+        earthAz: 240,
+        earthEl: 3.2,
+        clearance: "Line of sight nominal",
+        statusPill: "✓ Line of Sight Maintained",
+        pillClass: "pill-ok"
+      },
+      slope: {
+        svgPath: "M0,110 Q140,105 240,75 T420,165 T520,185",
+        touchdownX: 240,
+        touchdownY: 75,
+        slopeVal: "4.5°",
+        slopeStatus: "Safe (< 5°)",
+        distIce: "2.0 km",
+        hazardDesc: "14.2° max slope"
+      },
+      solar: {
+        svgPath: buildHighResSolarPath(null),
+        cursorX: "260.0",
+        cursorY: "120.0",
+        liveSunEl: "+1.2°",
+        daylightPct: "75% Daylight",
+        peakEl: "+1.8° (Solar Transit)",
+        continuousStay: "120 hrs continuous",
+        shadowIngress: "N/A"
+      },
+      comms: {
+        earthElev: "+3.2° (Stable)",
+        rfMargin: "+5.0 dB",
+        dsnLock: "Canberra / Goldstone Active",
+        librationBox: "±6.7° Lat / ±7.9° Lon"
+      }
+    };
   }
 
   /**
    * Opens the inspector for a specific site and view tab.
    */
-  function openInspector(siteKey, tab) {
-    activeSiteKey = siteKey || "shackleton";
+  function openInspector(siteKeyOrData, tab, siteData) {
+    if (siteData) {
+      activeSiteData = siteData;
+    }
+    activeSiteKey = typeof siteKeyOrData === "string" ? siteKeyOrData : (siteKeyOrData?.site_id || siteKeyOrData?.name || "shackleton");
     activeTab = tab || "horizon";
 
     // Proactively query FastAPI backend /api/sites/{site_id} endpoint
-    if (window.LunarPhysics && window.LunarPhysics.fetchSiteDetail) {
+    if (typeof activeSiteKey === "string" && window.LunarPhysics && window.LunarPhysics.fetchSiteDetail) {
       window.LunarPhysics.fetchSiteDetail(activeSiteKey).then(() => {
         renderActiveView();
       });
     }
 
-    const site = getInspectorSite(activeSiteKey);
+    const site = getInspectorSite(siteKeyOrData);
 
     // Update header fields
     const tagEl = document.getElementById("inspector-site-tag");
@@ -472,13 +502,16 @@
     if (activeTab === "horizon") {
       stage.innerHTML = renderSkylineView(site);
       attachCrosshairEvents();
-      updateLiveSunTracker();
+      updateInspectorTelemetry(currentSliderVal);
     } else if (activeTab === "slope") {
       stage.innerHTML = renderSlopeView(site);
+      updateInspectorTelemetry(currentSliderVal);
     } else if (activeTab === "solar") {
       stage.innerHTML = renderSolarView(site);
+      updateInspectorTelemetry(currentSliderVal);
     } else if (activeTab === "comms") {
       stage.innerHTML = renderCommsView(site);
+      updateInspectorTelemetry(currentSliderVal);
     }
 
     // Update footer telemetry
@@ -498,11 +531,11 @@
    */
   function renderSkylineView(site) {
     const h = site.skyline;
-    // Match tracker positions to the chart axes: 0–360° azimuth and +15° to -5° elevation.
+    // Match tracker positions to the chart axes: 0–360° azimuth and +15° to -5° elevation (8 px/deg).
     const sunLeftPct = (h.sunAz / 360) * 100;
     const earthLeftPct = (h.earthAz / 360) * 100;
-    const sunTopPct = Math.max(4, Math.min(96, 72.5 - (h.sunEl * 4.5)));
-    const earthTopPct = Math.max(4, Math.min(96, 72.5 - (h.earthEl * 4.5)));
+    const sunTopPct = Math.max(4, Math.min(96, 72.5 - (h.sunEl * 4.0)));
+    const earthTopPct = Math.max(4, Math.min(96, 72.5 - (h.earthEl * 4.0)));
     return `
       <div class="inspector-axis-title-y">Elevation (°)</div>
       <div class="inspector-skyline-wrap" id="inspector-skyline-wrap">
@@ -534,12 +567,12 @@
         <!-- Dynamic Celestial Trackers -->
         <div class="inspector-celestial-tracker" id="inspector-sun-tracker" style="left: ${sunLeftPct}%; top: ${sunTopPct}%;">
           <span>☀️</span>
-          <span class="tracker-tag" id="inspector-sun-tag">Sun (+${h.sunEl}°)</span>
+          <span class="tracker-tag" id="inspector-sun-tag">Sun (${h.sunEl >= 0 ? '+' : ''}${h.sunEl}°, ${h.sunAz}° Az)</span>
         </div>
 
         <div class="inspector-celestial-tracker" id="inspector-earth-tracker" style="left: ${earthLeftPct}%; top: ${earthTopPct}%;">
           <span>🌍</span>
-          <span class="tracker-tag">Earth (+${h.earthEl}°)</span>
+          <span class="tracker-tag" id="inspector-earth-tag">Earth (${h.earthEl >= 0 ? '+' : ''}${h.earthEl}°, ${h.earthAz}° Az)</span>
         </div>
       </div>
 
@@ -561,19 +594,19 @@
       <div class="inspector-metrics-panel">
         <div class="inspector-stat-box">
           <span class="stat-label">Solar Elevation</span>
-          <span class="stat-val status-safe">+${h.sunEl}° (${h.sunAz}° Az)</span>
+          <span class="stat-val status-safe" id="inspector-skyline-sun-val">${h.sunEl >= 0 ? '+' : ''}${h.sunEl}° (${h.sunAz}° Az)</span>
         </div>
         <div class="inspector-stat-box">
           <span class="stat-label">Earth Line-of-Sight</span>
-          <span class="stat-val status-safe">+${h.earthEl}° (${h.earthAz}° Az)</span>
+          <span class="stat-val status-safe" id="inspector-skyline-earth-val">${h.earthEl >= 0 ? '+' : ''}${h.earthEl}° (${h.earthAz}° Az)</span>
         </div>
         <div class="inspector-stat-box">
           <span class="stat-label">Horizon Crest Margin</span>
-          <span class="stat-val status-safe">+2.4° Clear</span>
+          <span class="stat-val ${h.clearance.includes('Shadow') ? 'status-danger' : 'status-safe'}" id="inspector-skyline-crest-val">${h.clearance}</span>
         </div>
         <div class="inspector-stat-box">
           <span class="stat-label">Continuous Daylight</span>
-          <span class="stat-val">${site.solar.continuousStay}</span>
+          <span class="stat-val" id="inspector-skyline-daylight-val">${site.solar.continuousStay}</span>
         </div>
       </div>
     `;
@@ -648,29 +681,33 @@
             <line x1="519" y1="0" x2="519" y2="200" />
           </g>
           <line x1="0" y1="120" x2="520" y2="120" stroke="var(--accent-sand, #c99e52)" stroke-dasharray="3 3" />
-          <path d="M0,140 Q130,40 260,50 T520,150" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="3" />
+          <path id="inspector-solar-curve" d="${sol.svgPath}" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="2.5" />
           <text x="45" y="112" fill="var(--accent-sand, #c99e52)" font-size="10" font-family="sans-serif">0° Local Solar Horizon</text>
+
+          <!-- Dynamic Timeline Cursor for Solar Stay Curve -->
+          <line id="inspector-solar-cursor-line" x1="${sol.cursorX}" y1="0" x2="${sol.cursorX}" y2="200" stroke="var(--accent-cyan, #5bc0be)" stroke-width="1.5" stroke-dasharray="3 3" />
+          <circle id="inspector-solar-cursor-dot" cx="${sol.cursorX}" cy="${sol.cursorY}" r="5" fill="var(--accent-cyan, #5bc0be)" stroke="#fff" stroke-width="1.5" />
         </svg>
       </div>
-      <div class="inspector-profile-axis-caption"><span>Solar elevation (°)</span><span>Mission day</span></div>
-      <div class="inspector-profile-x-ticks" aria-hidden="true"><span>1</span><span>7</span><span>14</span></div>
+      <div class="inspector-profile-axis-caption"><span>Solar elevation (°)</span><span>Mission day (Nov 2026)</span></div>
+      <div class="inspector-profile-x-ticks" aria-hidden="true"><span>Day 1</span><span>Day 8</span><span>Day 15</span><span>Day 22</span><span>Day 30</span></div>
 
       <div class="inspector-metrics-panel">
         <div class="inspector-stat-box">
           <span class="stat-label">Illumination Ratio</span>
-          <span class="stat-val status-safe">${sol.daylightPct}</span>
+          <span class="stat-val status-safe" id="inspector-solar-ratio-val">${sol.daylightPct}</span>
         </div>
         <div class="inspector-stat-box">
-          <span class="stat-label">Peak Sun Elevation</span>
-          <span class="stat-val">${sol.peakEl}</span>
+          <span class="stat-label">Sun Elevation (Live)</span>
+          <span class="stat-val" id="inspector-solar-el-val">${sol.liveSunEl}</span>
         </div>
         <div class="inspector-stat-box">
           <span class="stat-label">Unbroken EVA Stay</span>
-          <span class="stat-val status-safe">${sol.continuousStay}</span>
+          <span class="stat-val status-safe" id="inspector-solar-stay-val">${sol.continuousStay}</span>
         </div>
         <div class="inspector-stat-box">
           <span class="stat-label">Current Phase Status</span>
-          <span class="stat-val">${sol.shadowIngress}</span>
+          <span class="stat-val" id="inspector-solar-phase-val">${sol.shadowIngress}</span>
         </div>
       </div>
     `;
@@ -685,11 +722,11 @@
       <div class="inspector-metrics-panel" style="grid-template-columns: repeat(2, 1fr); margin-top: 8px;">
         <div class="inspector-stat-box">
           <span class="stat-label">Direct Earth Elevation</span>
-          <span class="stat-val status-safe">${c.earthElev}</span>
+          <span class="stat-val status-safe" id="inspector-comms-earth-el">${c.earthElev}</span>
         </div>
         <div class="inspector-stat-box">
           <span class="stat-label">High-Gain RF Link Margin</span>
-          <span class="stat-val status-safe">${c.rfMargin}</span>
+          <span class="stat-val status-safe" id="inspector-comms-rf-margin">${c.rfMargin}</span>
         </div>
         <div class="inspector-stat-box">
           <span class="stat-label">Deep Space Network Ground Stations</span>
@@ -704,7 +741,7 @@
   }
 
   /**
-   * Attaches interactive crosshair events to the skyline chart.
+   * Attaches interactive crosshair events to the skyline chart with authentic LOLA crest lookups.
    */
   function attachCrosshairEvents() {
     const wrap = document.getElementById("inspector-skyline-wrap");
@@ -717,18 +754,35 @@
       const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
       // Convert the crosshair's horizontal fraction into the chart's 0–360° azimuth.
       const pct = x / rect.width;
-      const az = Math.round(pct * 360);
+      const az = Math.min(359, Math.max(0, Math.round(pct * 360)));
 
-      // Approximate terrain crest elevation at this azimuth
-      const simulatedEl = (Math.sin(pct * Math.PI * 4) * 2.8 + 1.2).toFixed(1);
-      const isClear = simulatedEl < 4.0;
+      const site = getInspectorSite(activeSiteKey);
+      const horizonMask = site._raw?.terrain?.horizon_mask_360;
+      const crestEl = (horizonMask && horizonMask[az] !== undefined)
+        ? +(horizonMask[az]).toFixed(1)
+        : 1.2;
+
+      const sunAz = site.skyline.sunAz || 180;
+      const sunEl = site.skyline.sunEl || 1.2;
+      const heading = getCompassHeading(az);
 
       line.style.display = "block";
       line.style.left = `${x}px`;
 
       badge.style.display = "block";
-      badge.style.left = `${x}px`;
-      badge.textContent = `Az: ${az}° · Terrain: +${simulatedEl}° · ${isClear ? 'Clear' : 'Occluded'}`;
+      // Position badge safely within view boundaries
+      const badgeWidth = 240;
+      const badgeLeft = Math.min(rect.width - badgeWidth, Math.max(10, x - (badgeWidth / 2)));
+      badge.style.left = `${badgeLeft}px`;
+
+      // Check proximity to sun azimuth
+      const azDiff = Math.abs(az - Math.round(sunAz));
+      if (azDiff <= 6 || azDiff >= 354) {
+        const delta = (sunEl - crestEl).toFixed(1);
+        badge.innerHTML = `Az: <strong>${az}° (${heading})</strong> · LOLA: <strong>+${crestEl}°</strong> · Sun: <strong>${delta >= 0 ? '+' + delta + '° (Clear)' : delta + '° (Shadow)'}</strong>`;
+      } else {
+        badge.innerHTML = `Az: <strong>${az}° (${heading})</strong> · Topographic Crest: <strong>${crestEl >= 0 ? '+' : ''}${crestEl}°</strong>`;
+      }
     });
 
     wrap.addEventListener("mouseleave", () => {
@@ -738,23 +792,128 @@
   }
 
   /**
-   * Real-time Sun tracker update across the high-res skyline.
+   * Real-time 60 FPS telemetry update across all inspector views when scrubbing timeline.
    */
-  function updateLiveSunTracker() {
-    const sunTracker = document.getElementById("inspector-sun-tracker");
-    const sunTag = document.getElementById("inspector-sun-tag");
+  function updateInspectorTelemetry(sliderVal) {
+    if (!isOpen) return;
+
+    const val = typeof sliderVal === "number" ? sliderVal : (currentSliderVal || 50);
+    currentSliderVal = val;
+
     const site = getInspectorSite(activeSiteKey);
-    if (!sunTracker || !site) return;
+    if (!site || !site._raw || !window.LunarPhysics) return;
 
-    const initialAz = site.skyline.sunAz || 180;
-    const liveAz = (initialAz + Math.round(timelineProgress * 360)) % 360;
-    const leftPct = (liveAz / 360) * 100;
-    sunTracker.style.left = `${leftPct}%`;
+    const hourIdx = window.LunarPhysics.sliderToHourIndex(val);
+    const live = window.LunarPhysics.evaluateAtHour(site._raw, hourIdx);
+    if (!live) return;
 
-    if (sunTag) {
-      sunTag.textContent = `Sun (+${site.skyline.sunEl}°, ${liveAz}° Az)`;
+    const terrain = site._raw.terrain || {};
+    const horizonMask = terrain.horizon_mask_360;
+    const crestAtSun = (horizonMask && horizonMask[Math.round(live.sunAz) % 360] !== undefined)
+      ? horizonMask[Math.round(live.sunAz) % 360]
+      : 1.0;
+    const clearanceDelta = +(live.sunEl - crestAtSun).toFixed(1);
+    const clearanceDesc = live.isSunVis
+      ? `+${clearanceDelta}° above regional terrain crest`
+      : `${clearanceDelta}° below regional crest (Topographic Shadow)`;
+    const statusPill = live.isSunVis ? "✓ Line of Sight Maintained" : "✗ Topographic Shadow";
+    const pillClass = live.isSunVis ? "pill-ok" : "pill-warn";
+
+    // 1. Update Persistent Modal Footer Telemetry
+    const pill = document.getElementById("inspector-los-pill");
+    const detail = document.getElementById("inspector-clearance-detail");
+    if (pill) {
+      pill.textContent = statusPill;
+      pill.className = `telemetry-pill ${pillClass}`;
+    }
+    if (detail) {
+      detail.innerHTML = `Terrain clearance: <strong>${clearanceDesc}</strong>`;
+    }
+
+    // 2. Tab-Specific Live Visual Updates
+    if (activeTab === "horizon") {
+      const sunTracker = document.getElementById("inspector-sun-tracker");
+      const sunTag = document.getElementById("inspector-sun-tag");
+      const earthTracker = document.getElementById("inspector-earth-tracker");
+      const earthTag = document.getElementById("inspector-earth-tag") || (earthTracker ? earthTracker.querySelector(".tracker-tag") : null);
+
+      if (sunTracker) {
+        const sunLeftPct = (live.sunAz / 360) * 100;
+        const sunTopPct = Math.max(4, Math.min(96, 72.5 - (live.sunEl * 4.0)));
+        sunTracker.style.left = `${sunLeftPct}%`;
+        sunTracker.style.top = `${sunTopPct}%`;
+        if (sunTag) {
+          sunTag.textContent = `Sun (${live.sunEl >= 0 ? '+' : ''}${live.sunEl}°, ${live.sunAz}° Az)`;
+        }
+      }
+
+      if (earthTracker) {
+        const earthLeftPct = (live.earthAz / 360) * 100;
+        const earthTopPct = Math.max(4, Math.min(96, 72.5 - (live.earthEl * 4.0)));
+        earthTracker.style.left = `${earthLeftPct}%`;
+        earthTracker.style.top = `${earthTopPct}%`;
+        if (earthTag) {
+          earthTag.textContent = `Earth (${live.earthEl >= 0 ? '+' : ''}${live.earthEl}°, ${live.earthAz}° Az)`;
+        }
+      }
+
+      // Skyline 4-Stat Panel
+      const sunStat = document.getElementById("inspector-skyline-sun-val");
+      const earthStat = document.getElementById("inspector-skyline-earth-val");
+      const crestStat = document.getElementById("inspector-skyline-crest-val");
+      if (sunStat) sunStat.textContent = `${live.sunEl >= 0 ? '+' : ''}${live.sunEl}° (${live.sunAz}° Az)`;
+      if (earthStat) earthStat.textContent = `${live.earthEl >= 0 ? '+' : ''}${live.earthEl}° (${live.earthAz}° Az)`;
+      if (crestStat) {
+        crestStat.textContent = clearanceDesc;
+        crestStat.className = `stat-val ${live.isSunVis ? 'status-safe' : 'status-danger'}`;
+      }
+    } else if (activeTab === "solar") {
+      const cursorLine = document.getElementById("inspector-solar-cursor-line");
+      const cursorDot = document.getElementById("inspector-solar-cursor-dot");
+      const cursorX = ((hourIdx / 719) * 520).toFixed(1);
+      const cursorY = Math.max(15, Math.min(190, 120 - live.sunEl * 17)).toFixed(1);
+
+      if (cursorLine) {
+        cursorLine.setAttribute("x1", cursorX);
+        cursorLine.setAttribute("x2", cursorX);
+      }
+      if (cursorDot) {
+        cursorDot.setAttribute("cx", cursorX);
+        cursorDot.setAttribute("cy", cursorY);
+      }
+
+      const elVal = document.getElementById("inspector-solar-el-val");
+      const phaseVal = document.getElementById("inspector-solar-phase-val");
+      if (elVal) {
+        elVal.textContent = `${live.sunEl >= 0 ? '+' : ''}${live.sunEl}° (Hour ${hourIdx})`;
+      }
+      if (phaseVal) {
+        phaseVal.textContent = live.isSunVis ? `${live.nextSunsetHrs}h until sunset` : `Sunrise in ${live.nextSunriseHrs}h`;
+        phaseVal.className = `stat-val ${live.isSunVis ? 'status-safe' : 'status-warning'}`;
+      }
+    } else if (activeTab === "comms") {
+      const earthElVal = document.getElementById("inspector-comms-earth-el");
+      const rfMarginVal = document.getElementById("inspector-comms-rf-margin");
+      if (earthElVal) {
+        earthElVal.textContent = `${live.earthEl >= 0 ? '+' : ''}${live.earthEl}° (${live.isEarthVis ? 'Stable' : 'Occluded'})`;
+        earthElVal.className = `stat-val ${live.isEarthVis ? 'status-safe' : 'status-danger'}`;
+      }
+      if (rfMarginVal) {
+        rfMarginVal.textContent = `+${live.rfMargin.toFixed(1)} dB (${live.isEarthVis ? 'Nominal Link' : 'No Signal'})`;
+        rfMarginVal.className = `stat-val ${live.isEarthVis ? 'status-safe' : 'status-danger'}`;
+      }
     }
   }
+
+  // Expose API for verification testing and external control
+  window.SiteInspector = {
+    openInspector,
+    closeInspector,
+    getInspectorSite,
+    buildHighResSkylinePath,
+    buildHighResSolarPath,
+    updateInspectorTelemetry
+  };
 
   // Safe DOM ready check
   if (document.readyState === "loading") {

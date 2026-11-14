@@ -352,6 +352,23 @@
   stroke-width: 1;
 }
 
+/* Solar Stay Timeline Scrubber Cursor & Dot */
+#inspector-solar-cursor-line {
+  stroke: var(--accent-cyan, #5bc0be);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(91, 192, 190, 0.5));
+}
+
+#inspector-solar-cursor-dot {
+  fill: var(--accent-cyan, #5bc0be);
+  stroke: #ffffff;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 6px rgba(91, 192, 190, 0.8));
+  pointer-events: none;
+}
+
 /* Interactive Crosshair Tracking Guide */
 .inspector-crosshair-line {
   position: absolute;
