@@ -30,6 +30,15 @@
       });
     }
 
+    // Sync Candidate Sites Count Badge with Comparison Deck
+    const compareBadge = document.getElementById("top-nav-compare-badge");
+    if (window.eventBus && compareBadge) {
+      window.eventBus.on("cards:synced", (payload) => {
+        const total = (payload && typeof payload.total === "number") ? payload.total : 0;
+        compareBadge.textContent = total;
+      });
+    }
+
     // Backend FastAPI Status Pill
     const pill = document.getElementById("backend-status-pill");
     function updateBackendPill(online, detail) {
