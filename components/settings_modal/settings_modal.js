@@ -14,6 +14,8 @@
   // Default flight room cockpit preferences
   const defaultSettings = {
     theme: "earth",           // 'earth' | 'regolith' | 'space'
+    textureResolution: "8k",  // '8k' | '4k' | '2k'
+    reliefIntensity: "0.8",   // '1.0' | '0.8' | '0.4' | '0.0'
     terrainExag: "2",         // '1' (1.0x) | '2' (2.0x) | '3' (3.0x)
     shadowQuality: "high",    // 'high' | 'medium' | 'low'
     coordGrid: true,          // Polar latitude/longitude grid wireframe
@@ -103,6 +105,12 @@
   function syncUIFromSettings() {
     applyTheme(currentSettings.theme);
 
+    const texRes = document.getElementById("setting-texture-resolution");
+    if (texRes) texRes.value = currentSettings.textureResolution || "8k";
+
+    const relief = document.getElementById("setting-relief-intensity");
+    if (relief) relief.value = currentSettings.reliefIntensity || "0.8";
+
     const exag = document.getElementById("setting-terrain-exag");
     if (exag) exag.value = currentSettings.terrainExag;
 
@@ -151,6 +159,12 @@
    * and broadcasts updates across the EventBus to update 3D graphics and UI formatting.
    */
   function readSettingsFromUI() {
+    const texRes = document.getElementById("setting-texture-resolution");
+    if (texRes) currentSettings.textureResolution = texRes.value;
+
+    const relief = document.getElementById("setting-relief-intensity");
+    if (relief) currentSettings.reliefIntensity = relief.value;
+
     const exag = document.getElementById("setting-terrain-exag");
     if (exag) currentSettings.terrainExag = exag.value;
 
@@ -204,6 +218,8 @@
     // Broadcast granular events across the EventBus
     if (window.eventBus) {
       window.eventBus.emit("settings:changed", { ...currentSettings });
+      window.eventBus.emit("texture:resolution", { resolution: currentSettings.textureResolution });
+      window.eventBus.emit("relief:intensity", { intensity: parseFloat(currentSettings.reliefIntensity) });
       window.eventBus.emit("grid:toggle", { enabled: currentSettings.coordGrid });
       window.eventBus.emit("terrain:exaggeration", { factor: parseFloat(currentSettings.terrainExag) });
       window.eventBus.emit("cardlayout:changed", { layout: currentSettings.cardLayout });

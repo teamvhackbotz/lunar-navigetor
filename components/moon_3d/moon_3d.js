@@ -116,26 +116,136 @@
     scene.add(sunLight);
 
     // ------------------------------------------------------------------------
-    // E. Moon Mesh & Texture Mapping
-    // 64x64 segment UV sphere textured with NASA LROC global cylindrical mosaic.
+    // E. Moon Mesh & Ultra-High-Resolution (8K/4K) Texture + Normal Mapping
+    // High-tessellation UV sphere textured with authentic NASA LROC 8K albedo
+    // and LOLA-derived normal displacement relief for realistic crater shadows.
     // ------------------------------------------------------------------------
     const textureLoader = new THREE.TextureLoader();
-    const moonTexture = textureLoader.load(
-      "static/images/moon_equirectangular.jpg",
-      () => renderer.render(scene, camera) // Re-render immediately on texture arrival
-    );
-    moonTexture.wrapS = THREE.ClampToEdgeWrapping;
-    moonTexture.wrapT = THREE.ClampToEdgeWrapping;
+    const maxAnisotropy = (renderer.capabilities && typeof renderer.capabilities.getMaxAnisotropy === "function")
+      ? renderer.capabilities.getMaxAnisotropy()
+      : 8;
 
-    const geometry = new THREE.SphereGeometry(MOON_RADIUS, 64, 64);
+    let activeResolution = localStorage.getItem("moon_texture_resolution") || "8k";
+
+    function configureTexture(tex) {
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.anisotropy = maxAnisotropy;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = true;
+      tex.needsUpdate = true;
+    }
+
+    const assetBase = (window.location.pathname && window.location.pathname.includes('/components/')) ? '../../' : '';
+
+    // Load High-Relief Normal Map for sharp crater & rim depth under solar grazing light
+    const normalTexture = textureLoader.load(
+      `${assetBase}static/images/moon_normal.png`,
+      () => { if (renderer && scene && camera) renderer.render(scene, camera); }
+    );
+    configureTexture(normalTexture);
+
+    // 128x128 segment UV sphere for smooth lunar silhouette
+    const geometry = new THREE.SphereGeometry(MOON_RADIUS, 128, 128);
     const material = new THREE.MeshStandardMaterial({
-      map: moonTexture,
-      roughness: 0.88,  // Lunar regolith is highly diffuse (rough scattering)
-      metalness: 0.05
+      roughness: 0.85,
+      metalness: 0.04,
+      normalMap: normalTexture,
+      normalScale: new THREE.Vector2(0.8, 0.8)
     });
 
     moonMesh = new THREE.Mesh(geometry, material);
     scene.add(moonMesh);
+
+    // Progressive texture loader: Load 4K first for immediate responsiveness, then upgrade to 8K
+    function updateHUDUI(res, state) {
+      const dot = document.querySelector("#hud-clarity-status .hud-status-dot");
+      const text = document.getElementById("hud-res-text");
+      const buttons = document.querySelectorAll(".clarity-switcher-group .hud-pill-btn");
+
+      if (buttons) {
+        buttons.forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.res === res);
+        });
+      }
+
+      if (text) {
+        if (state === "loading") {
+          text.textContent = `LOADING ${res.toUpperCase()}...`;
+        } else {
+          text.textContent = res === "8k" ? "8K ULTRA-HD" : "4K HIGH-RES";
+        }
+      }
+
+      if (dot) {
+        dot.className = "hud-status-dot " + (state === "loading" ? "loading" : "pulse");
+      }
+    }
+
+    function applyTextureResolution(res) {
+      activeResolution = res;
+      localStorage.setItem("moon_texture_resolution", res);
+      updateHUDUI(res, "loading");
+
+      const file = (res === "8k")
+        ? `${assetBase}static/images/moon_8k.jpg`
+        : (res === "4k" ? `${assetBase}static/images/moon_4k.jpg` : `${assetBase}static/images/moon_equirectangular.jpg`);
+
+      textureLoader.load(
+        file,
+        (loadedTex) => {
+          configureTexture(loadedTex);
+          material.map = loadedTex;
+          material.needsUpdate = true;
+          updateHUDUI(res, "ready");
+          if (renderer && scene && camera) renderer.render(scene, camera);
+        },
+        undefined,
+        (err) => {
+          console.warn(`[moon_3d] Failed to load ${file}, falling back:`, err);
+          updateHUDUI(res, "ready");
+        }
+      );
+    }
+
+    // Initial progressive load: 4K instant start, then upgrade to 8K if requested
+    textureLoader.load(
+      `${assetBase}static/images/moon_4k.jpg`,
+      (fastTex) => {
+        configureTexture(fastTex);
+        material.map = fastTex;
+        material.needsUpdate = true;
+        if (activeResolution === "8k") {
+          applyTextureResolution("8k");
+        } else {
+          updateHUDUI("4k", "ready");
+        }
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      },
+      undefined,
+      () => {
+        applyTextureResolution(activeResolution);
+      }
+    );
+
+    // Bind HUD buttons
+    function bindClarityHUD() {
+      const buttons = document.querySelectorAll(".clarity-switcher-group .hud-pill-btn");
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const res = btn.dataset.res;
+          if (res && res !== activeResolution) {
+            applyTextureResolution(res);
+            if (window.eventBus) {
+              window.eventBus.emit("texture:resolution", { resolution: res });
+            }
+          }
+        });
+      });
+      updateHUDUI(activeResolution, "ready");
+    }
+    setTimeout(bindClarityHUD, 100);
 
     // ------------------------------------------------------------------------
     // F. Multi-Site 3D Surface Pins Container
@@ -291,6 +401,22 @@
         sunLight.position.x = Math.cos(angle) * 14;
         sunLight.position.z = Math.sin(angle) * 14;
         sunLight.position.y = Math.sin(angle * 2) * 0.8;
+      });
+
+      // Synchronize texture resolution from Settings Modal or external command
+      window.eventBus.on("texture:resolution", (data) => {
+        if (data && data.resolution && data.resolution !== activeResolution) {
+          applyTextureResolution(data.resolution);
+        }
+      });
+
+      // Dynamic normal relief intensity (topographic exaggeration)
+      window.eventBus.on("relief:intensity", (data) => {
+        if (data && typeof data.intensity === "number" && material && material.normalScale) {
+          material.normalScale.set(data.intensity, data.intensity);
+          material.needsUpdate = true;
+          if (renderer && scene && camera) renderer.render(scene, camera);
+        }
       });
     }
 

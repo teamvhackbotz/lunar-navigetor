@@ -14,16 +14,23 @@ The **Collapsible 2D Moon Map** is a slide-up drawer located directly above the 
 
 ### B. Projections & Cartography
 The 2D map module provides three synchronized projection modes:
-1. **Global Equirectangular Basemap:** Full lunar surface ($180^\circ\text{W} - 180^\circ\text{E}$, $90^\circ\text{N} - 90^\circ\text{S}$).
-2. **South Pole Stereographic Disc (Artemis / CLPS Focus):** Circular projection centered at the South Pole ($70^\circ\text{S} - 90^\circ\text{S}$) with concentric rings at $80^\circ\text{S}, 85^\circ\text{S}, 88^\circ\text{S}$ with zero polar distortion.
+1. **Global Equirectangular Basemap:** Full lunar surface ($180^\circ\text{W} - 180^\circ\text{E}$, $90^\circ\text{N} - 90^\circ\text{S}$) powered by a native **8K Ultra-High Definition** ($8192 \times 4096$) NASA LROC mosaic basemap (`moon_8k.jpg` with `moon_4k.jpg` fallback) styled with high-contrast hardware-accelerated rendering.
+2. **South Pole Stereographic Disc (Artemis / CSA / CLPS Focus):** Circular projection centered at the South Pole ($70^\circ\text{S} - 90^\circ\text{S}$) with concentric rings at $80^\circ\text{S}, 85^\circ\text{S}, 88^\circ\text{S}$ with zero polar distortion.
 3. **North Pole Stereographic Disc (Cold Trap / Science Comparison):** Circular projection centered at the North Pole ($70^\circ\text{N} - 90^\circ\text{N}$) covering Hermite and Peary craters.
 
 - **Overlay Layers:**
   - Latitude / Longitude coordinate graticule.
   - Named geological features (craters, maria, mountain massifs).
-  - Curated landing site icons (Apollo, Artemis, CLPS, International).
+  - Curated landing site icons (Apollo, Artemis, CLPS, Canadian Lunar Rover / CSA, International).
+  - Header Resolution Badge (`8K UHD` / `4K HD`).
 
 ### C. Interactive Tools
+- **Interactive Multi-Level Zoom & Pan ($1.0\times - 5.0\times$):**
+  - Dedicated header zoom buttons (`+`, `−`, `⟲ Reset`) with real-time zoom readout badge (`1.0×` to `5.0×`).
+  - Mouse wheel zoom (`wheel` event) on the active 2D canvas with $0.25\times$ fine increments.
+  - Smooth pan/drag when zoomed in ($>1.0\times$) with cursor states (`grab` / `grabbing`) and automatic boundary clamping.
+  - Scale/pan-invariant coordinate translation ensuring pinpoint clicking accuracy and persistent marker alignment on zoomed terrain features.
+  - Keyboard hotkeys: `+` / `=` to zoom in, `−` / `_` to zoom out, `0` / `R` to reset zoom.
 - **Point Marking & Coordinate Drop:**
   - Clicking on the 2D map drops an interactive pin.
   - Automatically broadcasts the coordinate to the **3D Moon** and the **Top Comparison Cards**.

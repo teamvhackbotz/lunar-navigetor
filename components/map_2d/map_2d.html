@@ -33,6 +33,11 @@
       <span class="distance-pill" id="map-distance-display" aria-live="polite" title="Click 2 points on any map to measure lunar surface distance">
         📏 <strong>0.0 km</strong>
       </span>
+
+      <!-- 8K Basemap Clarity Badge -->
+      <span class="distance-pill map-clarity-pill" id="map-clarity-badge" title="Basemap Resolution: NASA LROC 8K Ultra-High Definition (8192×4096)">
+        ✨ <strong>8K UHD</strong>
+      </span>
     </div>
 
     <!-- Segmented Projection Switcher Tabs -->
@@ -51,8 +56,22 @@
       </button>
     </div>
 
-    <!-- Header Tools: Maximize Height & Collapse Icon Buttons -->
+    <!-- Header Tools: Zoom Controls, Maximize Height & Collapse Icon Buttons -->
     <div class="map-header-tools">
+      <!-- 2D Zoom Controls (1.0x - 5.0x with Pan Support) -->
+      <div class="map-zoom-group" role="group" aria-label="2D Map Zoom Controls">
+        <button type="button" class="map-zoom-btn" id="btn-map-zoom-out" title="Zoom Out (− or Wheel Down)" aria-label="Zoom Out" disabled>
+          −
+        </button>
+        <span class="map-zoom-badge" id="map-zoom-display" title="Active 2D Zoom Level">1.0×</span>
+        <button type="button" class="map-zoom-btn" id="btn-map-zoom-in" title="Zoom In (+ or Wheel Up)" aria-label="Zoom In">
+          +
+        </button>
+        <button type="button" class="map-zoom-btn btn-zoom-reset" id="btn-map-zoom-reset" title="Reset Zoom & Pan (1.0×)" aria-label="Reset Zoom">
+          ⟲
+        </button>
+      </div>
+
       <!-- Height Maximize / Restore Toggle (Icon only) -->
       <button type="button" class="map-tool-btn icon-only" id="btn-toggle-maximize" title="Maximize Deck Height" aria-label="Maximize Deck Height">
         ⛶
