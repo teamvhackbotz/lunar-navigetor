@@ -516,7 +516,7 @@ body {
 .main-viewport {
   position: absolute;
   top: 0;
-  bottom: var(--height-bottom-cockpit);
+  bottom: var(--height-bottom-cockpit, 92px);
   left: 0;
   right: 0;
   background: radial-gradient(circle at 60% 40%, #1c1e21 0%, #0d0f11 75%);
@@ -648,7 +648,7 @@ body {
 .drawer-left-horizon {
   position: absolute;
   top: var(--height-top-nav);
-  bottom: var(--height-bottom-cockpit);
+  bottom: var(--height-bottom-cockpit, 92px);
   left: 0;
   width: var(--width-left-drawer);
   background: rgba(30, 32, 34, 0.98);
@@ -745,7 +745,7 @@ body {
    ======================================================== */
 .drawer-bottom-map {
   position: absolute;
-  bottom: var(--height-bottom-cockpit);
+  bottom: var(--height-bottom-cockpit, 92px);
   left: 0;
   right: 0;
   margin: 0 auto;
@@ -879,7 +879,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  height: var(--height-bottom-cockpit);
+  height: var(--height-bottom-cockpit, 92px);
+  min-height: 92px;
   z-index: 100;
 }
 
@@ -897,14 +898,18 @@ body {
 
 .mission-toolbar {
   height: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  gap: 8px;
+  overflow: hidden;
 }
 
-.toolbar-playback-group { display: flex; align-items: center; gap: 6px; }
+.toolbar-playback-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .btn-media {
   width: 28px; height: 28px;
   border-radius: 4px;
@@ -928,19 +933,37 @@ body {
 }
 .btn-speed.active { background: var(--accent-slate); color: #fff; }
 
+.btn-edit-timeline {
+  border-color: var(--border-medium);
+  gap: 4px;
+}
+.btn-edit-timeline:hover {
+  border-color: var(--accent-terracotta);
+}
+.btn-edit-timeline.active {
+  background: var(--accent-terracotta) !important;
+  border-color: var(--accent-terracotta) !important;
+  color: #fff !important;
+}
+
 .toolbar-center-status {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 11px;
   font-family: var(--font-mono);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
 }
-.status-clock { color: var(--accent-sand); font-weight: 600; }
-.status-coord { color: var(--text-primary); }
-.status-phase { color: var(--text-muted); }
-.status-divider { color: var(--border-medium); }
+.status-clock { color: var(--accent-sand); font-weight: 600; flex-shrink: 0; white-space: nowrap; }
+.status-coord { color: var(--text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-phase { color: var(--text-muted); flex-shrink: 0; white-space: nowrap; }
+.status-divider { color: var(--border-medium); flex-shrink: 0; }
 
-.toolbar-tools-group { display: flex; align-items: center; gap: 6px; }
+.toolbar-tools-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .btn-tool {
   font-size: 11px; font-weight: 600; padding: 5px 12px;
   background: var(--bg-card); border: 1px solid var(--border-medium);
@@ -959,10 +982,13 @@ body {
 /* TIER 2: FULL-WIDTH TIMELINE WITH PRECISION SCALE */
 .full-timeline-strip {
   height: 48px;
+  min-height: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 0 16px 4px;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .timeline-meta-row {
@@ -1229,4 +1255,50 @@ body {
 .ai-text-input:focus { outline: none; border-color: var(--border-active); }
 .btn-ai-send {
   background: var(--accent-terracotta); border: none; color: #fff; border-radius: 4px; padding: 0 10px; cursor: pointer;
+}
+
+/* ========================================================
+   BOTTOM COCKPIT RESPONSIVE BREAKPOINTS
+   ======================================================== */
+@media (max-width: 1180px) and (min-width: 901px) {
+  .mission-toolbar {
+    padding: 0 10px;
+    gap: 6px;
+  }
+  .btn-edit-timeline span {
+    display: none;
+  }
+  .btn-edit-timeline {
+    padding: 5px 8px;
+  }
+  .toolbar-center-status {
+    font-size: 10px;
+    gap: 6px;
+  }
+  .status-coord {
+    max-width: 200px;
+  }
+  .btn-tool {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .full-timeline-strip {
+    padding: 0 10px 4px;
+  }
+}
+
+@media (max-width: 900px) {
+  :root { --height-bottom-cockpit: 116px; }
+  #mount-timeline {
+    height: 116px !important;
+    min-height: 116px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  :root { --height-bottom-cockpit: 122px; }
+  #mount-timeline {
+    height: 122px !important;
+    min-height: 122px !important;
+  }
 }
