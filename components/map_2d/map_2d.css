@@ -27,6 +27,7 @@
   min-width: 440px;
   max-width: calc(100vw - 96px);
   height: var(--height-bottom-map, 390px);
+  max-height: calc(100dvh - var(--height-bottom-cockpit, 92px) - var(--height-top-nav, 54px) - 16px);
   background: rgba(24, 26, 28, 0.98);
   border-top: 2px solid var(--border-medium, #4e4f52);
   border-left: 1px solid var(--border-medium, #4e4f52);

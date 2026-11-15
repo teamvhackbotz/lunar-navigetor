@@ -17,10 +17,11 @@
    -------------------------------------------------------------------------- */
 :root {
   /* Layout Dimensions & Boundaries */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
   --width-left-drawer: 380px;
   --width-right-drawer: 380px;
   --height-top-nav: 54px;
-  --height-bottom-cockpit: 92px;
+  --height-bottom-cockpit: calc(92px + var(--safe-bottom));
   --height-bottom-map: 390px;
   --height-bottom-map-max: 500px;
 
@@ -55,11 +56,16 @@
   user-select: none;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   background-color: var(--bg-deep-space);
   color: var(--text-primary);
   font-family: var(--font-main);
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -738,6 +744,7 @@ body {
   min-width: 440px;
   max-width: calc(100vw - 96px);
   height: var(--height-bottom-map);
+  max-height: calc(100dvh - var(--height-bottom-cockpit, 92px) - var(--height-top-nav, 54px) - 16px);
   background: rgba(30, 32, 34, 0.98);
   border-top: 2px solid var(--border-medium);
   border-left: 1px solid var(--border-medium);
@@ -879,6 +886,8 @@ body {
   flex-direction: column;
   z-index: 100;
   box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+  padding-bottom: var(--safe-bottom, 0px);
+  box-sizing: border-box;
 }
 
 .mission-toolbar {
@@ -1273,17 +1282,17 @@ body {
 }
 
 @media (max-width: 900px) {
-  :root { --height-bottom-cockpit: 116px; }
+  :root { --height-bottom-cockpit: calc(116px + var(--safe-bottom, 0px)); }
   #mount-timeline {
-    height: 116px !important;
-    min-height: 116px !important;
+    height: calc(116px + var(--safe-bottom, 0px)) !important;
+    min-height: calc(116px + var(--safe-bottom, 0px)) !important;
   }
 }
 
 @media (max-width: 600px) {
-  :root { --height-bottom-cockpit: 122px; }
+  :root { --height-bottom-cockpit: calc(122px + var(--safe-bottom, 0px)); }
   #mount-timeline {
-    height: 122px !important;
-    min-height: 122px !important;
+    height: calc(122px + var(--safe-bottom, 0px)) !important;
+    min-height: calc(122px + var(--safe-bottom, 0px)) !important;
   }
 }
