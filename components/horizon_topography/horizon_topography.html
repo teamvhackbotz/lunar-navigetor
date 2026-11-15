@@ -46,15 +46,57 @@
 
       <!-- Mission Archetype Selector -->
       <div class="mission-archetype-selector" role="tablist" aria-label="Mission Archetype">
-        <button type="button" class="archetype-pill active" data-archetype="crewed" title="Artemis Crewed Sortie (LTV)">🧑‍🚀 Crewed</button>
-        <button type="button" class="archetype-pill" data-archetype="rover" title="Robotic Prospecting Rover (VIPER/CADRE)">🤖 Rover</button>
-        <button type="button" class="archetype-pill" data-archetype="lander" title="Stationary Science Lander (CLPS)">📡 Lander</button>
-        <button type="button" class="archetype-pill" data-archetype="basecamp" title="Extended Surface Outpost / Base Camp">🏗️ Base Camp</button>
+        <button type="button" class="archetype-pill active" data-archetype="crewed" title="Artemis Crewed Sortie (LTV)">
+          <svg class="archetype-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a8 8 0 0 0-8 8v3a8 8 0 0 0 16 0v-3a8 8 0 0 0-8-8z"/>
+            <path d="M8 11a4 4 0 0 1 8 0v1a4 4 0 0 1-8 0v-1z"/>
+            <path d="M6 21v-1a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/>
+          </svg>
+          <span>Crewed</span>
+        </button>
+        <button type="button" class="archetype-pill" data-archetype="rover" title="Robotic Prospecting Rover (VIPER/CADRE)">
+          <svg class="archetype-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="5" cy="18" r="3"/>
+            <circle cx="19" cy="18" r="3"/>
+            <path d="M8 18h8"/>
+            <path d="M5 15l2-6h9l3 6"/>
+            <path d="M11 9V5"/>
+            <circle cx="11" cy="4" r="1.5" fill="currentColor"/>
+          </svg>
+          <span>Rover</span>
+        </button>
+        <button type="button" class="archetype-pill" data-archetype="lander" title="Stationary Science Lander (CLPS)">
+          <svg class="archetype-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 8h8l2 5H6l2-5z"/>
+            <path d="M10 5h4v3h-4z"/>
+            <path d="M6 13l-3 7"/>
+            <path d="M18 13l3 7"/>
+            <path d="M12 13v6"/>
+            <path d="M2 20h3"/>
+            <path d="M19 20h3"/>
+            <path d="M10 19h4"/>
+          </svg>
+          <span>Lander</span>
+        </button>
+        <button type="button" class="archetype-pill" data-archetype="basecamp" title="Extended Surface Outpost / Base Camp">
+          <svg class="archetype-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 20h18"/>
+            <path d="M4 20c0-6 3.6-11 8-11s8 5 8 11"/>
+            <path d="M9 20v-4a3 3 0 0 1 6 0v4"/>
+            <path d="M12 9V4"/>
+            <path d="M9 4h6"/>
+          </svg>
+          <span>Base Camp</span>
+        </button>
       </div>
     </div>
     
     <!-- Close Button: Collapses the left drawer -->
-    <label for="toggle-left-horizon" class="btn-close-drawer" title="Close Planner" role="button" tabindex="0">◀</label>
+    <label for="toggle-left-horizon" class="btn-close-drawer" title="Close Planner" role="button" tabindex="0" aria-label="Close Planner">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </label>
   </header>
 
   <!-- Scrollable Analysis Content Container -->
@@ -154,7 +196,16 @@
             <span class="wp-title">Touchdown Landing Zone</span>
             <span class="wp-meta">0.0 km · Slope: 4.2° <span class="tag-safe">Nominal</span></span>
           </div>
-          <button class="btn-wp-focus" title="Center 3D on Waypoint">📍</button>
+          <button class="btn-wp-focus" title="Center 3D on Waypoint" aria-label="Center 3D on Waypoint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wp-target-icon">
+              <circle cx="12" cy="12" r="7"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+          </button>
         </div>
 
         <!-- WP 2 -->
@@ -164,7 +215,16 @@
             <span class="wp-title">Eastern Saddle Station</span>
             <span class="wp-meta">1.2 km · Slope: 6.8° <span class="tag-warn">Caution</span></span>
           </div>
-          <button class="btn-wp-focus" title="Center 3D on Waypoint">📍</button>
+          <button class="btn-wp-focus" title="Center 3D on Waypoint" aria-label="Center 3D on Waypoint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wp-target-icon">
+              <circle cx="12" cy="12" r="7"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+          </button>
         </div>
 
         <!-- WP 3 -->
@@ -174,7 +234,16 @@
             <span class="wp-title">PSR Cold Trap Perimeter</span>
             <span class="wp-meta">2.4 km · Slope: 14.1° <span class="tag-danger">Steep Flank</span></span>
           </div>
-          <button class="btn-wp-focus" title="Center 3D on Waypoint">📍</button>
+          <button class="btn-wp-focus" title="Center 3D on Waypoint" aria-label="Center 3D on Waypoint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wp-target-icon">
+              <circle cx="12" cy="12" r="7"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -229,7 +298,11 @@
     </div>
     
     <!-- Close Button: Collapses the right drawer -->
-    <label for="toggle-right-horizon" class="btn-close-drawer" title="Close Overlays" role="button" tabindex="0">▶</label>
+    <label for="toggle-right-horizon" class="btn-close-drawer" title="Close Overlays" role="button" tabindex="0" aria-label="Close Overlays">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </label>
   </header>
 
   <!-- Scrollable Analysis Content Container -->
