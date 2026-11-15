@@ -249,7 +249,7 @@
         container.style.cursor = cur;
         container.classList.toggle("tool-mark", currentTool === "mark");
       }
-      if (controls) controls.enabled = true; // OrbitControls enabled in both grab and mark so user can rotate/zoom to explore and position targets
+      if (controls) controls.enabled = currentTool === "grab";
     }
     updateCursor();
 
@@ -316,7 +316,6 @@
               name: siteName,
               source: "moon-3d",
             });
-            window.eventBus.emit("tool:set", { tool: "grab" });
           }
         }
       }

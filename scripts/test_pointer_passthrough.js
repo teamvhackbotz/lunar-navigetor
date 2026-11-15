@@ -65,23 +65,20 @@ function runTests() {
 
   // 3. Verify moon_3d.js controls & touch events
   console.log("\n3. moon_3d.js OrbitControls & Touch Handling:");
-  if (moon3dJs.includes("controls.enabled = currentTool === \"grab\"")) {
-    throw new Error("FAIL: controls.enabled must not be disabled when tool is mark");
+  if (!moon3dJs.includes("controls.enabled = currentTool === \"grab\"")) {
+    throw new Error("FAIL: controls.enabled must be disabled in mark mode to prevent pointer capture from intercepting site marking");
   }
-  if (!moon3dJs.includes("controls.enabled = true")) {
-    throw new Error("FAIL: controls.enabled must remain true");
-  }
-  console.log("  ✓ controls.enabled remains enabled in both grab and mark modes");
+  console.log("  ✓ controls.enabled correctly isolated to grab mode so mark mode reliably captures clicks");
 
   if (!moon3dJs.includes('renderer.domElement.addEventListener("touchstart"')) {
     throw new Error("FAIL: renderer.domElement must listen for touchstart");
   }
   console.log("  ✓ renderer.domElement records touchstart coordinates for mobile devices");
 
-  if (!moon3dJs.includes('window.eventBus.emit("tool:set", { tool: "grab" })')) {
-    throw new Error("FAIL: moon_3d.js must emit tool:set with grab after placing pin");
+  if (moon3dJs.includes('window.eventBus.emit("tool:set", { tool: "grab" })')) {
+    throw new Error("FAIL: moon_3d.js must not prematurely force tool back to grab so user can continue marking multiple sites");
   }
-  console.log("  ✓ moon_3d.js reverts tool to grab upon placing a site pin");
+  console.log("  ✓ moon_3d.js keeps mark tool active across multiple site clicks");
 
   console.log("\n✅ All Touch & Pointer-Events Passthrough tests passed successfully!");
 }
