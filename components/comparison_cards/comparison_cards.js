@@ -81,6 +81,9 @@
       const earthAz = live ? live.earthAz : 240;
       const isSunVis = live ? live.isSunVis : true;
       const nextSunset = live ? `${live.nextSunsetHrs}h 00m` : "96h 00m";
+      const tdMatch = (terrain.slope_svg_path || "").match(/Q\s*\d+\s*,\s*\d+\s+(\d+)\s*,\s*(\d+)/);
+      const tdX = tdMatch ? parseInt(tdMatch[1], 10) : 100;
+      const tdY = tdMatch ? parseInt(tdMatch[2], 10) : 34;
 
       return {
         _authentic: authentic,
@@ -102,10 +105,10 @@
             : `Sun is in <strong>Topographic Shadow</strong>. Direct Earth line-of-sight is <strong>${earthEl > 0 ? 'Clear (+' + earthEl + '°)' : 'Occluded'}</strong>.`
         },
         slope: {
-          title: "📈 Local Crater Radial Cross-Section",
+          title: "Crater Radial Profile",
           svgPath: terrain.slope_svg_path,
-          touchdownX: 100,
-          touchdownY: 34,
+          touchdownX: tdX,
+          touchdownY: tdY,
           slopeVal: `${terrain.slope_touchdown_deg}°`,
           slopeStatus: terrain.slope_status,
           slopeColor: terrain.slope_color,
@@ -250,6 +253,12 @@
             <span>High</span><span>Mid</span><span>Low</span>
           </div>
           <svg viewBox="0 0 300 80" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="slope-card-grad-${siteKey}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7d967e" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#7d967e" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
             <g class="subcard-chart-grid">
               <line x1="0" y1="8" x2="300" y2="8"></line>
               <line x1="0" y1="40" x2="300" y2="40"></line>
@@ -258,6 +267,7 @@
               <line x1="150" y1="0" x2="150" y2="80"></line>
               <line x1="299" y1="0" x2="299" y2="80"></line>
             </g>
+            <path d="${s.svgPath} L300,80 L0,80 Z" fill="url(#slope-card-grad-${siteKey})"></path>
             <path d="${s.svgPath}" fill="none" stroke="var(--accent-sage, #7d967e)" stroke-width="2.5"></path>
             <circle cx="${s.touchdownX}" cy="${s.touchdownY}" r="4.5" fill="var(--accent-terracotta, #c87d55)"></circle>
             <text x="${s.touchdownX + 8}" y="${s.touchdownY - 2}" fill="var(--text-primary, #ede8e1)" font-size="8.5" font-family="sans-serif">Touchdown</text>
@@ -316,8 +326,8 @@
             <path d="${sol.svgPath}" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="1.8"></path>
           </svg>
         </div>
-        <div class="subcard-axis-caption"><span>Solar Elevation (°)</span><span>Timeline (Day 1 - 14)</span></div>
-        <div class="subcard-profile-x-ticks" aria-hidden="true"><span>Day 1</span><span>Day 7</span><span>Day 14</span></div>
+        <div class="subcard-axis-caption"><span>Solar Elevation (°)</span><span>Mission Day (Nov 2026)</span></div>
+        <div class="subcard-profile-x-ticks" aria-hidden="true"><span>Day 1</span><span>Day 8</span><span>Day 15</span><span>Day 22</span><span>Day 30</span></div>
         <div class="subcard-slope-stat-grid">
           <div class="subcard-stat-item">
             <span class="subcard-stat-label">Daylight Ratio</span>
@@ -387,7 +397,7 @@
           svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>'
         },
         solar: {
-          title: "14-Day Solar Profile",
+          title: "Solar Stay Profile",
           svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>'
         },
         comms: {
