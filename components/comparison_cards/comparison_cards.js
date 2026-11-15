@@ -987,34 +987,65 @@
       <!-- Primary Summary Card -->
       <div class="site-card active" data-site-id="${siteKey}" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${p.name}">
         <div class="card-header">
-          <div>
+          <div class="card-header-main">
             <div class="card-header-badge-row">
               <span class="site-number-badge">1</span>
               <span class="site-tag ${tagClass}">${tagLabel}</span>
             </div>
             <h3 class="site-name">${p.name}</h3>
-            <span class="site-coords">${latStr} · ${lonStr} · ${p.elevation}</span>
+            <div class="site-coords-row">
+              <span class="site-coords">
+                <span class="coords-geo">${latStr} · ${lonStr}</span>
+                <span class="coords-sep">·</span>
+                <span class="coords-elev">${p.elevation}</span>
+              </span>
+            </div>
           </div>
-          <button class="card-dismiss" title="Remove site">×</button>
+          <button class="card-dismiss" title="Remove site" aria-label="Remove site">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
 
         <!-- 4-Metric Landing Hazard & Celestial Telemetry Grid -->
         <div class="card-metrics-grid">
           <div class="metric-item">
-            <span class="metric-label">Touchdown Slope</span>
-            <span class="metric-value ${p.slope.slopeColor}">${p.slope.slopeVal} <span class="tag-status">${p.slope.slopeStatus}</span></span>
+            <span class="metric-label">
+              <span class="metric-icon">∡</span>
+              <span>Touchdown Slope</span>
+            </span>
+            <span class="metric-value ${p.slope.slopeColor}">
+              <span class="metric-num">${p.slope.slopeVal}</span>
+              <span class="tag-status ${p.slope.slopeColor}">${p.slope.slopeStatus}</span>
+            </span>
           </div>
           <div class="metric-item">
-            <span class="metric-label">Solar Elevation</span>
-            <span class="metric-value ${p.horizon.sunEl > 0 ? "status-safe" : "status-danger"}">${p.horizon.sunEl > 0 ? "+" : ""}${p.horizon.sunEl}° <span class="metric-sub">(${p.horizon.sunEl > 0 ? "Rising" : "Shadow"})</span></span>
+            <span class="metric-label">
+              <span class="metric-icon">☼</span>
+              <span>Solar Elevation</span>
+            </span>
+            <span class="metric-value ${p.horizon.sunEl > 0 ? "status-safe" : "status-danger"}">
+              <span class="metric-num">${p.horizon.sunEl > 0 ? "+" : ""}${p.horizon.sunEl}°</span>
+              <span class="metric-sub">(${p.horizon.sunEl > 0 ? "Rising" : "Shadow"})</span>
+            </span>
           </div>
           <div class="metric-item">
-            <span class="metric-label">Next Sunset</span>
-            <span class="metric-value">${p.nextSunset || "96h 20m"}</span>
+            <span class="metric-label">
+              <span class="metric-icon">◷</span>
+              <span>Next Sunset</span>
+            </span>
+            <span class="metric-value">
+              <span class="metric-num">${p.nextSunset || "96h 20m"}</span>
+            </span>
           </div>
           <div class="metric-item">
-            <span class="metric-label">Earth Visibility</span>
-            <span class="metric-value status-safe">Clear (+${p.horizon.earthEl}°)</span>
+            <span class="metric-label">
+              <span class="metric-icon">☊</span>
+              <span>Earth Visibility</span>
+            </span>
+            <span class="metric-value status-safe">
+              <span class="metric-num">+${p.horizon.earthEl}°</span>
+              <span class="tag-status status-safe">Clear</span>
+            </span>
           </div>
         </div>
 
@@ -1031,15 +1062,30 @@
 
         <!-- Interactive Secondary View Selector Tabs -->
         <div class="card-detail-tabs">
-          <button class="btn-detail-tab" data-tab="horizon" title="360° Panoramic Skyline Mask">🌄 Horizon</button>
-          <button class="btn-detail-tab" data-tab="slope" title="Local Crater Radial Elevation Profile">📈 Slope</button>
-          <button class="btn-detail-tab" data-tab="solar" title="14-Day Solar Illumination Curve">☀️ Solar</button>
-          <button class="btn-detail-tab" data-tab="comms" title="Direct-to-Earth Line of Sight">📡 Comms</button>
+          <button class="btn-detail-tab" data-tab="horizon" title="360° Panoramic Skyline Mask">
+            <svg class="tab-svg-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18l6-6 4 4 8-8 2 2v8H2z"/></svg>
+            <span>Horizon</span>
+          </button>
+          <button class="btn-detail-tab" data-tab="slope" title="Local Crater Radial Elevation Profile">
+            <svg class="tab-svg-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+            <span>Slope</span>
+          </button>
+          <button class="btn-detail-tab" data-tab="solar" title="14-Day Solar Illumination Curve">
+            <svg class="tab-svg-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <span>Solar</span>
+          </button>
+          <button class="btn-detail-tab" data-tab="comms" title="Direct-to-Earth Line of Sight">
+            <svg class="tab-svg-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+            <span>Comms</span>
+          </button>
         </div>
 
         <!-- Card Action Toolbar -->
         <div class="card-actions">
-          <button class="btn-card-action btn-focus-site" title="Center 3D Moon camera on this site">Focus 3D</button>
+          <button class="btn-card-action btn-focus-site" title="Center 3D Moon camera on this site">
+            <svg class="btn-focus-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+            <span>Focus 3D</span>
+          </button>
         </div>
       </div>
 
@@ -1232,6 +1278,16 @@
       SITE_PROFILES[siteKey] = generateSiteProfile(siteKey, siteData);
     }
     const profile = SITE_PROFILES[siteKey];
+
+    // Remove any existing duplicate column for this site before appending
+    const existingCol = findCardByCoordsOrName(siteData.lat, siteData.lon, siteData.name);
+    if (existingCol) {
+      existingCol.remove();
+    }
+    const existingById = track.querySelector(`.site-card-column[data-site-id="${siteKey}"]`);
+    if (existingById) {
+      existingById.remove();
+    }
 
     // Remove empty placeholder if present
     const emptyMsg = track.querySelector(".cards-empty-state");
