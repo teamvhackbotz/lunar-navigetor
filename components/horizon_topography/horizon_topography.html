@@ -39,10 +39,18 @@
   
   <!-- Drawer Header -->
   <header class="drawer-header">
-    <div>
-      <div class="drawer-tag">Artemis III Surface Operations</div>
+    <div style="flex: 1; min-width: 0;">
+      <div class="drawer-tag" id="planner-mission-tag">Artemis III Surface Operations</div>
       <h3 class="drawer-title">Mission & Traverse Planner</h3>
       <span class="drawer-subtitle" id="planner-site-name">📍 Active: Peak Near Shackleton</span>
+
+      <!-- Mission Archetype Selector -->
+      <div class="mission-archetype-selector" role="tablist" aria-label="Mission Archetype">
+        <button type="button" class="archetype-pill active" data-archetype="crewed" title="Artemis Crewed Sortie (LTV)">🧑‍🚀 Crewed</button>
+        <button type="button" class="archetype-pill" data-archetype="rover" title="Robotic Prospecting Rover (VIPER/CADRE)">🤖 Rover</button>
+        <button type="button" class="archetype-pill" data-archetype="lander" title="Stationary Science Lander (CLPS)">📡 Lander</button>
+        <button type="button" class="archetype-pill" data-archetype="basecamp" title="Extended Surface Outpost / Base Camp">🏗️ Base Camp</button>
+      </div>
     </div>
     
     <!-- Close Button: Collapses the left drawer -->
@@ -72,16 +80,16 @@
       <!-- Power Telemetry Readouts Grid -->
       <div class="planner-metrics-grid">
         <div class="planner-metric-card">
-          <span class="p-label">Primary Power</span>
-          <span class="p-val status-safe">10.0 kW (VSAT)</span>
+          <span class="p-label" id="label-primary-power">Primary Power</span>
+          <span class="p-val status-safe" id="val-primary-power">10.0 kW (VSAT)</span>
         </div>
         <div class="planner-metric-card">
-          <span class="p-label">Darkness Reserve</span>
-          <span class="p-val">72 hrs (RFC)</span>
+          <span class="p-label" id="label-darkness-reserve">Darkness Reserve</span>
+          <span class="p-val" id="val-darkness-reserve">72 hrs (RFC)</span>
         </div>
         <div class="planner-metric-card">
-          <span class="p-label">Crew Compliment</span>
-          <span class="p-val">2 Astronauts</span>
+          <span class="p-label" id="label-crew-compliment">Crew Compliment</span>
+          <span class="p-val" id="val-crew-compliment">2 Astronauts</span>
         </div>
         <div class="planner-metric-card">
           <span class="p-label">Daylight Margin</span>
@@ -92,7 +100,7 @@
       <!-- Battery SoC Indicator -->
       <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
         <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted, #8c867c);">
-          <span>Lander Battery State-of-Charge</span>
+          <span id="label-battery-soc">Lander Battery State-of-Charge</span>
           <span style="color: var(--accent-sage, #7d967e); font-weight: 600;" id="val-battery-soc">94% Nominal</span>
         </div>
         <div class="bar-track">
@@ -104,27 +112,27 @@
     <!-- Section 2: Rover Mobility & LTV Constraints -->
     <section class="panel-section">
       <div class="section-title-row">
-        <span class="section-tag">Surface Mobility</span>
-        <h4 class="section-heading">Lunar Terrain Vehicle (LTV)</h4>
+        <span class="section-tag" id="mobility-section-tag">Surface Mobility</span>
+        <h4 class="section-heading" id="mobility-section-heading">Lunar Terrain Vehicle (LTV)</h4>
       </div>
-      <p class="section-desc">Traverse boundaries and maximum unassisted walk-back radius.</p>
+      <p class="section-desc" id="mobility-section-desc">Traverse boundaries and maximum unassisted walk-back radius.</p>
 
       <div class="planner-metrics-grid">
         <div class="planner-metric-card">
-          <span class="p-label">Operating Radius</span>
-          <span class="p-val">12.5 km</span>
+          <span class="p-label" id="label-operating-radius">Operating Radius</span>
+          <span class="p-val" id="val-operating-radius">12.5 km</span>
         </div>
         <div class="planner-metric-card">
-          <span class="p-label">Nominal Speed</span>
-          <span class="p-val">8.0 km/h</span>
+          <span class="p-label" id="label-nominal-speed">Nominal Speed</span>
+          <span class="p-val" id="val-nominal-speed">8.0 km/h</span>
         </div>
         <div class="planner-metric-card">
           <span class="p-label">Planned Traverse</span>
           <span class="p-val" id="val-total-traverse">18.4 km total</span>
         </div>
         <div class="planner-metric-card">
-          <span class="p-label">Walk-Back Margin</span>
-          <span class="p-val status-safe">Safe (&lt; 5.0 km)</span>
+          <span class="p-label" id="label-safety-margin">Walk-Back Margin</span>
+          <span class="p-val status-safe" id="val-walkback-safety">Safe (&lt; 5.0 km)</span>
         </div>
       </div>
     </section>
@@ -181,10 +189,10 @@
     <section class="panel-section">
       <div class="section-title-row">
         <span class="section-tag">Science Objectives</span>
-        <h4 class="section-heading">Deployable Instrument Roster</h4>
+        <h4 class="section-heading" id="payload-section-heading">Deployable Instrument Roster</h4>
       </div>
 
-      <div class="checklist-grid">
+      <div class="checklist-grid" id="science-payload-checklist">
         <label class="check-item">
           <input type="checkbox" checked>
           <span>Regolith Volatiles Mass Spectrometer (PCMS)</span>

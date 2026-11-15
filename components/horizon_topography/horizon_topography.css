@@ -185,6 +185,47 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* Mission Archetype Switcher */
+.mission-archetype-selector {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  background: var(--bg-cockpit, #17181a);
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle, #3a3c3f);
+}
+
+.archetype-pill {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted, #8c867c);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px 3px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.archetype-pill:hover {
+  color: var(--text-primary, #ede8e1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.archetype-pill.active {
+  background: rgba(200, 125, 85, 0.18);
+  border-color: var(--accent-terracotta, #c87d55);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
 .drawer-content-scroll {
   flex: 1;
   overflow-y: auto;
@@ -277,8 +318,10 @@
   border: 1px solid var(--border-subtle, #3a3c3f);
 }
 
-.bar-fill { height: 100%; transition: width 0.3s ease; }
+.bar-fill { height: 100%; transition: width 0.3s ease, background-color 0.3s ease; }
 .fill-sage { background: var(--accent-sage, #7d967e); }
+.fill-warn { background: var(--accent-sand, #c99e52); }
+.fill-danger { background: var(--accent-danger, #b8544f); }
 
 /* Custom range inputs */
 .custom-range {
@@ -389,6 +432,25 @@
   border-left: 3px solid var(--accent-sage, #7d967e);
   color: var(--text-secondary, #beb7ac);
   margin-top: 4px;
+  transition: all 0.2s ease;
+}
+
+.hazard-callout.ok {
+  background: rgba(125, 150, 126, 0.12);
+  border-left-color: var(--accent-sage, #7d967e);
+  color: var(--text-secondary, #beb7ac);
+}
+
+.hazard-callout.warning {
+  background: rgba(201, 158, 82, 0.14);
+  border-left-color: var(--accent-sand, #c99e52);
+  color: var(--text-primary, #ede8e1);
+}
+
+.hazard-callout.danger {
+  background: rgba(184, 84, 79, 0.16);
+  border-left-color: var(--accent-danger, #b8544f);
+  color: var(--text-primary, #ede8e1);
 }
 
 /* Checklist items */
