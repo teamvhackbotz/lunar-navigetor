@@ -774,6 +774,153 @@
   let activeBasemap = "lroc";
 
   /**
+   * Analytical layer overlay active states.
+   */
+  const layerStates = {
+    slope: true,
+    psr: true,
+    ice: false,
+    dte: false
+  };
+
+  let psrDisabledByLatitude = false;
+
+  /**
+   * Sets the active state of an analytical overlay layer and emits layer:toggle across EventBus.
+   * @param {string} layerId - 'slope' | 'psr' | 'ice' | 'dte'
+   * @param {boolean} enabled
+   * @returns {boolean} Whether the layer state change was applied
+   */
+  function setLayer(layerId, enabled) {
+    if (!(layerId in layerStates)) {
+      console.warn(`[GISOverlays] Unknown layer '${layerId}'.`);
+      return false;
+    }
+
+    // Physical constraint: Cannot enable PSR at equatorial latitudes
+    if (layerId === "psr" && psrDisabledByLatitude && enabled) {
+      console.warn("[GISOverlays] Cannot enable PSR layer: site latitude |lat| < 75° has no permanent shadow.");
+      return false;
+    }
+
+    layerStates[layerId] = !!enabled;
+
+    // Synchronize DOM checkbox
+    const checkbox = document.getElementById(`layer-toggle-${layerId}`);
+    if (checkbox) {
+      checkbox.checked = !!enabled;
+    }
+
+    // Emit event across global EventBus
+    if (window.eventBus) {
+      window.eventBus.emit("layer:toggle", {
+        layerId: layerId,
+        enabled: !!enabled,
+        activeSite: activeSite ? { name: activeSite.name, lat: activeSite.lat, lon: activeSite.lon } : null
+      });
+    }
+
+    return true;
+  }
+
+  function getLayers() {
+    return { ...layerStates };
+  }
+
+  function isLayerActive(layerId) {
+    return !!layerStates[layerId];
+  }
+
+  /**
+   * Evaluates active landing site coordinates to dynamically enforce physical lunar boundary rules:
+   * - Equatorial latitudes (|lat| < 75°): Disables & dims PSR toggle with explanation badge.
+   * - Far Side longitudes (|normLon| >= 100°): Flags DTE toggle with 100% radio shadow alert badge.
+   * @param {number|null} lat
+   * @param {number|null} lon
+   */
+  function updateOverlayGeographicBounds(lat, lon) {
+    const itemPsr = document.getElementById("overlay-item-psr");
+    const togglePsr = document.getElementById("layer-toggle-psr");
+    const badgePsr = document.getElementById("badge-psr-context");
+
+    const toggleDte = document.getElementById("layer-toggle-dte");
+    const badgeDte = document.getElementById("badge-dte-context");
+
+    const validLat = typeof lat === "number" && !isNaN(lat);
+    const validLon = typeof lon === "number" && !isNaN(lon);
+
+    // 1. Latitude rule for Permanently Shadowed Regions (PSRs)
+    if (validLat) {
+      const isEquatorial = Math.abs(lat) < 75.0;
+      if (isEquatorial) {
+        psrDisabledByLatitude = true;
+        if (togglePsr) {
+          togglePsr.disabled = true;
+          togglePsr.checked = false;
+        }
+        if (itemPsr) itemPsr.classList.add("disabled");
+        if (badgePsr) {
+          badgePsr.className = "layer-context-badge info";
+          badgePsr.textContent = "ℹ️ PSRs absent at equatorial latitudes (|lat| < 75°)";
+          badgePsr.style.display = "inline-block";
+        }
+        if (layerStates.psr) {
+          layerStates.psr = false;
+          if (window.eventBus) {
+            window.eventBus.emit("layer:toggle", {
+              layerId: "psr",
+              enabled: false,
+              suppressedByLatitude: true
+            });
+          }
+        }
+      } else {
+        // Polar site (|lat| >= 75°)
+        psrDisabledByLatitude = false;
+        if (togglePsr) {
+          togglePsr.disabled = false;
+          togglePsr.checked = layerStates.psr !== false;
+        }
+        layerStates.psr = togglePsr ? togglePsr.checked : true;
+        if (itemPsr) itemPsr.classList.remove("disabled");
+        if (badgePsr) {
+          badgePsr.style.display = "none";
+          badgePsr.textContent = "";
+        }
+      }
+    }
+
+    // 2. Longitude rule for Direct-to-Earth (DTE) radio line of sight
+    if (validLon) {
+      const normLon = ((lon + 180) % 360 + 360) % 360 - 180;
+      const isFarSide = Math.abs(normLon) >= 100.0;
+      if (isFarSide) {
+        if (badgeDte) {
+          badgeDte.className = "layer-context-badge alert";
+          badgeDte.textContent = "⚠️ 100% Far Side Radio Shadow — Relay Required (e.g. Queqiao-1/2)";
+          badgeDte.style.display = "inline-block";
+        }
+        if (toggleDte && !toggleDte.checked) {
+          toggleDte.checked = true;
+          layerStates.dte = true;
+          if (window.eventBus) {
+            window.eventBus.emit("layer:toggle", {
+              layerId: "dte",
+              enabled: true,
+              enforcedByFarSide: true
+            });
+          }
+        }
+      } else {
+        if (badgeDte) {
+          badgeDte.style.display = "none";
+          badgeDte.textContent = "";
+        }
+      }
+    }
+  }
+
+  /**
    * Switches the active cartographic basemap and synchronizes DOM and global EventBus.
    * @param {string} basemapKey - 'lroc' | 'lola' | 'kaguya'
    * @returns {Object} Active basemap configuration
@@ -836,15 +983,19 @@
     });
 
     // 2. Overlay Checkboxes
+    if (toggleSlope) layerStates.slope = toggleSlope.checked;
+    if (togglePsr) layerStates.psr = togglePsr.checked;
+    if (toggleIce) layerStates.ice = toggleIce.checked;
+    if (toggleDte) layerStates.dte = toggleDte.checked;
+
     function bindOverlayToggle(el, layerId) {
       if (el) {
         el.addEventListener("change", (e) => {
-          if (window.eventBus) {
-            window.eventBus.emit("layer:toggle", {
-              layerId: layerId,
-              enabled: e.target.checked
-            });
+          if (layerId === "psr" && psrDisabledByLatitude) {
+            e.target.checked = false;
+            return;
           }
+          setLayer(layerId, e.target.checked);
         });
       }
     }
@@ -892,14 +1043,27 @@
       }
       renderWaypoints(activeSite);
       updatePowerBudgetAndStay();
+      updateOverlayGeographicBounds(site.lat, site.lon);
     } else if (data.name) {
       if (siteTitleEl) siteTitleEl.textContent = `📍 Active: ${data.name}`;
       const lower = data.name.toLowerCase();
-      if (lower.includes("shackleton")) activeSiteKey = "shackleton";
-      else if (lower.includes("ridge")) activeSiteKey = "ridge";
-      else if (lower.includes("malapert")) activeSiteKey = "malapert";
+      let lat = null, lon = null;
+      if (lower.includes("shackleton")) { activeSiteKey = "shackleton"; lat = -89.6; lon = 129.2; }
+      else if (lower.includes("ridge")) { activeSiteKey = "ridge"; lat = -89.44; lon = 137.31; }
+      else if (lower.includes("malapert")) { activeSiteKey = "malapert"; lat = -86.04; lon = 2.7; }
+      else if (lower.includes("apollo")) { activeSiteKey = "apollo-11"; lat = 0.67; lon = 23.47; }
+      else if (lower.includes("kár") || lower.includes("karman") || lower.includes("chang")) { activeSiteKey = "change-4"; lat = -45.45; lon = 177.58; }
+
+      if (typeof data.lat === "number") lat = data.lat;
+      else if (!isNaN(parseFloat(data.lat))) lat = parseFloat(data.lat);
+      if (typeof data.lon === "number") lon = data.lon;
+      else if (!isNaN(parseFloat(data.lon))) lon = parseFloat(data.lon);
+
       renderWaypoints(activeSiteKey);
       updatePowerBudgetAndStay();
+      if (lat !== null && lon !== null) {
+        updateOverlayGeographicBounds(lat, lon);
+      }
     }
   }
 
@@ -922,7 +1086,11 @@
     setBasemap: setBasemap,
     getBasemap: () => activeBasemap,
     getBasemapConfig: (key) => BASEMAP_CONFIGS[key || activeBasemap],
-    BASEMAPS: BASEMAP_CONFIGS
+    BASEMAPS: BASEMAP_CONFIGS,
+    setLayer: setLayer,
+    getLayers: getLayers,
+    isLayerActive: isLayerActive,
+    updateGeographicContext: updateOverlayGeographicBounds
   };
 
   // Safe DOM ready check

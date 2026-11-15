@@ -292,39 +292,41 @@
 
       <div class="overlay-toggle-list">
         <!-- Slope Gradient Heatmap -->
-        <label class="overlay-toggle-item">
+        <label class="overlay-toggle-item" id="overlay-item-slope">
           <div class="toggle-text">
             <span class="t-title">LOLA Slope Gradient Heatmap</span>
             <span class="t-sub">Safe (&lt;5° Green) · Moderate (5°-8° Yellow) · Hazard (&gt;8° Red)</span>
           </div>
-          <input type="checkbox" id="layer-toggle-slope" checked class="switch-checkbox">
+          <input type="checkbox" id="layer-toggle-slope" checked class="layer-checkbox" aria-label="Toggle LOLA Slope Gradient Heatmap">
         </label>
 
         <!-- Permanently Shadowed Regions (PSRs) -->
-        <label class="overlay-toggle-item">
+        <label class="overlay-toggle-item" id="overlay-item-psr">
           <div class="toggle-text">
             <span class="t-title">Permanently Shadowed Regions (PSRs)</span>
             <span class="t-sub">Extreme cold traps below 40 K (-233°C)</span>
+            <span class="layer-context-badge" id="badge-psr-context" style="display: none;"></span>
           </div>
-          <input type="checkbox" id="layer-toggle-psr" checked class="switch-checkbox">
+          <input type="checkbox" id="layer-toggle-psr" checked class="layer-checkbox" aria-label="Toggle Permanently Shadowed Regions">
         </label>
 
         <!-- Water Equivalent Hydrogen (WEH) -->
-        <label class="overlay-toggle-item">
+        <label class="overlay-toggle-item" id="overlay-item-ice">
           <div class="toggle-text">
             <span class="t-title">Water-Equivalent Hydrogen (WEH)</span>
             <span class="t-sub">Subsurface volatiles (&gt; 0.5 wt% H) from LEND epithermal neutrons</span>
           </div>
-          <input type="checkbox" id="layer-toggle-ice" class="switch-checkbox">
+          <input type="checkbox" id="layer-toggle-ice" class="layer-checkbox" aria-label="Toggle Water Equivalent Hydrogen">
         </label>
 
         <!-- Direct-to-Earth (DTE) Occlusion -->
-        <label class="overlay-toggle-item">
+        <label class="overlay-toggle-item" id="overlay-item-dte">
           <div class="toggle-text">
             <span class="t-title">Earth Radio Occlusion Mask</span>
             <span class="t-sub">Regions with blocked line-of-sight during minimum libration</span>
+            <span class="layer-context-badge" id="badge-dte-context" style="display: none;"></span>
           </div>
-          <input type="checkbox" id="layer-toggle-dte" class="switch-checkbox">
+          <input type="checkbox" id="layer-toggle-dte" class="layer-checkbox" aria-label="Toggle Earth Radio Occlusion Mask">
         </label>
       </div>
     </section>
