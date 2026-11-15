@@ -17,6 +17,17 @@
     <!-- Three.js WebGL Canvas Mount: moon_3d.js injects the WebGLRenderer <canvas> here -->
     <div id="moon-webgl-canvas" class="moon-webgl-canvas" aria-label="Interactive 3D Moon Canvas"></div>
 
+    <div class="celestial-view-controls" role="group" aria-label="Viewport mode">
+      <button type="button" class="celestial-view-btn active" id="btn-surface-view" aria-pressed="true">SURFACE</button>
+      <button type="button" class="celestial-view-btn" id="btn-system-view" aria-pressed="false">SYSTEM</button>
+    </div>
+
+    <div class="celestial-view-caption" id="celestial-view-caption" aria-live="polite" aria-label="True-scale system view. Earth mean distance: 384,400 kilometers. Sun mean distance: 149.6 million kilometers. Left-drag to pan, right-drag to rotate, scroll over a body to focus and zoom." title="Milky Way backdrop source: NASA Science, The Milky Way Galaxy. Source image dimensions: 2,048 × 2,048 pixels.">
+      <span class="celestial-caption-dot"></span>
+      <span>Sun · Earth · Moon</span>
+      <span class="celestial-caption-hint">Drag to pan · Right-drag to rotate</span>
+    </div>
+
     <!-- 2D Surface Pin Overlay (Fallback/HTML Tooltip synced with 3D pin) -->
     <div class="surface-pin" id="active-moon-pin" style="display: none;" aria-live="polite">
       <span class="pin-marker"></span>
