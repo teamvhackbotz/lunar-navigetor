@@ -98,7 +98,7 @@ body {
 #toggle-top-cards:checked ~ #mount-comparison-cards .drawer-top-cards {
   transform: translateY(0);
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: none; /* Passthrough: corridor container does not intercept touches intended for 3D Moon */
 }
 #toggle-top-cards:not(:checked) ~ .drawer-top-cards,
 #toggle-top-cards:not(:checked) ~ #mount-comparison-cards .drawer-top-cards {
@@ -323,6 +323,7 @@ body {
   z-index: 90;
   overflow: hidden; /* STRICT CLIPPING: Cards never tuck or bleed under side drawers */
   box-sizing: border-box;
+  pointer-events: none; /* Passthrough on transparent background */
   transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
               right 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
               transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
@@ -340,8 +341,14 @@ body {
   max-width: 100%;
   box-sizing: border-box;
   justify-content: flex-start;
-  pointer-events: auto; /* Re-enable pointer events on cards */
+  pointer-events: none; /* Passthrough on empty track spaces to allow touching the 3D Moon */
   scrollbar-width: thin;
+}
+
+.site-card-column,
+.cards-empty-state,
+.cards-empty-state .site-card {
+  pointer-events: auto; /* Re-enable pointer events strictly on card elements */
 }
 
 /* Adapt card width when corridor is narrow between open drawers */

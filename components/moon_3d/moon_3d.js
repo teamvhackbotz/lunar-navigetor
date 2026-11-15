@@ -249,7 +249,7 @@
         container.style.cursor = cur;
         container.classList.toggle("tool-mark", currentTool === "mark");
       }
-      if (controls) controls.enabled = currentTool === "grab";
+      if (controls) controls.enabled = true; // OrbitControls enabled in both grab and mark so user can rotate/zoom to explore and position targets
     }
     updateCursor();
 
@@ -261,6 +261,15 @@
       downY = e.clientY;
       updateCursor();
     });
+
+    renderer.domElement.addEventListener("touchstart", (e) => {
+      if (e.touches && e.touches.length > 0) {
+        isCameraFocusing = false;
+        targetCameraPos = null;
+        downX = e.touches[0].clientX;
+        downY = e.touches[0].clientY;
+      }
+    }, { passive: true });
 
     window.addEventListener("mouseup", () => {
       if (isDragging) {
@@ -307,6 +316,7 @@
               name: siteName,
               source: "moon-3d",
             });
+            window.eventBus.emit("tool:set", { tool: "grab" });
           }
         }
       }

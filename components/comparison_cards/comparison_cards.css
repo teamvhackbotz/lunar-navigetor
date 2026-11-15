@@ -21,6 +21,7 @@
   z-index: 90;
   overflow: hidden;
   box-sizing: border-box;
+  pointer-events: none; /* Passthrough on empty corridor spaces */
   transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
               right 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
               transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
@@ -61,6 +62,12 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  pointer-events: none;
+}
+
+.cards-corridor-toolbar button,
+.cards-corridor-toolbar input,
+.cards-toolbar-actions {
   pointer-events: auto;
 }
 
@@ -107,6 +114,12 @@
   gap: 8px;
   padding: 0 48px 6px;
   box-sizing: border-box;
+  pointer-events: none;
+}
+
+.cards-comparison-controls button,
+.cards-comparison-controls input,
+.cards-comparison-controls label {
   pointer-events: auto;
 }
 
@@ -197,8 +210,14 @@
   box-sizing: border-box;
   justify-content: flex-start;
   align-items: flex-start;
-  pointer-events: auto;
+  pointer-events: none; /* Passthrough on empty track spaces to allow touching the 3D Moon */
   scrollbar-width: thin;
+}
+
+.site-card-column,
+.cards-empty-state,
+.cards-empty-state .site-card {
+  pointer-events: auto; /* Re-enable pointer events on candidate cards and add triggers */
 }
 
 /* Custom scrollbar styling for card track */
