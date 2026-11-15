@@ -774,6 +774,108 @@
   let activeBasemap = "lroc";
 
   /**
+   * Scientific calibration specifications and sensor citations for analytical overlays.
+   */
+  const CALIBRATION_SPECS = {
+    slope: {
+      id: "slope",
+      tag: "[LOLA DEM]",
+      title: "LOLA Terrain Incline Scale:",
+      gradient: "linear-gradient(90deg, #7d967e 0%, #c99e52 40%, #b8544f 100%)",
+      ticks: ["0° (Flat / Safe)", "8° (Moderate)", "20°+ (Steep Hazard)"],
+      citation: "Data Source: NASA Lunar Reconnaissance Orbiter (LRO) LOLA Laser Altimeter DEM. IAU 1,737.4 km lunar sphere datum."
+    },
+    psr: {
+      id: "psr",
+      tag: "[Diviner DLRE]",
+      title: "Cryogenic Surface Temperature:",
+      gradient: "linear-gradient(90deg, #2a324b 0%, #4a78a6 50%, #8ea8c3 100%)",
+      ticks: ["25 K (-248°C)", "40 K (Volatiles Trap)", "100 K (Sublimation)"],
+      citation: "Data Source: NASA LRO Diviner Lunar Radiometer Experiment (DLRE) bolometric brightness temperature."
+    },
+    ice: {
+      id: "ice",
+      tag: "[LEND Neutrons]",
+      title: "Water-Equivalent Hydrogen (WEH):",
+      gradient: "linear-gradient(90deg, #4a453f 0%, #3d8b80 45%, #0288d1 100%)",
+      ticks: ["0.0 wt% (Desiccated)", "0.5 wt% (Volatiles)", "1.5+ wt% (Ice Deposits)"],
+      citation: "Data Source: NASA LRO Lunar Exploration Neutron Detector (LEND) epithermal neutron flux suppression."
+    },
+    dte: {
+      id: "dte",
+      tag: "[DSN 8.4 GHz]",
+      title: "Direct-to-Earth (DTE) Clearance:",
+      gradient: "linear-gradient(90deg, #b8544f 0%, #c99e52 25%, #7d967e 100%)",
+      ticks: ["-5° (Occluded)", "0° (Horizon Limit)", "+45° (High Zenith)"],
+      citation: "Data Source: Deep Space Network (DSN) Goldstone / Madrid geometric line-of-sight elevation."
+    }
+  };
+
+  let activeLegend = "slope";
+  let activeOpacity = 0.75;
+
+  /**
+   * Updates the adaptive multi-spectral calibration legend bar, ticks, and citation.
+   * @param {string} layerId - 'slope' | 'psr' | 'ice' | 'dte'
+   * @returns {Object} Active calibration specification
+   */
+  function updateCalibrationLegend(layerId) {
+    if (!CALIBRATION_SPECS[layerId]) {
+      layerId = "slope";
+    }
+    activeLegend = layerId;
+    const spec = CALIBRATION_SPECS[layerId];
+
+    const titleEl = document.getElementById("legend-instrument-title");
+    const tagEl = document.getElementById("legend-active-layer-tag");
+    const barEl = document.getElementById("legend-gradient-bar");
+    const tickLow = document.getElementById("legend-tick-low");
+    const tickMid = document.getElementById("legend-tick-mid");
+    const tickHigh = document.getElementById("legend-tick-high");
+    const citationEl = document.getElementById("legend-citation-text");
+
+    if (titleEl) titleEl.textContent = spec.title;
+    if (tagEl) tagEl.textContent = spec.tag;
+    if (barEl) barEl.style.background = spec.gradient;
+    if (tickLow) tickLow.textContent = spec.ticks[0];
+    if (tickMid) tickMid.textContent = spec.ticks[1];
+    if (tickHigh) tickHigh.textContent = spec.ticks[2];
+    if (citationEl) citationEl.textContent = spec.citation;
+
+    return spec;
+  }
+
+  /**
+   * Sets the overlay blend opacity (10-100%) and emits layer:opacity across EventBus.
+   * @param {number|string} pct
+   * @returns {number} Normalized float opacity (0.10 to 1.00)
+   */
+  function setOpacity(pct) {
+    let num = parseInt(pct, 10);
+    if (isNaN(num)) num = 75;
+    num = Math.max(10, Math.min(100, num));
+    activeOpacity = num / 100;
+
+    const slider = document.getElementById("slider-layer-opacity");
+    const readout = document.getElementById("val-layer-opacity");
+    if (slider) slider.value = num;
+    if (readout) readout.textContent = `${num}%`;
+
+    // Synchronize preset pills
+    const pills = document.querySelectorAll(".preset-pill");
+    pills.forEach(pill => {
+      const pillVal = parseInt(pill.dataset.opacity, 10);
+      pill.classList.toggle("active", pillVal === num);
+    });
+
+    if (window.eventBus) {
+      window.eventBus.emit("layer:opacity", { opacity: activeOpacity });
+    }
+
+    return activeOpacity;
+  }
+
+  /**
    * Analytical layer overlay active states.
    */
   const layerStates = {
@@ -809,6 +911,11 @@
     const checkbox = document.getElementById(`layer-toggle-${layerId}`);
     if (checkbox) {
       checkbox.checked = !!enabled;
+    }
+
+    // Adapt calibration legend to the active layer if enabled
+    if (enabled && CALIBRATION_SPECS[layerId]) {
+      updateCalibrationLegend(layerId);
     }
 
     // Emit event across global EventBus
@@ -1005,17 +1112,34 @@
     bindOverlayToggle(toggleIce, "ice");
     bindOverlayToggle(toggleDte, "dte");
 
-    // 3. Opacity Slider
+    // 3. Opacity Slider & Presets
     if (sliderOpacity) {
       sliderOpacity.addEventListener("input", (e) => {
-        const pct = parseInt(e.target.value, 10);
-        if (valOpacity) valOpacity.textContent = `${pct}%`;
-
-        if (window.eventBus) {
-          window.eventBus.emit("layer:opacity", { opacity: pct / 100 });
-        }
+        setOpacity(e.target.value);
       });
     }
+
+    const presetPills = document.querySelectorAll(".preset-pill");
+    presetPills.forEach(pill => {
+      pill.addEventListener("click", () => {
+        const val = pill.dataset.opacity;
+        if (val) setOpacity(val);
+      });
+    });
+
+    // 4. Interactive Legend Trigger on Overlay Items
+    const overlayItems = document.querySelectorAll(".overlay-toggle-item");
+    overlayItems.forEach(item => {
+      item.addEventListener("click", () => {
+        const id = item.id ? item.id.replace("overlay-item-", "") : null;
+        if (id && CALIBRATION_SPECS[id]) {
+          updateCalibrationLegend(id);
+        }
+      });
+    });
+
+    // Initialize default calibration legend
+    updateCalibrationLegend("slope");
   }
 
   /**
@@ -1090,7 +1214,13 @@
     setLayer: setLayer,
     getLayers: getLayers,
     isLayerActive: isLayerActive,
-    updateGeographicContext: updateOverlayGeographicBounds
+    updateGeographicContext: updateOverlayGeographicBounds,
+    setOpacity: setOpacity,
+    getOpacity: () => activeOpacity,
+    setLegend: updateCalibrationLegend,
+    getLegend: () => activeLegend,
+    getLegendSpec: (id) => CALIBRATION_SPECS[id || activeLegend],
+    CALIBRATION_SPECS: CALIBRATION_SPECS
   };
 
   // Safe DOM ready check

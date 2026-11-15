@@ -345,6 +345,14 @@
         </div>
         <input type="range" id="slider-layer-opacity" min="10" max="100" value="75" class="custom-range" style="width: 100%;">
       </div>
+
+      <!-- Quick Blend Presets -->
+      <div class="opacity-preset-row">
+        <button type="button" class="preset-pill" data-opacity="30">30% Subtle</button>
+        <button type="button" class="preset-pill" data-opacity="60">60% Balanced</button>
+        <button type="button" class="preset-pill active" data-opacity="75">75% Standard</button>
+        <button type="button" class="preset-pill" data-opacity="90">90% Analytical</button>
+      </div>
     </section>
 
     <!-- Section 4: Instrument Legend & Citations -->
@@ -355,17 +363,20 @@
       </div>
 
       <div class="legend-scale-wrap">
-        <span style="font-size: 9px; color: var(--text-muted, #8c867c); text-transform: uppercase;">Slope Scale Incline:</span>
-        <div class="legend-gradient-bar"></div>
-        <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono, monospace); color: var(--text-muted, #8c867c);">
-          <span>0° (Safe)</span>
-          <span>5° (Caution)</span>
-          <span>10°+ (Hazard)</span>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span id="legend-instrument-title" style="font-size: 9px; color: var(--text-muted, #8c867c); text-transform: uppercase;">Slope Scale Incline:</span>
+          <span id="legend-active-layer-tag" style="font-size: 8px; font-family: var(--font-mono, monospace); color: var(--accent-sand, #c99e52);">[LOLA DEM]</span>
+        </div>
+        <div class="legend-gradient-bar" id="legend-gradient-bar"></div>
+        <div id="legend-ticks-row" style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono, monospace); color: var(--text-muted, #8c867c);">
+          <span id="legend-tick-low">0° (Flat / Safe)</span>
+          <span id="legend-tick-mid">8° (Moderate)</span>
+          <span id="legend-tick-high">20°+ (Steep Hazard)</span>
         </div>
       </div>
 
-      <div class="meta-citation" style="margin-top: 8px; font-size: 9px; color: var(--text-muted, #8c867c); line-height: 1.4;">
-        Data Source: NASA Lunar Reconnaissance Orbiter (LRO) LOLA / LROC Science Teams. Projected at 1,737.4 km lunar sphere datum.
+      <div class="meta-citation" id="legend-citation-text" style="margin-top: 8px; font-size: 9px; color: var(--text-muted, #8c867c); line-height: 1.4;">
+        Data Source: NASA Lunar Reconnaissance Orbiter (LRO) LOLA Laser Altimeter DEM. IAU 1,737.4 km lunar sphere datum.
       </div>
     </section>
 
