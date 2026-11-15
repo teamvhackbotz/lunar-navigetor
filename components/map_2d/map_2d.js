@@ -323,6 +323,7 @@
       window.SiteMeasurement ? window.SiteMeasurement.getSelectedSites() : [],
       window.SiteMeasurement ? window.SiteMeasurement.getMeasurement() : null
     );
+    syncBottomHandlePosition();
   }
 
   // ==========================================================================
@@ -403,6 +404,31 @@
 
     const btnZoomReset = document.getElementById("btn-map-zoom-reset");
     if (btnZoomReset) btnZoomReset.addEventListener("click", resetZoom);
+
+    // Bottom Edge Tab Handle Keyboard Support (Enter / Space) & Toggle Sync
+    const handleBottom = document.getElementById("handle-bottom-map");
+    if (handleBottom) {
+      handleBottom.addEventListener("click", () => {
+        setTimeout(syncBottomHandlePosition, 25);
+      });
+      handleBottom.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          const toggle = document.getElementById("toggle-bottom-map");
+          if (toggle) {
+            toggle.checked = !toggle.checked;
+            toggle.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+      });
+    }
+
+    const toggleBottom = document.getElementById("toggle-bottom-map");
+    if (toggleBottom) {
+      toggleBottom.addEventListener("change", syncBottomHandlePosition);
+    }
+
+    window.addEventListener("resize", syncBottomHandlePosition);
   }
 
   // ==========================================================================
@@ -437,7 +463,7 @@
     const southPanel = document.getElementById("south-polar-panel");
 
     if (viewMode === "tri") {
-      if (subLabel) subLabel.textContent = "◫ Tri-Map: North · Global · South";
+      if (subLabel) subLabel.textContent = "Tri-Map: North · Global · South";
       if (northPanel) northPanel.classList.remove("single-active");
       if (rectPanel) rectPanel.classList.remove("single-active");
       if (southPanel) southPanel.classList.remove("single-active");
@@ -448,9 +474,9 @@
       if (southPanel) southPanel.classList.toggle("single-active", activeProjection === "south");
 
       if (subLabel) {
-        if (activeProjection === "south") subLabel.textContent = "🎯 South Pole (70°S – 90°S) · Artemis III";
-        else if (activeProjection === "global") subLabel.textContent = "🌐 Global Flat (180°W – 180°E) · 2:1 Ratio";
-        else if (activeProjection === "north") subLabel.textContent = "❄️ North Pole (70°N – 90°N) · Cold Traps";
+        if (activeProjection === "south") subLabel.textContent = "South Pole (70°S – 90°S) · Artemis III";
+        else if (activeProjection === "global") subLabel.textContent = "Global Flat (180°W – 180°E) · 2:1 Ratio";
+        else if (activeProjection === "north") subLabel.textContent = "North Pole (70°N – 90°N) · Cold Traps";
       }
     }
 
@@ -539,15 +565,49 @@
       drawer.classList.toggle("is-maximized", isMaximized);
     }
     if (btnMaximize) {
-      btnMaximize.textContent = isMaximized ? "◰" : "⛶";
+      btnMaximize.innerHTML = isMaximized
+        ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="10" y1="14" x2="3" y2="21"/></svg>'
+        : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
       btnMaximize.classList.toggle("active", isMaximized);
       btnMaximize.title = isMaximized ? "Restore Compact Deck Height (390px)" : "Maximize Tactical Deck Height (500px)";
       btnMaximize.setAttribute("aria-label", isMaximized ? "Restore Deck Height" : "Maximize Deck Height");
     }
 
+    syncBottomHandlePosition();
+
     setTimeout(() => {
       renderMarkers(lastMarkedSite);
     }, 320);
+  }
+
+  // ==========================================================================
+  // BOTTOM EDGE HANDLE DOCK SYNCHRONIZATION
+  // Guarantees handle stays docked flush above bottom cockpit (92px) when collapsed,
+  // and elevated to top edge of drawer (390px or 500px) when open.
+  // ==========================================================================
+  function syncBottomHandlePosition() {
+    const handle = document.getElementById("handle-bottom-map");
+    const drawerToggle = document.getElementById("toggle-bottom-map");
+    const drawer = document.getElementById("drawer-bottom-map");
+    if (!handle) return;
+
+    const isOpen = drawerToggle ? drawerToggle.checked : false;
+    const isMax = drawer && drawer.classList.contains("is-maximized");
+
+    if (!isOpen) {
+      handle.style.setProperty("bottom", "var(--height-bottom-cockpit, 92px)", "important");
+      handle.style.setProperty("top", "auto", "important");
+      handle.classList.remove("is-open");
+      const arrow = handle.querySelector(".handle-arrow");
+      if (arrow) arrow.style.transform = "rotate(0deg)";
+    } else {
+      const drawerHeight = isMax ? 500 : 390;
+      handle.style.setProperty("bottom", `calc(var(--height-bottom-cockpit, 92px) + ${drawerHeight}px)`, "important");
+      handle.style.setProperty("top", "auto", "important");
+      handle.classList.add("is-open");
+      const arrow = handle.querySelector(".handle-arrow");
+      if (arrow) arrow.style.transform = "rotate(180deg)";
+    }
   }
 
   // ==========================================================================
@@ -801,7 +861,7 @@
           northPin.style.display = "block";
           northPin.style.left = `${pos.x}px`;
           northPin.style.top = `${pos.y}px`;
-          northPin.textContent = `📍 ${numLabel}${data.name}`;
+          northPin.innerHTML = `<span class="marker-beacon"></span><span class="marker-text">${numLabel}${data.name}</span>`;
         } else {
           northPin.style.display = "none";
         }
@@ -822,7 +882,7 @@
           southPin.style.display = "block";
           southPin.style.left = `${pos.x}px`;
           southPin.style.top = `${pos.y}px`;
-          southPin.textContent = `📍 ${numLabel}${data.name}`;
+          southPin.innerHTML = `<span class="marker-beacon"></span><span class="marker-text">${numLabel}${data.name}</span>`;
         } else {
           southPin.style.display = "none";
         }

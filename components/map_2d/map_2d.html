@@ -27,32 +27,63 @@
        ======================================================================== -->
   <header class="drawer-header">
     <div class="map-controls-row">
-      <h3 class="drawer-title">🗺️ 2D Maps</h3>
+      <h3 class="drawer-title">
+        <svg class="header-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+          <line x1="8" y1="2" x2="8" y2="18"/>
+          <line x1="16" y1="6" x2="16" y2="22"/>
+        </svg>
+        <span>2D Maps</span>
+      </h3>
       
       <!-- Distance Badge: Displays pair selection status and the measured surface distance -->
-      <span class="distance-pill" id="map-distance-display" aria-live="polite" title="Shift + right-click two marked sites, then right-click either and choose Measure distance.">
-        📏 Select 2 sites
+      <span class="distance-pill" id="map-distance-display" aria-live="polite" title="Shift + right-click two marked sites to measure surface distance.">
+        <svg class="pill-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 12h20M6 8v8M10 9v6M14 9v6M18 8v8"/>
+        </svg>
+        <span>Select 2 sites</span>
       </span>
 
       <!-- 8K Basemap Clarity Badge -->
       <span class="distance-pill map-clarity-pill" id="map-clarity-badge" title="Basemap Resolution: NASA LROC 8K Ultra-High Definition (8192×4096)">
-        ✨ <strong>8K UHD</strong>
+        <svg class="pill-icon" viewBox="0 0 24 24" width="10" height="10" fill="currentColor" stroke="none" aria-hidden="true">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <strong>8K UHD</strong>
       </span>
     </div>
 
     <!-- Segmented Projection Switcher Tabs -->
     <div class="map-view-switcher" role="tablist" aria-label="Map Projection Selector">
       <button type="button" class="map-view-pill active" data-view="south" title="South Pole Stereographic (Artemis III Target Zone)" role="tab" aria-selected="true">
-        🎯 South
+        <svg class="pill-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="4"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+        </svg>
+        <span>South</span>
       </button>
       <button type="button" class="map-view-pill" data-view="global" title="Global Cylindrical Equirectangular (Strict 2:1 Ratio)" role="tab" aria-selected="false">
-        🌐 Flat
+        <svg class="pill-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="5" width="20" height="14" rx="2"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <line x1="12" y1="5" x2="12" y2="19"/>
+        </svg>
+        <span>Flat</span>
       </button>
       <button type="button" class="map-view-pill" data-view="north" title="North Pole Stereographic (70°N – 90°N)" role="tab" aria-selected="false">
-        ❄️ North
+        <svg class="pill-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14"/>
+        </svg>
+        <span>North</span>
       </button>
       <button type="button" class="map-view-pill" data-view="tri" title="Tri-Map Panoramic View (All 3 Views Side-by-Side)" role="tab" aria-selected="false">
-        ◫ Tri
+        <svg class="pill-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="5" height="16" rx="1"/>
+          <rect x="9.5" y="4" width="5" height="16" rx="1"/>
+          <rect x="16" y="4" width="5" height="16" rx="1"/>
+        </svg>
+        <span>Tri</span>
       </button>
     </div>
 
@@ -61,25 +92,33 @@
       <!-- 2D Zoom Controls (1.0x - 5.0x with Pan Support) -->
       <div class="map-zoom-group" role="group" aria-label="2D Map Zoom Controls">
         <button type="button" class="map-zoom-btn" id="btn-map-zoom-out" title="Zoom Out (− or Wheel Down)" aria-label="Zoom Out" disabled>
-          −
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
         <span class="map-zoom-badge" id="map-zoom-display" title="Active 2D Zoom Level">1.0×</span>
         <button type="button" class="map-zoom-btn" id="btn-map-zoom-in" title="Zoom In (+ or Wheel Up)" aria-label="Zoom In">
-          +
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
         <button type="button" class="map-zoom-btn btn-zoom-reset" id="btn-map-zoom-reset" title="Reset Zoom & Pan (1.0×)" aria-label="Reset Zoom">
-          ⟲
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         </button>
       </div>
 
       <!-- Height Maximize / Restore Toggle (Icon only) -->
       <button type="button" class="map-tool-btn icon-only" id="btn-toggle-maximize" title="Maximize Deck Height" aria-label="Maximize Deck Height">
-        ⛶
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
       </button>
 
       <!-- Collapse Close Button: Label targeting #toggle-bottom-map checkbox -->
       <label for="toggle-bottom-map" class="btn-close-drawer icon-only" title="Collapse 2D Maps Drawer" role="button" tabindex="0" aria-label="Close 2D Map Deck">
-        ✕
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
       </label>
     </div>
   </header>
@@ -96,12 +135,24 @@
     <aside class="tactical-wing wing-left collapsed" id="wing-left" aria-label="Target Shortcuts & Exploration Candidates">
       <div class="wing-header">
         <div class="wing-title-group">
-          <span class="wing-icon">🎯</span>
+          <svg class="wing-icon-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="3"/>
+            <line x1="12" y1="1" x2="12" y2="5"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="1" y1="12" x2="5" y2="12"/>
+            <line x1="19" y1="12" x2="23" y2="12"/>
+          </svg>
           <h4 class="wing-heading" id="wing-left-title">Candidate Targets</h4>
         </div>
         <div class="wing-header-actions">
           <span class="wing-badge" id="wing-left-badge">Artemis III</span>
-          <button type="button" class="wing-close-btn" id="btn-close-left-wing" title="Collapse Targets Wing" aria-label="Collapse Targets Wing">✕</button>
+          <button type="button" class="wing-close-btn" id="btn-close-left-wing" title="Collapse Targets Wing" aria-label="Collapse Targets Wing">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -114,14 +165,24 @@
       </div>
 
       <div class="wing-footer-tip">
-        <span>💡 Click any candidate to set landing coordinates and center viewports.</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="footer-tip-icon">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span>Click any candidate to set landing coordinates and center viewports.</span>
       </div>
     </aside>
 
     <!-- Left Wing Map Flank Handle -->
     <button type="button" class="map-wing-tab tab-left" id="tab-wing-left" title="Toggle Target Shortcuts Wing" aria-expanded="false" aria-label="Toggle Target Shortcuts Wing">
-      <span class="tab-arrow">❮</span>
-      <span class="tab-icon">🎯</span>
+      <svg class="tab-arrow-svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      <svg class="tab-icon-svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="8"/>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+      </svg>
       <span class="tab-text">TARGETS</span>
     </button>
 
@@ -133,7 +194,12 @@
       <!-- Panel 1: North Pole Stereographic Disc (70°N – 90°N) -->
       <div class="map-panel polar-panel" id="north-polar-panel">
         <div class="panel-header-mini">
-          <span class="map-type-badge badge-north">❄️ North Pole (70°N – 90°N)</span>
+          <span class="map-type-badge badge-north">
+            <svg class="panel-badge-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14"/>
+            </svg>
+            <span>North Pole (70°N – 90°N)</span>
+          </span>
           <span class="panel-tip">Stereographic Projection · Cold Traps (Peary, Hermite)</span>
         </div>
 
@@ -156,7 +222,8 @@
 
             <!-- Active Marker Pin -->
             <div class="map-marker" id="north-polar-active-pin" style="display: none;" aria-live="polite">
-              📍 Active Point
+              <span class="marker-beacon"></span>
+              <span class="marker-text">Active Point</span>
             </div>
           </div>
         </div>
@@ -165,12 +232,25 @@
       <!-- Panel 2: Global Flat Map (Strict 2:1 Cylindrical Equirectangular Projection) -->
       <div class="map-panel rect-panel" id="rect-map-panel">
         <div class="panel-header-mini">
-          <span class="map-type-badge">🌐 Global Flat (Equirectangular 180°W – 180°E)</span>
+          <span class="map-type-badge">
+            <svg class="panel-badge-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <line x1="12" y1="5" x2="12" y2="19"/>
+            </svg>
+            <span>Global Flat (Equirectangular 180°W – 180°E)</span>
+          </span>
           <span class="panel-tip">Strict 2:1 Aspect Ratio · Click anywhere for global coordinates</span>
         </div>
 
         <div class="rect-map-wrapper">
           <div class="rect-map-canvas-mock" id="rect-map-canvas-mock" title="Click to mark a coordinate; Shift + right-click marked sites to select a distance pair">
+            <!-- Reticle HUD Accents -->
+            <div class="hud-corner hud-top-left" aria-hidden="true"></div>
+            <div class="hud-corner hud-top-right" aria-hidden="true"></div>
+            <div class="hud-corner hud-bottom-left" aria-hidden="true"></div>
+            <div class="hud-corner hud-bottom-right" aria-hidden="true"></div>
+
             <!-- Cartographic Grid Lines -->
             <div class="rect-grid-line lat-equator" title="Lunar Equator (0°)"></div>
             <div class="rect-grid-line lat-70n" title="70° N Polar Boundary"></div>
@@ -179,10 +259,12 @@
 
             <!-- Historical Landmark Badges -->
             <div class="landmark-badge lm-apollo11" style="top: 50%; left: 56%;" title="Apollo 11 Landing Site (0.67° N, 23.5° E)">
-              · Apollo 11
+              <span class="landmark-beacon"></span>
+              <span class="landmark-label">Apollo 11</span>
             </div>
             <div class="landmark-badge lm-chandrayaan" style="top: 88%; left: 59%;" title="Chandrayaan-3 Shiv Shakti Point (69.4° S, 32.3° E)">
-              · Chandrayaan-3
+              <span class="landmark-beacon"></span>
+              <span class="landmark-label">Chandrayaan-3</span>
             </div>
 
             <!-- Regional Exploration Boundary Overlays -->
@@ -200,7 +282,14 @@
       <!-- Panel 3: South Pole Stereographic Disc (70°S – 90°S) - Artemis III Primary -->
       <div class="map-panel polar-panel single-active" id="south-polar-panel">
         <div class="panel-header-mini">
-          <span class="map-type-badge badge-south">🎯 South Pole (70°S – 90°S)</span>
+          <span class="map-type-badge badge-south">
+            <svg class="panel-badge-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+            <span>South Pole (70°S – 90°S)</span>
+          </span>
           <span class="panel-tip">Artemis III Target Zone · Shackleton, Connecting Ridge, Malapert</span>
         </div>
 
@@ -223,7 +312,8 @@
 
             <!-- Active Marker Pin -->
             <div class="map-marker" id="south-polar-active-pin" style="top: 48%; left: 52%;" aria-live="polite">
-              📍 Connecting Ridge
+              <span class="marker-beacon"></span>
+              <span class="marker-text">Connecting Ridge</span>
             </div>
           </div>
         </div>
@@ -233,8 +323,12 @@
 
     <!-- Right Wing Map Flank Handle -->
     <button type="button" class="map-wing-tab tab-right" id="tab-wing-right" title="Toggle Live Telemetry Wing" aria-expanded="false" aria-label="Toggle Live Telemetry Wing">
-      <span class="tab-arrow">❯</span>
-      <span class="tab-icon">📡</span>
+      <svg class="tab-arrow-svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+      <svg class="tab-icon-svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4.93 19.07A10 10 0 0 1 12 16a10 10 0 0 1 7.07 3.07M8.46 15.54A5 5 0 0 1 12 14a5 5 0 0 1 3.54 1.54M12 12a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+      </svg>
       <span class="tab-text">TELEMETRY</span>
     </button>
 
@@ -245,12 +339,19 @@
     <aside class="tactical-wing wing-right collapsed" id="wing-right" aria-label="Selenographic Telemetry & Environment">
       <div class="wing-header">
         <div class="wing-title-group">
-          <span class="wing-icon">📡</span>
+          <svg class="wing-icon-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4.93 19.07A10 10 0 0 1 12 16a10 10 0 0 1 7.07 3.07M8.46 15.54A5 5 0 0 1 12 14a5 5 0 0 1 3.54 1.54M12 12a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+          </svg>
           <h4 class="wing-heading">Live Telemetry</h4>
         </div>
         <div class="wing-header-actions">
           <span class="wing-badge status-safe" id="telemetry-comm-badge">DTE Lock</span>
-          <button type="button" class="wing-close-btn" id="btn-close-right-wing" title="Collapse Telemetry Wing" aria-label="Collapse Telemetry Wing">✕</button>
+          <button type="button" class="wing-close-btn" id="btn-close-right-wing" title="Collapse Telemetry Wing" aria-label="Collapse Telemetry Wing">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -297,9 +398,31 @@
       </div>
 
       <div class="wing-footer-tip">
-        <span>🛰️ DSN Canberra / Goldstone telemetry synchronized with orbital ephemeris.</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="footer-tip-icon">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span>DSN Canberra / Goldstone telemetry synchronized with orbital ephemeris.</span>
       </div>
     </aside>
 
   </div>
 </section>
+
+<!-- Bottom Edge Tab Handle: Targets #toggle-bottom-map checkbox to slide open 2D Maps Deck -->
+<label for="toggle-bottom-map" class="drawer-edge-handle handle-bottom" id="handle-bottom-map" title="Toggle 2D Maps Drawer (Alt + ↓)" role="button" tabindex="0" aria-label="Toggle 2D Maps Drawer">
+  <span class="handle-arrow" aria-hidden="true">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+  </span>
+  <span class="handle-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+      <line x1="8" y1="2" x2="8" y2="18"/>
+      <line x1="16" y1="6" x2="16" y2="22"/>
+    </svg>
+  </span>
+  <span class="handle-label">2D Maps</span>
+</label>

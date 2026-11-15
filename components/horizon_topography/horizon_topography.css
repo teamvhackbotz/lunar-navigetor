@@ -12,21 +12,26 @@
    -------------------------------------------------------------------------- */
 .drawer-edge-handle {
   position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
   background: var(--bg-surface-dark, #1e2022);
   border: 1px solid var(--border-medium, #4e4f52);
   color: var(--text-secondary, #beb7ac);
-  padding: 14px 6px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
   cursor: pointer;
   z-index: 105; /* Renders above side drawers (z: 95) and bottom cockpit (z: 80) */
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 4px 14px rgba(0,0,0,0.5);
   user-select: none;
+}
+
+/* Side handles pinned to vertical center */
+.handle-left,
+.handle-right {
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 14px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Left edge handle pinned to screen left */
@@ -50,7 +55,20 @@
   color: #fff;
 }
 
-.handle-icon { font-size: 14px; }
+.handle-icon {
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.handle-icon svg {
+  display: block;
+  stroke: var(--accent-sand, #c99e52);
+  transition: stroke 0.15s ease;
+}
+.drawer-edge-handle:hover .handle-icon svg {
+  stroke: #fff;
+}
 .handle-arrow { font-size: 11px; transition: transform 0.2s ease; }
 
 /* Rotated vertical text label displayed inside the handle tab */
