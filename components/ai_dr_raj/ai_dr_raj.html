@@ -7,11 +7,24 @@
 
 <!-- Floating assistant wrapper pinned to bottom-right corner above timeline cockpit -->
 <div class="ai-assistant-wrapper" id="ai-assistant-wrapper">
+  <button
+    type="button"
+    class="ai-bubble-btn"
+    id="ai-bubble-btn"
+    aria-label="Open Dr. Raj mission analyst"
+    aria-controls="ai-chat-window"
+    aria-expanded="false"
+    title="Open Dr. Raj mission analyst">
+    <span class="ai-avatar-badge" aria-hidden="true">👨‍🚀</span>
+    <span class="ai-bubble-text">
+      <span class="ai-bubble-name">Dr. Raj</span>
+      <span class="ai-bubble-role">Lunar Mission Analyst</span>
+    </span>
+  </button>
 
   <!-- ========================================================================
        Expanded Chat / Intelligence Window
-       Initially hidden (display: none); toggled open/closed via the "👨‍🚀 Dr. Raj AI"
-       button in the bottom mission toolbar (emits 'ai:toggle' across EventBus).
+       Initially hidden; opened by the floating launcher or bottom mission toolbar.
        ======================================================================== -->
   <div class="ai-chat-window" id="ai-chat-window" style="display: none;">
 
@@ -31,6 +44,11 @@
       </div>
       <!-- Header window controls -->
       <div class="ai-header-actions">
+        <button type="button" class="ai-personality-toggle" id="ai-personality-toggle" role="switch" aria-checked="false" title="Toggle Dr. Raj personality">
+          <span>Dr. Raj</span>
+          <span class="ai-personality-track" aria-hidden="true"><span></span></span>
+          <span id="ai-personality-mode">Off</span>
+        </button>
         <!-- Minimize button collapses chat window -->
         <button class="ai-header-btn" id="ai-minimize-btn" title="Minimize">&minus;</button>
       </div>
@@ -47,6 +65,15 @@
       <button class="chip-btn" data-query="Best Artemis site for 6-day solar stay?">☀️ Solar Stay</button>
     </div>
 
+    <details class="ai-diagnostics" id="ai-diagnostics">
+      <summary>
+        <span>Diagnostics</span>
+        <span id="ai-diagnostics-status">Idle</span>
+        <span id="ai-diagnostics-elapsed">00:00</span>
+      </summary>
+      <div class="ai-diagnostics-log" id="ai-diagnostics-log" role="log" aria-live="polite" aria-relevant="additions"></div>
+    </details>
+
     <!-- ========================================================================
          Conversation History Stream
          Scrollable corridor rendering incoming tactical briefs and operator dialogue.
@@ -55,10 +82,10 @@
       <!-- Default welcome greeting explaining analyst capabilities -->
       <div class="ai-msg msg-assistant">
         <div class="msg-bubble">
-          Greetings Commander. I am <strong>Dr. Raj</strong>, your Lunar Mission Analyst.
-          Select any landing site or drag the mission timeline, and I'll analyze solar illumination windows, DTE link margins, and PSR crater hazards in real time.
+          <strong>Lunar Mission Analyst online.</strong>
+          Select a site or provide a date range for a preliminary assessment of illumination, Earth communications, and terrain hazards. Verify results against validated mission data and constraints.
         </div>
-        <div class="msg-time">Flight Room Active</div>
+        <div class="msg-time">Decision support — not a mission go/no-go</div>
       </div>
     </div>
 
@@ -68,11 +95,14 @@
          ======================================================================== -->
     <form class="ai-input-form" id="ai-input-form">
       <input type="text" class="ai-input-field" id="ai-input-text" placeholder="Ask Dr. Raj about lunar sites..." autocomplete="off">
-      <button type="submit" class="ai-send-btn" id="ai-send-btn" title="Send Query">
+      <button type="submit" class="ai-send-btn" id="ai-send-btn" title="Send Query" aria-label="Send Query">
         <!-- Paper airplane send icon -->
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="ai-send-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <line x1="22" y1="2" x2="11" y2="13"></line>
           <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+        <svg class="ai-stop-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <rect x="6" y="6" width="12" height="12" rx="1"></rect>
         </svg>
       </button>
     </form>
