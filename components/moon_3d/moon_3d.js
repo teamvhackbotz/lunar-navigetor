@@ -34,6 +34,9 @@
   let ephemerisCache = new Map();
   let targetCameraPos = null;
   let isCameraFocusing = false;
+  let activeSpinAxis = null;
+  let defaultSpinAxis = null;
+  let lastTimelineEpoch = null;
 
   // Standard WebGL world radius of the lunar sphere
   const MOON_RADIUS = 2.5;
@@ -155,6 +158,7 @@
 
     moonMesh = new THREE.Mesh(geometry, material);
     scene.add(moonMesh);
+    defaultSpinAxis = new THREE.Vector3(0, 1, 0);
 
     function updateHUDUI(res, state) {
       const dot = document.querySelector("#hud-clarity-status .hud-status-dot");
@@ -228,7 +232,7 @@
     );
 
     pinsContainer = new THREE.Group();
-    scene.add(pinsContainer);
+    moonMesh.add(pinsContainer);
 
     let currentTool = window.currentCockpitTool || "grab";
     let isDragging = false;
@@ -281,7 +285,7 @@
         const intersects = raycaster.intersectObject(moonMesh);
 
         if (intersects.length > 0) {
-          const p = intersects[0].point;
+          const p = moonMesh.worldToLocal(intersects[0].point.clone());
           const r = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
           const lat = 90 - (Math.acos(p.y / r) * 180) / Math.PI;
           let lon = (Math.atan2(p.z, -p.x) * 180) / Math.PI - 180;
@@ -333,6 +337,17 @@
       window.eventBus.on("cards:synced", (data) => {
         if (data && Array.isArray(data.cards)) {
           syncPinsFromCards(data.cards);
+          const activeCard = data.cards.find(card => card.active);
+          if (activeCard) {
+            setSpinAxisForSite(activeCard.lat, activeCard.lon);
+            window._lastMarkedSite = {
+              lat: activeCard.lat,
+              lon: activeCard.lon,
+              name: activeCard.name
+            };
+          } else {
+            activeSpinAxis = null;
+          }
         }
       });
 
@@ -345,6 +360,7 @@
         if (!foundPin) {
           createOrUpdate3DPin({ ...data, active: true });
         }
+        setSpinAxisForSite(data.lat, data.lon);
         if (data.focus !== false) {
           focusOnCoordinates(data.lat, data.lon);
         }
@@ -354,10 +370,22 @@
       window.eventBus.on("time:changed", (data) => {
         if (!data) return;
 
-        // 1. Sync Moon axial rotation from new timeline epoch if provided
-        if (data.unixEpoch && moonMesh) {
-          const daysElapsed = data.unixEpoch / (1000 * 60 * 60 * 24);
-          moonMesh.rotation.y = (daysElapsed * 0.1) % (Math.PI * 2);
+        // 1. Advance the globe around the highlighted surface point when one is active.
+        const timelineEpoch = Number.isFinite(data.currentEpoch)
+          ? data.currentEpoch
+          : data.unixEpoch;
+        if (Number.isFinite(timelineEpoch) && moonMesh) {
+          const daysElapsed = timelineEpoch / (1000 * 60 * 60 * 24);
+          if (lastTimelineEpoch === null && !activeSpinAxis) {
+            moonMesh.quaternion.setFromAxisAngle(
+              defaultSpinAxis,
+              (daysElapsed * 0.1) % (Math.PI * 2)
+            );
+          } else if (lastTimelineEpoch !== null) {
+            const elapsedDays = (timelineEpoch - lastTimelineEpoch) / (1000 * 60 * 60 * 24);
+            spinMoonBy(elapsedDays * 0.1);
+          }
+          lastTimelineEpoch = timelineEpoch;
           currentSunAngle = (daysElapsed / 29.53) * Math.PI * 2;
           updateSunPosition(currentSunAngle);
         }
@@ -422,9 +450,7 @@
         '.playing, .active-play, [data-playing="true"]',
       );
       if (isPlaying || window.isTimelinePlaying || anyPlayBtnActive) {
-        if (moonMesh) {
-          moonMesh.rotation.y += 0.003;
-        }
+        spinMoonBy(0.003);
         currentSunAngle += 0.008; // Dynamically sweeps the shadow terminator across the polar craters
         updateSunPosition(currentSunAngle);
       }
@@ -453,11 +479,34 @@
     return { x, y, z, vector, normal };
   }
 
+  function getWorldSiteNormal(lat, lon) {
+    const normal = getCartesianCoords(lat, lon).normal;
+    if (!moonMesh) return normal;
+    moonMesh.updateMatrixWorld(true);
+    return normal.applyQuaternion(
+      moonMesh.getWorldQuaternion(new THREE.Quaternion())
+    ).normalize();
+  }
+
+  function setSpinAxisForSite(lat, lon) {
+    if (!moonMesh || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    activeSpinAxis = getWorldSiteNormal(lat, lon);
+  }
+
+  function spinMoonBy(angle) {
+    if (!moonMesh || !Number.isFinite(angle)) return;
+    const axis = activeSpinAxis || defaultSpinAxis;
+    if (!axis) return;
+
+    // Premultiplying rotates in world space, keeping the highlighted radial axis fixed.
+    const delta = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+    moonMesh.quaternion.premultiply(delta).normalize();
+  }
+
   function focusOnCoordinates(lat, lon) {
     if (!camera || typeof THREE === "undefined" || !Number.isFinite(lat) ||
         !Number.isFinite(lon) || lat < -90 || lat > 90) return false;
-    const coords = getCartesianCoords(lat, lon);
-    targetCameraPos = coords.normal.clone().multiplyScalar(5.4);
+    targetCameraPos = getWorldSiteNormal(lat, lon).multiplyScalar(5.4);
     isCameraFocusing = true;
     return true;
   }
