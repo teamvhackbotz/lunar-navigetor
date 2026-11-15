@@ -7,7 +7,7 @@
      - Mounts an interactive Three.js WebGL canvas rendering a 3D Moon sphere.
      - Textured with authentic NASA LROC global lunar albedo imagery.
      - Supports free rotation, zoom, dynamic timeline-driven solar illumination,
-       and click-to-mark raycasting anywhere on the lunar surface.
+       click-to-mark raycasting, and cross-view surface-distance measurements.
      ========================================================================== -->
 
 <!-- Main Viewport Shell: Occupies full central stage between top nav (54px) and bottom cockpit (92px) -->
@@ -15,7 +15,7 @@
   <div class="viewport-stage" id="viewport-stage">
     
     <!-- Three.js WebGL Canvas Mount: moon_3d.js injects the WebGLRenderer <canvas> here -->
-    <div id="moon-webgl-canvas" class="moon-webgl-canvas" aria-label="Interactive 3D Moon Canvas"></div>
+    <div id="moon-webgl-canvas" class="moon-webgl-canvas" aria-label="Interactive 3D Moon Canvas" title="Shift + right-click two marked sites to select a pair; right-click either and choose Measure distance"></div>
 
     <!-- 2D Surface Pin Overlay (Fallback/HTML Tooltip synced with 3D pin) -->
     <div class="surface-pin" id="active-moon-pin" style="display: none;" aria-live="polite">

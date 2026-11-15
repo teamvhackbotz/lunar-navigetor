@@ -37,6 +37,7 @@
   let activeSpinAxis = null;
   let defaultSpinAxis = null;
   let lastTimelineEpoch = null;
+  let measurementGroup = null;
 
   // Standard WebGL world radius of the lunar sphere
   const MOON_RADIUS = 2.5;
@@ -311,6 +312,22 @@
       }
     });
 
+    renderer.domElement.addEventListener("contextmenu", event => {
+      if (!pinsContainer || !window.SiteMeasurement) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hit = raycaster.intersectObject(pinsContainer, true)
+        .find(intersection =>
+          intersection.object.userData &&
+          intersection.object.userData.siteId
+        );
+      if (hit) {
+        window.SiteMeasurement.handleContextMenu(event, hit.object.userData);
+      }
+    });
+
     // Global timeline state listener
     let isPlaying = false;
 
@@ -336,6 +353,9 @@
       // Synchronize all candidate landing site pins with comparison deck
       window.eventBus.on("cards:synced", (data) => {
         if (data && Array.isArray(data.cards)) {
+          if (window.SiteMeasurement) {
+            window.SiteMeasurement.syncSites(data.cards);
+          }
           syncPinsFromCards(data.cards);
           const activeCard = data.cards.find(card => card.active);
           if (activeCard) {
@@ -365,6 +385,12 @@
           focusOnCoordinates(data.lat, data.lon);
         }
       });
+
+      window.eventBus.on("site-measurement:selection-changed", () => {
+        updateMeasurementPinStyles();
+      });
+
+      window.eventBus.on("site-measurement:changed", render3DMeasurement);
 
       // Dynamically revolve the Sun around the Moon as timeline progresses
       window.eventBus.on("time:changed", (data) => {
@@ -410,6 +436,18 @@
 
         if (renderer && scene && camera) renderer.render(scene, camera);
       });
+    }
+
+    if (window.ComparisonCards && typeof window.ComparisonCards.getMarkedSites === "function") {
+      const sites = window.ComparisonCards.getMarkedSites();
+      syncPinsFromCards(sites);
+      if (window.SiteMeasurement) {
+        window.SiteMeasurement.syncSites(sites);
+      }
+    }
+    if (window.SiteMeasurement) {
+      updateMeasurementPinStyles();
+      render3DMeasurement(window.SiteMeasurement.getMeasurement());
     }
 
     // Also auto-detect play button clicks anywhere in the DOM as a robust fallback
@@ -562,12 +600,98 @@
     return sprite;
   }
 
+  function isSiteMeasureSelected(site) {
+    return Boolean(window.SiteMeasurement && window.SiteMeasurement.isSelected(site));
+  }
+
+  function updateMeasurementPinStyles() {
+    pinsMap.forEach(entry => {
+      const selected = isSiteMeasureSelected(entry.data);
+      const active = Boolean(entry.data.active);
+      entry.ringMesh.material.color.setHex(selected ? 0x299cff : active ? 0xc87d55 : 0x5a6068);
+      entry.headMesh.material.color.setHex(selected ? 0x299cff : active ? 0xc87d55 : 0x8ea8c3);
+      const scale = selected ? 1.3 : active ? 1.22 : 1.0;
+      entry.group.scale.set(scale, scale, scale);
+    });
+  }
+
+  function clear3DMeasurement() {
+    if (!measurementGroup || !moonMesh) return;
+    moonMesh.remove(measurementGroup);
+    measurementGroup.traverse(object => {
+      if (object.geometry) object.geometry.dispose();
+      if (object.material) {
+        if (object.material.map) object.material.map.dispose();
+        object.material.dispose();
+      }
+    });
+    measurementGroup = null;
+  }
+
+  function render3DMeasurement(measurement) {
+    clear3DMeasurement();
+    if (!measurement || !moonMesh || !Array.isArray(measurement.path) ||
+        measurement.path.length < 2) return;
+
+    measurementGroup = new THREE.Group();
+    const surfacePoints = measurement.path.map(point =>
+      getCartesianCoords(point.lat, point.lon).vector.multiplyScalar(1.006)
+    );
+    const lineCurve = new THREE.CatmullRomCurve3(surfacePoints);
+    const lineGeometry = new THREE.TubeGeometry(
+      lineCurve,
+      Math.max(64, measurement.path.length - 1),
+      0.012,
+      6,
+      false
+    );
+    const lineMaterial = new THREE.MeshBasicMaterial({
+      color: 0x299cff,
+      depthTest: true,
+      depthWrite: false
+    });
+    const line = new THREE.Mesh(lineGeometry, lineMaterial);
+    line.renderOrder = 2;
+    measurementGroup.add(line);
+
+    const midpoint = measurement.path[Math.floor(measurement.path.length / 2)];
+    const labelCanvas = document.createElement("canvas");
+    labelCanvas.width = 256;
+    labelCanvas.height = 64;
+    const context = labelCanvas.getContext("2d");
+    context.fillStyle = "rgba(8, 24, 42, 0.92)";
+    context.fillRect(4, 8, 248, 48);
+    context.strokeStyle = "#299cff";
+    context.lineWidth = 3;
+    context.strokeRect(4, 8, 248, 48);
+    context.fillStyle = "#58adff";
+    context.font = "bold 28px monospace";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(`${measurement.distanceKm.toFixed(1)} km`, 128, 33);
+    const labelTexture = new THREE.CanvasTexture(labelCanvas);
+    const labelMaterial = new THREE.SpriteMaterial({
+      map: labelTexture,
+      depthTest: true,
+      depthWrite: false
+    });
+    const label = new THREE.Sprite(labelMaterial);
+    label.scale.set(0.78, 0.2, 1);
+    label.position.copy(
+      getCartesianCoords(midpoint.lat, midpoint.lon).vector.multiplyScalar(1.055)
+    );
+    label.renderOrder = 3;
+    measurementGroup.add(label);
+    moonMesh.add(measurementGroup);
+  }
+
   function createOrUpdate3DPin(site) {
     if (!pinsContainer || !site || typeof site.lat !== "number" || typeof site.lon !== "number") return;
 
     const key = site.siteId || `site_${site.lat.toFixed(2)}_${site.lon.toFixed(2)}`;
     const coords = getCartesianCoords(site.lat, site.lon);
     const isActive = Boolean(site.active);
+    const isMeasureSelected = isSiteMeasureSelected(site);
     const number = site.number || 1;
 
     let pinEntry = pinsMap.get(key);
@@ -578,7 +702,7 @@
       // 1. Ground contact ring (landing target)
       const ringGeo = new THREE.RingGeometry(0.035, 0.055, 24);
       const ringMat = new THREE.MeshBasicMaterial({
-        color: isActive ? 0xc87d55 : 0x5a6068,
+        color: isMeasureSelected ? 0x299cff : isActive ? 0xc87d55 : 0x5a6068,
         side: THREE.DoubleSide
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
@@ -596,7 +720,7 @@
       // 3. Spherical pin head
       const headGeo = new THREE.SphereGeometry(0.05, 16, 16);
       const headMat = new THREE.MeshBasicMaterial({
-        color: isActive ? 0xc87d55 : 0x8ea8c3
+        color: isMeasureSelected ? 0x299cff : isActive ? 0xc87d55 : 0x8ea8c3
       });
       const headMesh = new THREE.Mesh(headGeo, headMat);
       headMesh.position.y = 0.13;
@@ -610,11 +734,8 @@
       group.position.set(coords.x, coords.y, coords.z);
       group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), coords.normal);
 
-      if (isActive) {
-        group.scale.set(1.22, 1.22, 1.22);
-      } else {
-        group.scale.set(1.0, 1.0, 1.0);
-      }
+      const scale = isMeasureSelected ? 1.3 : isActive ? 1.22 : 1.0;
+      group.scale.set(scale, scale, scale);
 
       // Metadata for raycasting
       const meta = {
@@ -649,14 +770,10 @@
       pinEntry.group.position.set(coords.x, coords.y, coords.z);
       pinEntry.group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), coords.normal);
 
-      pinEntry.headMesh.material.color.setHex(isActive ? 0xc87d55 : 0x8ea8c3);
-      pinEntry.ringMesh.material.color.setHex(isActive ? 0xc87d55 : 0x5a6068);
-
-      if (isActive) {
-        pinEntry.group.scale.set(1.22, 1.22, 1.22);
-      } else {
-        pinEntry.group.scale.set(1.0, 1.0, 1.0);
-      }
+      pinEntry.headMesh.material.color.setHex(isMeasureSelected ? 0x299cff : isActive ? 0xc87d55 : 0x8ea8c3);
+      pinEntry.ringMesh.material.color.setHex(isMeasureSelected ? 0x299cff : isActive ? 0xc87d55 : 0x5a6068);
+      const scale = isMeasureSelected ? 1.3 : isActive ? 1.22 : 1.0;
+      pinEntry.group.scale.set(scale, scale, scale);
 
       if (pinEntry.sprite) {
         pinEntry.group.remove(pinEntry.sprite);
@@ -715,9 +832,11 @@
                       (Math.abs((entry.data.lon - lon + 540) % 360 - 180) < 1.0);
       if (isMatch) foundPin = true;
       entry.data.active = isMatch;
-      entry.headMesh.material.color.setHex(isMatch ? 0xc87d55 : 0x8ea8c3);
-      entry.ringMesh.material.color.setHex(isMatch ? 0xc87d55 : 0x5a6068);
-      entry.group.scale.set(isMatch ? 1.22 : 1.0, isMatch ? 1.22 : 1.0, isMatch ? 1.22 : 1.0);
+      const selected = isSiteMeasureSelected(entry.data);
+      entry.headMesh.material.color.setHex(selected ? 0x299cff : isMatch ? 0xc87d55 : 0x8ea8c3);
+      entry.ringMesh.material.color.setHex(selected ? 0x299cff : isMatch ? 0xc87d55 : 0x5a6068);
+      const scale = selected ? 1.3 : isMatch ? 1.22 : 1.0;
+      entry.group.scale.set(scale, scale, scale);
 
       if (entry.sprite) {
         const pinEntryGroup = entry.group;
