@@ -22,7 +22,7 @@ This module provides precision 2D lunar inspection viewports with dual presentat
 - **Smart Dual-Height Workspace:**
   - **Baseline Tactical:** `390px` height (leaves $>530\text{px}$ of the Three.js 3D Moon sphere visible above).
   - **Maximized Inspection (`[ ⛶ Maximize ]`):** Expands the drawer to `500px` for deep crater inspection, and `[ ◰ Restore ]` returns to `390px`.
-- **Two-Point Great-Circle Distance Tool:** Clicking any two points across the maps calculates real surface distance in kilometers using the lunar sphere radius ($R = 1,737.4\text{ km}$).
+- **Cross-View Great-Circle Distance Tool:** Shift + right-click two marked sites to select a pair, then right-click either and choose **Measure distance**. A blue great-circle route and kilometer label appear in the global, North Pole, and South Pole views; the shared measurement also appears on the 3D Moon.
 - **Bidirectional Event Synchronization:**
   - **Emits:**
     - `site:marked`: `{ lat, lon, name, source, focus }` when clicking any map or quick target button.

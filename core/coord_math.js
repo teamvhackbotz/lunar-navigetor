@@ -231,6 +231,11 @@ const CoordMath = (function() {
    * @returns {number} Distance along lunar surface in kilometers
    */
   function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+    if (![lat1, lon1, lat2, lon2].every(Number.isFinite) ||
+        lat1 < -90 || lat1 > 90 || lat2 < -90 || lat2 > 90) {
+      return NaN;
+    }
+
     const toRad = Math.PI / 180;
     const phi1 = lat1 * toRad;
     const phi2 = lat2 * toRad;
@@ -241,9 +246,96 @@ const CoordMath = (function() {
     const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
               Math.cos(phi1) * Math.cos(phi2) *
               Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const clampedA = Math.min(1, Math.max(0, a));
+    const c = 2 * Math.atan2(Math.sqrt(clampedA), Math.sqrt(1 - clampedA));
 
     return MOON_RADIUS_KM * c;
+  }
+
+  /**
+   * Samples the shortest great-circle route between two lunar coordinates.
+   *
+   * @returns {Array<{lat: number, lon: number}>} Surface points from start to end
+   */
+  function getGreatCirclePoints(lat1, lon1, lat2, lon2, segments = 96) {
+    if (![lat1, lon1, lat2, lon2].every(Number.isFinite) ||
+        lat1 < -90 || lat1 > 90 || lat2 < -90 || lat2 > 90) {
+      return [];
+    }
+
+    const requestedSegments = Number.isFinite(segments) ? Math.floor(segments) : 96;
+    const count = Math.min(512, Math.max(2, requestedSegments));
+    const toRad = Math.PI / 180;
+    const toVector = (lat, lon) => {
+      const phi = lat * toRad;
+      const lambda = lon * toRad;
+      return {
+        x: Math.cos(phi) * Math.cos(lambda),
+        y: Math.sin(phi),
+        z: Math.cos(phi) * Math.sin(lambda)
+      };
+    };
+    const start = toVector(lat1, lon1);
+    const end = toVector(lat2, lon2);
+    const dot = Math.min(1, Math.max(-1,
+      start.x * end.x + start.y * end.y + start.z * end.z
+    ));
+    const angle = Math.acos(dot);
+    let tangent = null;
+
+    if (Math.PI - angle < 1e-6) {
+      const reference = Math.abs(start.y) < 0.9
+        ? { x: 0, y: 1, z: 0 }
+        : { x: 1, y: 0, z: 0 };
+      tangent = {
+        x: start.y * reference.z - start.z * reference.y,
+        y: start.z * reference.x - start.x * reference.z,
+        z: start.x * reference.y - start.y * reference.x
+      };
+      const length = Math.hypot(tangent.x, tangent.y, tangent.z);
+      tangent.x /= length;
+      tangent.y /= length;
+      tangent.z /= length;
+    }
+
+    const points = [];
+    for (let index = 0; index <= count; index += 1) {
+      const t = index / count;
+      if (index === 0) {
+        points.push({ lat: lat1, lon: ((lon1 % 360) + 360) % 360 });
+        continue;
+      }
+      if (index === count) {
+        points.push({ lat: lat2, lon: ((lon2 % 360) + 360) % 360 });
+        continue;
+      }
+
+      let vector;
+      if (tangent) {
+        vector = {
+          x: start.x * Math.cos(Math.PI * t) + tangent.x * Math.sin(Math.PI * t),
+          y: start.y * Math.cos(Math.PI * t) + tangent.y * Math.sin(Math.PI * t),
+          z: start.z * Math.cos(Math.PI * t) + tangent.z * Math.sin(Math.PI * t)
+        };
+      } else if (angle < 1e-8) {
+        vector = start;
+      } else {
+        const startWeight = Math.sin((1 - t) * angle) / Math.sin(angle);
+        const endWeight = Math.sin(t * angle) / Math.sin(angle);
+        vector = {
+          x: start.x * startWeight + end.x * endWeight,
+          y: start.y * startWeight + end.y * endWeight,
+          z: start.z * startWeight + end.z * endWeight
+        };
+      }
+
+      points.push({
+        lat: Math.asin(Math.min(1, Math.max(-1, vector.y))) / toRad,
+        lon: (Math.atan2(vector.z, vector.x) / toRad + 360) % 360
+      });
+    }
+
+    return points;
   }
 
   // Expose cartographic methods in return package
@@ -257,7 +349,8 @@ const CoordMath = (function() {
     polarSouthToLatLon,
     latLonToPolarNorth,
     polarNorthToLatLon,
-    calculateDistanceKm
+    calculateDistanceKm,
+    getGreatCirclePoints
   };
 })();
 

@@ -1582,9 +1582,12 @@
             const card = column.querySelector(".site-card");
             if (!card) return null;
             return {
+              siteId: column.dataset.siteId,
+              number: Number(card.dataset.cardIndex),
               name: card.dataset.name || "",
               lat: Number(card.dataset.lat),
-              lon: Number(card.dataset.lon)
+              lon: Number(card.dataset.lon),
+              active: card.classList.contains("active")
             };
           })
           .filter(site => site && site.name &&

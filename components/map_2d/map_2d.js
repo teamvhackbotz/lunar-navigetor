@@ -74,8 +74,8 @@
   let rightWingExpanded = false; // Right wing: Live Telemetry (Collapsed as Default)
   let isMaximized = false; // Default: 390px baseline height
 
-  // Two-point geodesic distance state
-  let measurePointA = null;
+  let candidateSites = [];
+  const measurementSvgs = new Map();
 
   // Cached active landing site (defaults to Artemis target: Connecting Ridge)
   let lastMarkedSite = { lat: -89.4, lon: 222.6, name: "Connecting Ridge" };
@@ -253,6 +253,7 @@
     initMapPanEvents();
     bindViewportClickListeners();
     loadPreferences();
+    initMeasurementOverlays();
 
     // EventBus Subscription: External site:marked events
     if (window.eventBus) {
@@ -260,6 +261,33 @@
         lastMarkedSite = data;
         renderMarkers(data);
         updateTelemetryRightWing(data);
+      });
+
+      window.eventBus.on("cards:synced", data => {
+        if (!data || !Array.isArray(data.cards)) return;
+        candidateSites = data.cards.filter(site =>
+          Number.isFinite(site.lat) && Number.isFinite(site.lon)
+        );
+        if (window.SiteMeasurement) {
+          window.SiteMeasurement.syncSites(candidateSites);
+        }
+        renderCandidateMarkers();
+      });
+
+      window.eventBus.on("site-measurement:selection-changed", data => {
+        renderCandidateMarkers();
+        updateDistanceBadge(
+          data && Array.isArray(data.sites) ? data.sites : [],
+          window.SiteMeasurement ? window.SiteMeasurement.getMeasurement() : null
+        );
+      });
+
+      window.eventBus.on("site-measurement:changed", measurement => {
+        renderMeasurementOverlays(measurement);
+        updateDistanceBadge(
+          window.SiteMeasurement ? window.SiteMeasurement.getSelectedSites() : [],
+          measurement
+        );
       });
 
       // Texture resolution synchronizer (updates 2D basemap sharpness & header pill)
@@ -277,9 +305,24 @@
       });
     }
 
+    if (window.ComparisonCards) {
+      candidateSites = window.ComparisonCards.getMarkedSites();
+      if (window.SiteMeasurement) {
+        window.SiteMeasurement.syncSites(candidateSites);
+      }
+    }
+
     // Initial render
     applyPresentationState();
     updateTelemetryRightWing(lastMarkedSite);
+    renderMarkers(lastMarkedSite);
+    renderMeasurementOverlays(
+      window.SiteMeasurement ? window.SiteMeasurement.getMeasurement() : null
+    );
+    updateDistanceBadge(
+      window.SiteMeasurement ? window.SiteMeasurement.getSelectedSites() : [],
+      window.SiteMeasurement ? window.SiteMeasurement.getMeasurement() : null
+    );
   }
 
   // ==========================================================================
@@ -710,19 +753,6 @@
       source
     };
 
-    // Two-point geodesic distance state machine
-    if (!measurePointA) {
-      measurePointA = siteData;
-      updateDistanceBadge(0, `Pt A: ${siteData.name}`);
-    } else {
-      const dist = window.CoordMath.calculateDistanceKm(
-        measurePointA.lat, measurePointA.lon,
-        siteData.lat, siteData.lon
-      );
-      updateDistanceBadge(dist, `A ➔ B: ${dist.toFixed(1)} km`);
-      measurePointA = null;
-    }
-
     lastMarkedSite = siteData;
     renderMarkers(siteData);
     updateTelemetryRightWing(siteData);
@@ -732,11 +762,22 @@
     }
   }
 
-  function updateDistanceBadge(distKm, label) {
+  function updateDistanceBadge(sites, measurement) {
     const distEl = document.getElementById("map-distance-display");
-    if (distEl) {
-      distEl.innerHTML = `📏 <strong>${distKm.toFixed(1)} km</strong>`;
-      distEl.title = `Geodesic distance: ${distKm.toFixed(1)} km (${label})`;
+    if (!distEl) return;
+
+    if (measurement) {
+      distEl.textContent = `📏 ${measurement.distanceKm.toFixed(1)} km`;
+      distEl.title = `Surface distance: ${measurement.sites[0].name} to ${measurement.sites[1].name}`;
+    } else if (sites.length === 2) {
+      distEl.textContent = "📏 Pair ready";
+      distEl.title = "Right-click either selected site and choose Measure distance.";
+    } else if (sites.length === 1) {
+      distEl.textContent = "📏 1/2 selected";
+      distEl.title = "Shift + right-click another marked site to complete the pair.";
+    } else {
+      distEl.textContent = "📏 Select 2 sites";
+      distEl.title = "Shift + right-click two marked sites, then right-click either and choose Measure distance.";
     }
   }
 
@@ -744,61 +785,241 @@
   // 9. MULTI-PROJECTION MARKER RENDERER
   // ==========================================================================
   function renderMarkers(data) {
-    if (!data) return;
+    if (data) {
+      // 1. Render on North Pole Disc (lat >= 70°N)
+      const northDisc = document.getElementById("north-polar-map-disc");
+      const northPin = document.getElementById("north-polar-active-pin");
+      if (northDisc && northPin) {
+        const baseW = northDisc.offsetWidth || 290;
+        const cx = baseW / 2;
+        const cy = baseW / 2;
+        const r = (baseW / 2) - 8;
 
-    // 1. Render on North Pole Disc (lat >= 70°N)
-    const northDisc = document.getElementById("north-polar-map-disc");
-    const northPin = document.getElementById("north-polar-active-pin");
-    if (northDisc && northPin) {
-      const baseW = northDisc.offsetWidth || 290;
-      const cx = baseW / 2;
-      const cy = baseW / 2;
-      const r = (baseW / 2) - 8;
+        const numLabel = data.number ? `#${data.number} ` : "";
+        if (data.lat >= 70.0) {
+          const pos = window.CoordMath.latLonToPolarNorth(data.lat, data.lon, cx, cy, r, 70.0);
+          northPin.style.display = "block";
+          northPin.style.left = `${pos.x}px`;
+          northPin.style.top = `${pos.y}px`;
+          northPin.textContent = `📍 ${numLabel}${data.name}`;
+        } else {
+          northPin.style.display = "none";
+        }
+      }
 
-      const numLabel = data.number ? `#${data.number} ` : "";
-      if (data.lat >= 70.0) {
-        const pos = window.CoordMath.latLonToPolarNorth(data.lat, data.lon, cx, cy, r, 70.0);
-        northPin.style.display = "block";
-        northPin.style.left = `${pos.x}px`;
-        northPin.style.top = `${pos.y}px`;
-        northPin.textContent = `📍 ${numLabel}${data.name}`;
-      } else {
-        northPin.style.display = "none";
+      // 2. Render on South Pole Disc (lat <= -70°S)
+      const southDisc = document.getElementById("south-polar-map-disc");
+      const southPin = document.getElementById("south-polar-active-pin");
+      if (southDisc && southPin) {
+        const baseW = southDisc.offsetWidth || 290;
+        const cx = baseW / 2;
+        const cy = baseW / 2;
+        const r = (baseW / 2) - 8;
+
+        const numLabel = data.number ? `#${data.number} ` : "";
+        if (data.lat <= -70.0) {
+          const pos = window.CoordMath.latLonToPolarSouth(data.lat, data.lon, cx, cy, r, -70.0);
+          southPin.style.display = "block";
+          southPin.style.left = `${pos.x}px`;
+          southPin.style.top = `${pos.y}px`;
+          southPin.textContent = `📍 ${numLabel}${data.name}`;
+        } else {
+          southPin.style.display = "none";
+        }
+      }
+
+      // 3. Render on Global Flat Map
+      const rectMap = document.getElementById("rect-map-canvas-mock");
+      const rectPin = document.getElementById("rect-active-pin");
+      if (rectMap && rectPin) {
+        const pos = window.CoordMath.latLonToRect(
+          data.lat, data.lon, rectMap.offsetWidth || 580, rectMap.offsetHeight || 290
+        );
+        rectPin.style.left = `${(pos.x / (rectMap.offsetWidth || 580) * 100).toFixed(2)}%`;
+        rectPin.style.top = `${(pos.y / (rectMap.offsetHeight || 290) * 100).toFixed(2)}%`;
       }
     }
 
-    // 2. Render on South Pole Disc (lat <= -70°S)
-    const southDisc = document.getElementById("south-polar-map-disc");
-    const southPin = document.getElementById("south-polar-active-pin");
-    if (southDisc && southPin) {
-      const baseW = southDisc.offsetWidth || 290;
-      const cx = baseW / 2;
-      const cy = baseW / 2;
-      const r = (baseW / 2) - 8;
+    renderCandidateMarkers();
+    renderMeasurementOverlays(
+      window.SiteMeasurement ? window.SiteMeasurement.getMeasurement() : null
+    );
+  }
 
-      const numLabel = data.number ? `#${data.number} ` : "";
-      if (data.lat <= -70.0) {
-        const pos = window.CoordMath.latLonToPolarSouth(data.lat, data.lon, cx, cy, r, -70.0);
-        southPin.style.display = "block";
-        southPin.style.left = `${pos.x}px`;
-        southPin.style.top = `${pos.y}px`;
-        southPin.textContent = `📍 ${numLabel}${data.name}`;
-      } else {
-        southPin.style.display = "none";
+  function initMeasurementOverlays() {
+    const surfaces = [
+      ["north", "north-polar-map-disc"],
+      ["global", "rect-map-canvas-mock"],
+      ["south", "south-polar-map-disc"]
+    ];
+
+    surfaces.forEach(([projection, id]) => {
+      const surface = document.getElementById(id);
+      if (!surface) return;
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add("site-measurement-svg");
+      svg.setAttribute("aria-hidden", "true");
+      surface.appendChild(svg);
+      measurementSvgs.set(projection, { surface, svg });
+    });
+  }
+
+  function renderCandidateMarkers() {
+    const surfaces = [
+      ["north", "north-polar-map-disc"],
+      ["global", "rect-map-canvas-mock"],
+      ["south", "south-polar-map-disc"]
+    ];
+    const selectedSites = window.SiteMeasurement
+      ? window.SiteMeasurement.getSelectedSites()
+      : [];
+
+    surfaces.forEach(([projection, id]) => {
+      const surface = document.getElementById(id);
+      if (!surface) return;
+      surface.querySelectorAll(".site-measure-point").forEach(marker => marker.remove());
+
+      const width = surface.offsetWidth || (projection === "global" ? 580 : 290);
+      const height = surface.offsetHeight || (projection === "global" ? 290 : width);
+      const radius = width / 2 - 8;
+      const center = width / 2;
+
+      candidateSites.forEach((site, index) => {
+        const point = projection === "global"
+          ? window.CoordMath.latLonToRect(site.lat, site.lon, width, height)
+          : projection === "north"
+            ? window.CoordMath.latLonToPolarNorth(site.lat, site.lon, center, center, radius, 70)
+            : window.CoordMath.latLonToPolarSouth(site.lat, site.lon, center, center, radius, -70);
+        if (point.visible === false) return;
+
+        const marker = document.createElement("button");
+        marker.type = "button";
+        marker.className = "site-measure-point";
+        marker.dataset.siteId = site.siteId || `${site.lat.toFixed(5)}:${site.lon.toFixed(5)}`;
+        marker.textContent = String(site.number || index + 1);
+        marker.title = site.name || `Site ${index + 1}`;
+        marker.setAttribute("aria-label", marker.title);
+        marker.style.left = `${point.x}px`;
+        marker.style.top = `${point.y}px`;
+        if (window.SiteMeasurement && window.SiteMeasurement.isSelected(site)) {
+          marker.classList.add("is-measure-selected");
+        }
+        if (lastMarkedSite &&
+            Math.abs(lastMarkedSite.lat - site.lat) < 0.02 &&
+            Math.abs((lastMarkedSite.lon - site.lon + 540) % 360 - 180) < 0.02) {
+          marker.classList.add("is-active");
+        }
+        marker.addEventListener("click", event => event.stopPropagation());
+        marker.addEventListener("contextmenu", event => {
+          if (window.SiteMeasurement) {
+            window.SiteMeasurement.handleContextMenu(event, site);
+          }
+        });
+        surface.appendChild(marker);
+      });
+    });
+  }
+
+  function projectMeasurementPoint(projection, point, width, height) {
+    if (projection === "global") {
+      return window.CoordMath.latLonToRect(point.lat, point.lon, width, height);
+    }
+    const center = width / 2;
+    const radius = width / 2 - 8;
+    const projected = projection === "north"
+      ? window.CoordMath.latLonToPolarNorth(point.lat, point.lon, center, center, radius, 70)
+      : window.CoordMath.latLonToPolarSouth(point.lat, point.lon, center, center, radius, -70);
+    return projected.visible ? projected : null;
+  }
+
+  function createMeasurementSegments(projection, path, width, height) {
+    const segments = [];
+    let current = [];
+
+    path.forEach(point => {
+      const projected = projectMeasurementPoint(projection, point, width, height);
+      if (!projected) {
+        if (current.length > 1) segments.push(current);
+        current = [];
+        return;
       }
-    }
 
-    // 3. Render on Global Flat Map
-    const rectMap = document.getElementById("rect-map-canvas-mock");
-    const rectPin = document.getElementById("rect-active-pin");
-    if (rectMap && rectPin) {
-      let normLon = ((data.lon + 180) % 360) - 180;
-      if (normLon < -180) normLon += 360;
-      const u = (normLon + 180) / 360;
-      const v = (90 - data.lat) / 180;
-      rectPin.style.left = `${(u * 100).toFixed(2)}%`;
-      rectPin.style.top = `${(v * 100).toFixed(2)}%`;
-    }
+      if (projection === "global" && current.length) {
+        const previous = current[current.length - 1];
+        if (Math.abs(projected.x - previous.x) > width / 2) {
+          const wrapsRight = previous.x > projected.x;
+          const unwrappedX = projected.x + (wrapsRight ? width : -width);
+          const edgeX = wrapsRight ? width : 0;
+          const fraction = (edgeX - previous.x) / (unwrappedX - previous.x);
+          const edgeY = previous.y + (projected.y - previous.y) * fraction;
+          current.push({ x: edgeX, y: edgeY });
+          if (current.length > 1) segments.push(current);
+          current = [{ x: wrapsRight ? 0 : width, y: edgeY }, projected];
+          return;
+        }
+      }
+
+      current.push(projected);
+    });
+
+    if (current.length > 1) segments.push(current);
+    return segments;
+  }
+
+  function renderMeasurementOverlays(measurement) {
+    measurementSvgs.forEach(({ surface, svg }, projection) => {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      if (!measurement) return;
+
+      const width = surface.offsetWidth || (projection === "global" ? 580 : 290);
+      const height = surface.offsetHeight || (projection === "global" ? 290 : width);
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      const namespace = "http://www.w3.org/2000/svg";
+      const segments = createMeasurementSegments(projection, measurement.path, width, height);
+
+      segments.forEach(segment => {
+        const line = document.createElementNS(namespace, "path");
+        const pathData = segment.map((point, index) =>
+          `${index ? "L" : "M"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`
+        ).join(" ");
+        line.setAttribute("d", pathData);
+        line.setAttribute("fill", "none");
+        line.setAttribute("stroke", "#299cff");
+        line.setAttribute("stroke-width", "2.5");
+        line.setAttribute("stroke-linecap", "round");
+        line.setAttribute("stroke-linejoin", "round");
+        line.setAttribute("vector-effect", "non-scaling-stroke");
+        svg.appendChild(line);
+      });
+
+      const midpoint = measurement.path[Math.floor(measurement.path.length / 2)];
+      const labelPoint = projectMeasurementPoint(projection, midpoint, width, height);
+      if (labelPoint) {
+        const label = `${measurement.distanceKm.toFixed(1)} km`;
+        const labelWidth = label.length * 7 + 14;
+        const labelY = labelPoint.y < 27 ? labelPoint.y + 26 : labelPoint.y - 12;
+        const group = document.createElementNS(namespace, "g");
+        const background = document.createElementNS(namespace, "rect");
+        background.setAttribute("x", String(labelPoint.x - labelWidth / 2));
+        background.setAttribute("y", String(labelY - 14));
+        background.setAttribute("width", String(labelWidth));
+        background.setAttribute("height", "19");
+        background.setAttribute("rx", "4");
+        background.setAttribute("fill", "rgba(8, 24, 42, 0.92)");
+        background.setAttribute("stroke", "#299cff");
+        const text = document.createElementNS(namespace, "text");
+        text.setAttribute("x", String(labelPoint.x));
+        text.setAttribute("y", String(labelY));
+        text.setAttribute("fill", "#58adff");
+        text.setAttribute("font-size", "12");
+        text.setAttribute("font-family", "monospace");
+        text.setAttribute("font-weight", "700");
+        text.setAttribute("text-anchor", "middle");
+        text.textContent = label;
+        group.append(background, text);
+        svg.appendChild(group);
+      }
+    });
   }
 
   // ==========================================================================

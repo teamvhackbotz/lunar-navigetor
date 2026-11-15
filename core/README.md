@@ -28,8 +28,14 @@ The `core/` directory provides the shared architectural foundation for the Lunar
   - `latLonToPolarSouth(lat, lon, cx, cy, r, bound)` / `polarSouthToLatLon(...)`: Forward & inverse South Pole Stereographic projection ($\le -70^\circ$).
   - `latLonToPolarNorth(lat, lon, cx, cy, r, bound)` / `polarNorthToLatLon(...)`: Forward & inverse North Pole Stereographic projection ($\ge +70^\circ$).
   - `calculateDistanceKm(lat1, lon1, lat2, lon2)`: Spherical Haversine great-circle distance on the lunar sphere.
+  - `getGreatCirclePoints(lat1, lon1, lat2, lon2, segments)`: Samples the shortest surface route for map and globe overlays.
 
-### 3. Micro-Frontend Component Loader (`core/loader.js`)
+### 3. Shared Site Measurement (`core/site_measurement.js`)
+- **Role:** Keeps Shift + right-click pair selection and the Measure distance action consistent across 2D and 3D views.
+- **Topics:** `site-measurement:selection-changed` broadcasts selected sites; `site-measurement:changed` broadcasts the route and lunar surface distance in kilometers.
+- **Clear:** Press Escape to clear the pair and its overlays.
+
+### 4. Micro-Frontend Component Loader (`core/loader.js`)
 - **Role:** Asynchronously fetches, mounts, and initializes all component modules on `DOMContentLoaded`.
 - **Execution Flow:**
   1. Injects component markup into corresponding `#mount-<name>` containers.
