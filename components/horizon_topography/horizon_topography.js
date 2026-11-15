@@ -869,7 +869,10 @@
     });
 
     if (window.eventBus) {
-      window.eventBus.emit("layer:opacity", { opacity: activeOpacity });
+      window.eventBus.emit("layer:opacity", {
+        opacity: activeOpacity,
+        percent: Math.round(activeOpacity * 100)
+      });
     }
 
     return activeOpacity;
@@ -1167,7 +1170,9 @@
       }
       renderWaypoints(activeSite);
       updatePowerBudgetAndStay();
-      updateOverlayGeographicBounds(site.lat, site.lon);
+      const targetLat = (site.coordinates && typeof site.coordinates.lat === "number") ? site.coordinates.lat : (typeof site.lat === "number" ? site.lat : data.lat);
+      const targetLon = (site.coordinates && typeof site.coordinates.lon === "number") ? site.coordinates.lon : (typeof site.lon === "number" ? site.lon : data.lon);
+      updateOverlayGeographicBounds(targetLat, targetLon);
     } else if (data.name) {
       if (siteTitleEl) siteTitleEl.textContent = `📍 Active: ${data.name}`;
       const lower = data.name.toLowerCase();
@@ -1214,12 +1219,14 @@
     setLayer: setLayer,
     getLayers: getLayers,
     isLayerActive: isLayerActive,
-    updateGeographicContext: updateOverlayGeographicBounds,
     setOpacity: setOpacity,
     getOpacity: () => activeOpacity,
     setLegend: updateCalibrationLegend,
     getLegend: () => activeLegend,
+    getActiveLegend: () => activeLegend,
     getLegendSpec: (id) => CALIBRATION_SPECS[id || activeLegend],
+    updateGeographicContext: updateOverlayGeographicBounds,
+    updateOverlayGeographicBounds: updateOverlayGeographicBounds,
     CALIBRATION_SPECS: CALIBRATION_SPECS
   };
 

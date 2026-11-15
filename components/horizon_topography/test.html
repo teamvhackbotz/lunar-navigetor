@@ -1,380 +1,250 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Mission Planner & GIS Overlays - Standalone Test Harness</title>
-    <!-- Global design system styles -->
-    <link rel="stylesheet" href="../../styles.css" />
-    <!-- Active operational theme stylesheet -->
-    <link
-      rel="stylesheet"
-      id="theme-stylesheet"
-      href="../../themes/theme_earth.css"
-    />
-    <!-- Horizon / Mission drawers component styles -->
-    <link rel="stylesheet" href="horizon_topography.css" />
-    <!-- Shared Theme Manager -->
-    <script src="../../themes/theme_manager.js"></script>
-    <style>
-      body {
-        background: var(--bg-deep-space, #141618);
-        margin: 0;
-        padding: 20px;
-        font-family: sans-serif;
-        color: var(--text-primary, #ede8e1);
-        height: 100vh;
-        overflow: hidden;
-      }
-      .test-banner {
-        max-width: 620px;
-        margin: 20px auto;
-        text-align: center;
-      }
-    </style>
-  </head>
-  <body class="theme-earth">
-    <!-- Checkboxes for pure CSS drawer toggling -->
-    <input type="checkbox" id="toggle-left-horizon" class="drawer-toggle" />
-    <input type="checkbox" id="toggle-right-horizon" class="drawer-toggle" />
+<head>
+  <meta charset="UTF-8">
+  <title>Mission Planner & GIS Overlays - Standalone Test Harness</title>
+  <!-- Global design system styles -->
+  <link rel="stylesheet" href="../../styles.css">
+  <!-- Active operational theme stylesheet -->
+  <link rel="stylesheet" id="theme-stylesheet" href="../../themes/theme_earth.css">
+  <!-- Horizon / Mission drawers component styles -->
+  <link rel="stylesheet" href="horizon_topography.css">
+  <!-- Shared Theme Manager -->
+  <script src="../../themes/theme_manager.js"></script>
+  <style>
+    body {
+      background: var(--bg-deep-space, #141618);
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text-primary, #ede8e1);
+      height: 100vh;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    .test-banner {
+      max-width: 720px;
+      margin: 0 auto 20px;
+      text-align: center;
+    }
+    .sim-panel {
+      background: var(--bg-surface-dark, #1e2022);
+      border: 1px solid var(--border-subtle, #3a3c3f);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+    .sim-panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-sand, #c99e52);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-sim {
+      padding: 5px 9px;
+      font-size: 11px;
+      font-family: var(--font-mono, monospace);
+      background: #272a2d;
+      border: 1px solid #44474b;
+      border-radius: 4px;
+      color: #ede8e1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-sim:hover {
+      background: #33373b;
+      border-color: var(--accent-sand, #c99e52);
+      color: #fff;
+    }
+    .btn-cluster {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body class="theme-earth">
 
-    <div class="test-banner">
-      <h2 style="font-size: 18px; margin-bottom: 6px">
-        Mission Planner & GIS Overlays Test Harness
-      </h2>
-      <p
-        style="
-          font-size: 13px;
-          color: var(--text-muted, #8c867c);
-          margin-bottom: 16px;
-        "
-      >
-        Click the screen edge handles on the <strong>Left</strong> (<code
-          >[ 🧭 Mission & Traverse ]</code
-        >) and <strong>Right</strong> (<code>[ 🗺️ GIS Overlays ]</code>) to
-        slide open each global analytical tool.
-      </p>
+  <!-- Checkboxes for pure CSS drawer toggling -->
+  <input type="checkbox" id="toggle-left-horizon" class="drawer-toggle">
+  <input type="checkbox" id="toggle-right-horizon" class="drawer-toggle">
 
-      <!-- Test Trigger Buttons -->
-      <div
-        style="
-          display: flex;
-          gap: 10px;
-          justify-content: center;
-          margin-bottom: 12px;
-        "
-      >
-        <label
-          for="toggle-left-horizon"
-          style="
-            padding: 8px 14px;
-            background: var(--bg-surface-dark, #1e2022);
-            border: 1px solid var(--border-subtle, #3a3c3f);
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-          "
-        >
-          Toggle Left Planner
-        </label>
-        <label
-          for="toggle-right-horizon"
-          style="
-            padding: 8px 14px;
-            background: var(--bg-surface-dark, #1e2022);
-            border: 1px solid var(--border-subtle, #3a3c3f);
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-          "
-        >
-          Toggle Right Overlays
-        </label>
+  <div class="test-banner">
+    <h2 style="font-size: 18px; margin: 0 0 4px; color: var(--accent-sand, #c99e52);">Mission Planner & GIS Overlays Test Harness</h2>
+    <p style="font-size: 12px; color: var(--text-muted, #8c867c); margin: 0 0 14px;">
+      Standalone interactive sandbox for Left Drawer (Universal Traverse Planner) & Right Drawer (GIS Remote Sensing).
+    </p>
+
+    <!-- Master Drawer Open/Close Toggles -->
+    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 14px;">
+      <label for="toggle-left-horizon" class="btn-sim" style="padding: 7px 14px; font-weight: 600; cursor: pointer;">
+        🧭 Toggle Left Mission Planner
+      </label>
+      <label for="toggle-right-horizon" class="btn-sim" style="padding: 7px 14px; font-weight: 600; cursor: pointer;">
+        🗺️ Toggle Right GIS Overlays
+      </label>
+    </div>
+
+    <!-- Cluster 1: Left Drawer Simulation Triggers -->
+    <div class="sim-panel">
+      <div class="sim-panel-title">
+        <span>Left Drawer Simulation: Surface Archetypes & Sites</span>
+        <span style="font-size: 9px; color: var(--text-muted, #8c867c);">window.MissionPlanner</span>
       </div>
-
-      <!-- Interactive Simulation Controls -->
-      <div
-        style="
-          background: var(--bg-surface-dark, #1e2022);
-          border: 1px solid var(--border-subtle, #3a3c3f);
-          border-radius: 6px;
-          padding: 12px;
-          margin-bottom: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        "
-      >
-        <div
-          style="
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--accent-sand, #c99e52);
-            text-transform: uppercase;
-          "
-        >
-          Simulate Site Marking
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="btn-cluster">
+          <button type="button" class="btn-sim" onclick="simSetArchetype('crewed')">🧑‍🚀 Crewed Sortie</button>
+          <button type="button" class="btn-sim" onclick="simSetArchetype('rover')">🤖 Robotic Rover</button>
+          <button type="button" class="btn-sim" onclick="simSetArchetype('lander')">📡 Science Lander</button>
+          <button type="button" class="btn-sim" onclick="simSetArchetype('basecamp')">🏗️ Base Camp</button>
         </div>
-        <div
-          style="
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            justify-content: center;
-          "
-        >
-          <button
-            type="button"
-            onclick="
-              simMarkSite('shackleton', 'Peak Near Shackleton', -89.6, 129.2)
-            "
-            style="
-              padding: 5px 8px;
-              font-size: 11px;
-              background: #2a2d30;
-              border: 1px solid #444;
-              border-radius: 4px;
-              color: #ede8e1;
-              cursor: pointer;
-            "
-          >
-            📍 Polar: Shackleton
-          </button>
-          <button
-            type="button"
-            onclick="
-              simMarkSite(
-                'apollo-11',
-                'Apollo 11 Tranquility Base',
-                0.67,
-                23.47,
-              )
-            "
-            style="
-              padding: 5px 8px;
-              font-size: 11px;
-              background: #2a2d30;
-              border: 1px solid #444;
-              border-radius: 4px;
-              color: #ede8e1;
-              cursor: pointer;
-            "
-          >
-            📍 Equatorial: Apollo 11
-          </button>
-          <button
-            type="button"
-            onclick="
-              simMarkSite(
-                'change-4',
-                'Von Kármán Basin (Far Side)',
-                -45.45,
-                177.58,
-              )
-            "
-            style="
-              padding: 5px 8px;
-              font-size: 11px;
-              background: #2a2d30;
-              border: 1px solid #444;
-              border-radius: 4px;
-              color: #ede8e1;
-              cursor: pointer;
-            "
-          >
-            📍 Far Side: Chang'e 4
-          </button>
-          <button
-            type="button"
-            onclick="
-              simMarkSite('custom-pin', 'Custom Mare Outpost', 15.2, 40.5)
-            "
-            style="
-              padding: 5px 8px;
-              font-size: 11px;
-              background: #2a2d30;
-              border: 1px solid #444;
-              border-radius: 4px;
-              color: #ede8e1;
-              cursor: pointer;
-            "
-          >
-            📍 Custom Coordinates
-          </button>
+        <div class="btn-cluster">
+          <button type="button" class="btn-sim" onclick="simMarkSite('shackleton', 'Peak Near Shackleton', -89.6, 129.2)">📍 Polar (Shackleton)</button>
+          <button type="button" class="btn-sim" onclick="simMarkSite('apollo-11', 'Apollo 11 Tranquility Base', 0.67, 23.47)">📍 Equatorial (Apollo 11)</button>
+          <button type="button" class="btn-sim" onclick="simMarkSite('change-4', 'Von Kármán (Far Side)', -45.45, 177.58)">📍 Far Side (Chang'e 4)</button>
+          <button type="button" class="btn-sim" onclick="simMarkSite('custom-pin', 'Custom Outpost', 15.2, 40.5)">📍 Custom (15.2°S, 40.5°E)</button>
         </div>
-
-        <div
-          style="
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--accent-sand, #c99e52);
-            text-transform: uppercase;
-            margin-top: 4px;
-          "
-        >
-          Simulate Archetype Switch
-        </div>
-        <div style="display: flex; gap: 6px; justify-content: center">
-          <button
-            type="button"
-            onclick="simSetArchetype('crewed')"
-            style="
-              padding: 5px 8px;
-              font-size: 11px;
-              background: #2a2d30;
-              border: 1px solid #444;
-              border-radius: 4px;
-              color: #ede8e1;
-              cursor: pointer;
-            "
-          >
-            🧑‍🚀 Crewed
-          </button>
-          <button
-            type="button"
-            onclick="simSetArchetype('rover')"
-            style="
-              padding: 5px 8px;
-              font-size: 11px;
-              background: #2a2d30;
-              border: 1px solid #444;
-              border-radius: 4px;
-              color: #ede8e1;
-              cursor: pointer;
-            "
-          >
-            🤖 Rover
-          </button>
-          <button
-            type="button"
-            onclick="simSetArchetype('lander')"
-            style="
-              padding: 5px 8px;
-              font-size: 11px;
-              background: #2a2d30;
-              border: 1px solid #444;
-              border-radius: 4px;
-              color: #ede8e1;
-              cursor: pointer;
-            "
-          >
-            📡 Lander
-          </button>
-          <button
-            type="button"
-            onclick="simSetArchetype('basecamp')"
-            style="
-              padding: 5px 8px;
-              font-size: 11px;
-              background: #2a2d30;
-              border: 1px solid #444;
-              border-radius: 4px;
-              color: #ede8e1;
-              cursor: pointer;
-            "
-          >
-            🏗️ Base Camp
-          </button>
-        </div>
-      </div>
-
-      <!-- Real-time EventBus logging console -->
-      <div
-        id="event-log"
-        style="
-          margin-top: 16px;
-          padding: 15px;
-          background: var(--bg-surface-dark, #1e2022);
-          border: 1px solid var(--border-subtle, #3a3c3f);
-          border-radius: 6px;
-          font-family: monospace;
-          font-size: 12px;
-          color: var(--text-secondary, #beb7ac);
-          text-align: left;
-        "
-      >
-        <strong>Event Bus Output:</strong>
-        <ul
-          id="log-list"
-          style="
-            margin: 8px 0 0;
-            padding-left: 20px;
-            max-height: 160px;
-            overflow-y: auto;
-          "
-        >
-          <li>Listening for drawer events...</li>
-        </ul>
       </div>
     </div>
 
-    <!-- Micro-frontend mount container -->
-    <div id="mount-horizon-topography"></div>
+    <!-- Cluster 2: Right Drawer Simulation Triggers -->
+    <div class="sim-panel">
+      <div class="sim-panel-title">
+        <span>Right Drawer Simulation: Basemaps, Overlays & Legends</span>
+        <span style="font-size: 9px; color: var(--text-muted, #8c867c);">window.GISOverlays</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Basemap Switching -->
+        <div class="btn-cluster">
+          <span style="font-size: 10px; color: var(--text-muted, #8c867c); align-self: center; width: 65px;">Basemap:</span>
+          <button type="button" class="btn-sim" onclick="simSetBasemap('lroc')">📷 LROC WAC (100m)</button>
+          <button type="button" class="btn-sim" onclick="simSetBasemap('lola')">⛰️ LOLA DEM (59m)</button>
+          <button type="button" class="btn-sim" onclick="simSetBasemap('kaguya')">🛰️ Kaguya TC (10m)</button>
+        </div>
+        <!-- Overlay Layer Toggles -->
+        <div class="btn-cluster">
+          <span style="font-size: 10px; color: var(--text-muted, #8c867c); align-self: center; width: 65px;">Overlays:</span>
+          <button type="button" class="btn-sim" onclick="simToggleLayer('slope')">📐 Toggle Slope</button>
+          <button type="button" class="btn-sim" onclick="simToggleLayer('psr')">❄️ Toggle PSR</button>
+          <button type="button" class="btn-sim" onclick="simToggleLayer('ice')">💧 Toggle WEH Ice</button>
+          <button type="button" class="btn-sim" onclick="simToggleLayer('dte')">📡 Toggle DTE Radio</button>
+        </div>
+        <!-- Opacity Presets -->
+        <div class="btn-cluster">
+          <span style="font-size: 10px; color: var(--text-muted, #8c867c); align-self: center; width: 65px;">Opacity:</span>
+          <button type="button" class="btn-sim" onclick="simSetOpacity(30)">30% Subtle</button>
+          <button type="button" class="btn-sim" onclick="simSetOpacity(60)">60% Balanced</button>
+          <button type="button" class="btn-sim" onclick="simSetOpacity(75)">75% Standard</button>
+          <button type="button" class="btn-sim" onclick="simSetOpacity(90)">90% Analytical</button>
+        </div>
+        <!-- Legend Focus -->
+        <div class="btn-cluster">
+          <span style="font-size: 10px; color: var(--text-muted, #8c867c); align-self: center; width: 65px;">Legend:</span>
+          <button type="button" class="btn-sim" onclick="simSetLegend('slope')">LOLA Slope</button>
+          <button type="button" class="btn-sim" onclick="simSetLegend('psr')">Diviner Cryo</button>
+          <button type="button" class="btn-sim" onclick="simSetLegend('ice')">LEND Neutrons</button>
+          <button type="button" class="btn-sim" onclick="simSetLegend('dte')">DSN Sightline</button>
+        </div>
+      </div>
+    </div>
 
-    <!-- Shared core event bus, math, and physics dependencies -->
-    <script src="../../core/event_bus.js"></script>
-    <script src="../../core/coord_math.js"></script>
-    <script src="../../core/lunar_physics.js"></script>
-    <script>
-      const logList = document.getElementById("log-list");
-      function logEvent(name, data) {
-        const li = document.createElement("li");
-        li.textContent = `[${new Date().toLocaleTimeString()}] ${name}: ${JSON.stringify(data)}`;
-        logList.prepend(li);
+    <!-- Real-time EventBus logging console -->
+    <div id="event-log" style="padding: 12px; background: var(--bg-surface-dark, #1e2022); border: 1px solid var(--border-subtle, #3a3c3f); border-radius: 6px; font-family: var(--font-mono, monospace); font-size: 11px; color: var(--text-secondary, #beb7ac); text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 6px;">
+        <strong style="color: var(--accent-sand, #c99e52);">EventBus Telemetry Stream:</strong>
+        <button type="button" onclick="document.getElementById('log-list').innerHTML=''" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:10px;">Clear</button>
+      </div>
+      <ul id="log-list" style="margin: 0; padding-left: 16px; max-height: 140px; overflow-y: auto;">
+        <li>Listening for dual drawer EventBus streams...</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Micro-frontend mount container -->
+  <div id="mount-horizon-topography"></div>
+
+  <!-- Shared core event bus, coordinate math, and lunar physics dependencies -->
+  <script src="../../core/event_bus.js"></script>
+  <script src="../../core/coord_math.js"></script>
+  <script src="../../core/lunar_physics.js"></script>
+  <script>
+    const logList = document.getElementById("log-list");
+    function logEvent(name, data) {
+      const li = document.createElement("li");
+      li.style.marginBottom = "2px";
+      li.textContent = `[${new Date().toLocaleTimeString()}] ${name}: ${JSON.stringify(data)}`;
+      logList.prepend(li);
+    }
+
+    if (window.eventBus) {
+      window.eventBus.on("mission:archetype_change", d => logEvent("mission:archetype_change", d));
+      window.eventBus.on("mission:constraint_change", d => logEvent("mission:constraint_change", d));
+      window.eventBus.on("traverse:waypoint_select", d => logEvent("traverse:waypoint_select", d));
+      window.eventBus.on("layer:basemap_change", d => logEvent("layer:basemap_change", d));
+      window.eventBus.on("layer:toggle", d => logEvent("layer:toggle", d));
+      window.eventBus.on("layer:opacity", d => logEvent("layer:opacity", d));
+      window.eventBus.on("site:marked", d => logEvent("site:marked", d));
+    }
+
+    // Left Drawer Interactive Simulation Triggers
+    function simSetArchetype(key) {
+      if (window.MissionPlanner && window.MissionPlanner.setArchetype) {
+        window.MissionPlanner.setArchetype(key);
       }
+    }
 
+    function simMarkSite(siteId, name, lat, lon) {
       if (window.eventBus) {
-        window.eventBus.on("mission:archetype_change", (d) =>
-          logEvent("mission:archetype_change", d),
-        );
-        window.eventBus.on("traverse:waypoint_select", (d) =>
-          logEvent("traverse:waypoint_select", d),
-        );
-        window.eventBus.on("mission:constraint_change", (d) =>
-          logEvent("mission:constraint_change", d),
-        );
-        window.eventBus.on("layer:basemap_change", (d) =>
-          logEvent("layer:basemap_change", d),
-        );
-        window.eventBus.on("layer:toggle", (d) => logEvent("layer:toggle", d));
-        window.eventBus.on("layer:opacity", (d) =>
-          logEvent("layer:opacity", d),
-        );
-        window.eventBus.on("site:marked", (d) => logEvent("site:marked", d));
-      }
-
-      // Interactive Simulation Triggers
-      function simMarkSite(siteId, name, lat, lon) {
-        if (window.eventBus) {
-          window.eventBus.emit("site:marked", {
-            site_id: siteId,
-            name: name,
-            lat: lat,
-            lon: lon,
-          });
-        }
-      }
-
-      function simSetArchetype(key) {
-        if (window.MissionPlanner && window.MissionPlanner.setArchetype) {
-          window.MissionPlanner.setArchetype(key);
-        }
-      }
-
-      function simTimelineScrub(hour) {
-        if (window.eventBus) {
-          window.eventBus.emit("time:changed", { hour: parseInt(hour, 10) });
-        }
-      }
-
-      // Asynchronously fetch and inject the component markup and script for isolated testing
-      fetch("horizon_topography.html")
-        .then((r) => r.text())
-        .then((html) => {
-          document.getElementById("mount-horizon-topography").innerHTML = html;
-          const script = document.createElement("script");
-          script.src = "horizon_topography.js";
-          document.body.appendChild(script);
+        window.eventBus.emit("site:marked", {
+          site_id: siteId,
+          name: name,
+          lat: lat,
+          lon: lon
         });
-    </script>
-  </body>
+      }
+    }
+
+    // Right Drawer Interactive Simulation Triggers
+    function simSetBasemap(key) {
+      if (window.GISOverlays && window.GISOverlays.setBasemap) {
+        window.GISOverlays.setBasemap(key);
+      }
+    }
+
+    function simToggleLayer(layerId) {
+      if (window.GISOverlays && window.GISOverlays.setLayer) {
+        const active = window.GISOverlays.isLayerActive(layerId);
+        window.GISOverlays.setLayer(layerId, !active);
+      }
+    }
+
+    function simSetOpacity(pct) {
+      if (window.GISOverlays && window.GISOverlays.setOpacity) {
+        window.GISOverlays.setOpacity(pct);
+      }
+    }
+
+    function simSetLegend(layerId) {
+      if (window.GISOverlays && window.GISOverlays.setLegend) {
+        window.GISOverlays.setLegend(layerId);
+      }
+    }
+
+    // Asynchronously fetch and mount component template and controller
+    fetch("horizon_topography.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("mount-horizon-topography").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "horizon_topography.js";
+        document.body.appendChild(script);
+      });
+  </script>
+</body>
 </html>
