@@ -653,7 +653,16 @@
           <span class="wp-title">${wp.title}</span>
           <span class="wp-meta">${wp.dist} · Slope: ${wp.slope}° <span class="${wp.tagClass}">${wp.status}</span></span>
         </div>
-        <button class="btn-wp-focus" title="Center 3D on Waypoint">📍</button>
+        <button class="btn-wp-focus" title="Center 3D on Waypoint" aria-label="Center 3D on Waypoint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wp-target-icon">
+            <circle cx="12" cy="12" r="7"/>
+            <line x1="12" y1="2" x2="12" y2="5"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="2" y1="12" x2="5" y2="12"/>
+            <line x1="19" y1="12" x2="22" y2="12"/>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+          </svg>
+        </button>
       `;
 
       // Click on waypoint row

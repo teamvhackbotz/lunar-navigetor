@@ -46,15 +46,57 @@
 
       <!-- Mission Archetype Selector -->
       <div class="mission-archetype-selector" role="tablist" aria-label="Mission Archetype">
-        <button type="button" class="archetype-pill active" data-archetype="crewed" title="Artemis Crewed Sortie (LTV)">🧑‍🚀 Crewed</button>
-        <button type="button" class="archetype-pill" data-archetype="rover" title="Robotic Prospecting Rover (VIPER/CADRE)">🤖 Rover</button>
-        <button type="button" class="archetype-pill" data-archetype="lander" title="Stationary Science Lander (CLPS)">📡 Lander</button>
-        <button type="button" class="archetype-pill" data-archetype="basecamp" title="Extended Surface Outpost / Base Camp">🏗️ Base Camp</button>
+        <button type="button" class="archetype-pill active" data-archetype="crewed" title="Artemis Crewed Sortie (LTV)">
+          <svg class="archetype-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a8 8 0 0 0-8 8v3a8 8 0 0 0 16 0v-3a8 8 0 0 0-8-8z"/>
+            <path d="M8 11a4 4 0 0 1 8 0v1a4 4 0 0 1-8 0v-1z"/>
+            <path d="M6 21v-1a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/>
+          </svg>
+          <span>Crewed</span>
+        </button>
+        <button type="button" class="archetype-pill" data-archetype="rover" title="Robotic Prospecting Rover (VIPER/CADRE)">
+          <svg class="archetype-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="5" cy="18" r="3"/>
+            <circle cx="19" cy="18" r="3"/>
+            <path d="M8 18h8"/>
+            <path d="M5 15l2-6h9l3 6"/>
+            <path d="M11 9V5"/>
+            <circle cx="11" cy="4" r="1.5" fill="currentColor"/>
+          </svg>
+          <span>Rover</span>
+        </button>
+        <button type="button" class="archetype-pill" data-archetype="lander" title="Stationary Science Lander (CLPS)">
+          <svg class="archetype-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 8h8l2 5H6l2-5z"/>
+            <path d="M10 5h4v3h-4z"/>
+            <path d="M6 13l-3 7"/>
+            <path d="M18 13l3 7"/>
+            <path d="M12 13v6"/>
+            <path d="M2 20h3"/>
+            <path d="M19 20h3"/>
+            <path d="M10 19h4"/>
+          </svg>
+          <span>Lander</span>
+        </button>
+        <button type="button" class="archetype-pill" data-archetype="basecamp" title="Extended Surface Outpost / Base Camp">
+          <svg class="archetype-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 20h18"/>
+            <path d="M4 20c0-6 3.6-11 8-11s8 5 8 11"/>
+            <path d="M9 20v-4a3 3 0 0 1 6 0v4"/>
+            <path d="M12 9V4"/>
+            <path d="M9 4h6"/>
+          </svg>
+          <span>Base Camp</span>
+        </button>
       </div>
     </div>
     
     <!-- Close Button: Collapses the left drawer -->
-    <label for="toggle-left-horizon" class="btn-close-drawer" title="Close Planner" role="button" tabindex="0">◀</label>
+    <label for="toggle-left-horizon" class="btn-close-drawer" title="Close Planner" role="button" tabindex="0" aria-label="Close Planner">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </label>
   </header>
 
   <!-- Scrollable Analysis Content Container -->
@@ -154,7 +196,16 @@
             <span class="wp-title">Touchdown Landing Zone</span>
             <span class="wp-meta">0.0 km · Slope: 4.2° <span class="tag-safe">Nominal</span></span>
           </div>
-          <button class="btn-wp-focus" title="Center 3D on Waypoint">📍</button>
+          <button class="btn-wp-focus" title="Center 3D on Waypoint" aria-label="Center 3D on Waypoint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wp-target-icon">
+              <circle cx="12" cy="12" r="7"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+          </button>
         </div>
 
         <!-- WP 2 -->
@@ -164,7 +215,16 @@
             <span class="wp-title">Eastern Saddle Station</span>
             <span class="wp-meta">1.2 km · Slope: 6.8° <span class="tag-warn">Caution</span></span>
           </div>
-          <button class="btn-wp-focus" title="Center 3D on Waypoint">📍</button>
+          <button class="btn-wp-focus" title="Center 3D on Waypoint" aria-label="Center 3D on Waypoint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wp-target-icon">
+              <circle cx="12" cy="12" r="7"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+          </button>
         </div>
 
         <!-- WP 3 -->
@@ -174,7 +234,16 @@
             <span class="wp-title">PSR Cold Trap Perimeter</span>
             <span class="wp-meta">2.4 km · Slope: 14.1° <span class="tag-danger">Steep Flank</span></span>
           </div>
-          <button class="btn-wp-focus" title="Center 3D on Waypoint">📍</button>
+          <button class="btn-wp-focus" title="Center 3D on Waypoint" aria-label="Center 3D on Waypoint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wp-target-icon">
+              <circle cx="12" cy="12" r="7"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -229,7 +298,11 @@
     </div>
     
     <!-- Close Button: Collapses the right drawer -->
-    <label for="toggle-right-horizon" class="btn-close-drawer" title="Close Overlays" role="button" tabindex="0">▶</label>
+    <label for="toggle-right-horizon" class="btn-close-drawer" title="Close Overlays" role="button" tabindex="0" aria-label="Close Overlays">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </label>
   </header>
 
   <!-- Scrollable Analysis Content Container -->
@@ -246,9 +319,20 @@
       <div class="basemap-picker-grid">
         <label class="basemap-card active" data-basemap="lroc" tabindex="0">
           <input type="radio" name="gis-basemap" value="lroc" checked>
+          <div class="basemap-radio-indicator" aria-hidden="true"></div>
           <div class="basemap-info">
             <div class="basemap-header-row">
-              <span class="b-name">LROC WAC Albedo Mosaic</span>
+              <span class="b-name">
+                <svg class="sensor-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="3"/>
+                  <line x1="12" y1="2" x2="12" y2="5"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                  <line x1="2" y1="12" x2="5" y2="12"/>
+                  <line x1="19" y1="12" x2="22" y2="12"/>
+                </svg>
+                LROC WAC Albedo Mosaic
+              </span>
               <span class="basemap-res-chip">100 m/px</span>
             </div>
             <span class="basemap-spec-tag">NASA LRO · WAC (395–689 nm)</span>
@@ -258,9 +342,15 @@
 
         <label class="basemap-card" data-basemap="lola" tabindex="0">
           <input type="radio" name="gis-basemap" value="lola">
+          <div class="basemap-radio-indicator" aria-hidden="true"></div>
           <div class="basemap-info">
             <div class="basemap-header-row">
-              <span class="b-name">LOLA Topographic Relief</span>
+              <span class="b-name">
+                <svg class="sensor-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 12h3l3-7 4 14 3-7h7"/>
+                </svg>
+                LOLA Topographic Relief
+              </span>
               <span class="basemap-res-chip">59 m/px</span>
             </div>
             <span class="basemap-spec-tag">NASA LRO · LOLA (1064 nm Laser)</span>
@@ -270,9 +360,17 @@
 
         <label class="basemap-card" data-basemap="kaguya" tabindex="0">
           <input type="radio" name="gis-basemap" value="kaguya">
+          <div class="basemap-radio-indicator" aria-hidden="true"></div>
           <div class="basemap-info">
             <div class="basemap-header-row">
-              <span class="b-name">Kaguya TC Ortho Terrain</span>
+              <span class="b-name">
+                <svg class="sensor-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                Kaguya TC Ortho Terrain
+              </span>
               <span class="basemap-res-chip">10 m/px</span>
             </div>
             <span class="basemap-spec-tag">JAXA SELENE · TC (Stereo Ortho)</span>
@@ -293,40 +391,74 @@
       <div class="overlay-toggle-list">
         <!-- Slope Gradient Heatmap -->
         <label class="overlay-toggle-item" id="overlay-item-slope">
+          <div class="channel-icon-wrap" aria-hidden="true">
+            <svg class="channel-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 20h18L13 4 3 20z"/>
+            </svg>
+          </div>
           <div class="toggle-text">
             <span class="t-title">LOLA Slope Gradient Heatmap</span>
-            <span class="t-sub">Safe (&lt;5° Green) · Moderate (5°-8° Yellow) · Hazard (&gt;8° Red)</span>
+            <span class="t-sub">Safe (&lt;5° Green) · Moderate (5°–8° Yellow) · Hazard (&gt;8° Red)</span>
           </div>
-          <input type="checkbox" id="layer-toggle-slope" checked class="layer-checkbox" aria-label="Toggle LOLA Slope Gradient Heatmap">
+          <div class="switch-ui-wrap">
+            <input type="checkbox" id="layer-toggle-slope" checked class="layer-checkbox" aria-label="Toggle LOLA Slope Gradient Heatmap">
+            <span class="switch-slider" aria-hidden="true"></span>
+          </div>
         </label>
 
         <!-- Permanently Shadowed Regions (PSRs) -->
         <label class="overlay-toggle-item" id="overlay-item-psr">
+          <div class="channel-icon-wrap" aria-hidden="true">
+            <svg class="channel-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14"/>
+            </svg>
+          </div>
           <div class="toggle-text">
             <span class="t-title">Permanently Shadowed Regions (PSRs)</span>
             <span class="t-sub">Extreme cold traps below 40 K (-233°C)</span>
             <span class="layer-context-badge" id="badge-psr-context" style="display: none;"></span>
           </div>
-          <input type="checkbox" id="layer-toggle-psr" checked class="layer-checkbox" aria-label="Toggle Permanently Shadowed Regions">
+          <div class="switch-ui-wrap">
+            <input type="checkbox" id="layer-toggle-psr" checked class="layer-checkbox" aria-label="Toggle Permanently Shadowed Regions">
+            <span class="switch-slider" aria-hidden="true"></span>
+          </div>
         </label>
 
         <!-- Water Equivalent Hydrogen (WEH) -->
         <label class="overlay-toggle-item" id="overlay-item-ice">
+          <div class="channel-icon-wrap" aria-hidden="true">
+            <svg class="channel-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+            </svg>
+          </div>
           <div class="toggle-text">
             <span class="t-title">Water-Equivalent Hydrogen (WEH)</span>
             <span class="t-sub">Subsurface volatiles (&gt; 0.5 wt% H) from LEND epithermal neutrons</span>
           </div>
-          <input type="checkbox" id="layer-toggle-ice" class="layer-checkbox" aria-label="Toggle Water Equivalent Hydrogen">
+          <div class="switch-ui-wrap">
+            <input type="checkbox" id="layer-toggle-ice" class="layer-checkbox" aria-label="Toggle Water Equivalent Hydrogen">
+            <span class="switch-slider" aria-hidden="true"></span>
+          </div>
         </label>
 
         <!-- Direct-to-Earth (DTE) Occlusion -->
         <label class="overlay-toggle-item" id="overlay-item-dte">
+          <div class="channel-icon-wrap" aria-hidden="true">
+            <svg class="channel-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 11a9 9 0 0 1 9 9"/>
+              <path d="M4 4a16 16 0 0 1 16 16"/>
+              <circle cx="5" cy="19" r="1"/>
+            </svg>
+          </div>
           <div class="toggle-text">
             <span class="t-title">Earth Radio Occlusion Mask</span>
             <span class="t-sub">Regions with blocked line-of-sight during minimum libration</span>
             <span class="layer-context-badge" id="badge-dte-context" style="display: none;"></span>
           </div>
-          <input type="checkbox" id="layer-toggle-dte" class="layer-checkbox" aria-label="Toggle Earth Radio Occlusion Mask">
+          <div class="switch-ui-wrap">
+            <input type="checkbox" id="layer-toggle-dte" class="layer-checkbox" aria-label="Toggle Earth Radio Occlusion Mask">
+            <span class="switch-slider" aria-hidden="true"></span>
+          </div>
         </label>
       </div>
     </section>
@@ -363,19 +495,24 @@
       </div>
 
       <div class="legend-scale-wrap">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span id="legend-instrument-title" style="font-size: 9px; color: var(--text-muted, #8c867c); text-transform: uppercase;">Slope Scale Incline:</span>
-          <span id="legend-active-layer-tag" style="font-size: 8px; font-family: var(--font-mono, monospace); color: var(--accent-sand, #c99e52);">[LOLA DEM]</span>
+        <div class="legend-header-row">
+          <span id="legend-instrument-title">Slope Scale Incline:</span>
+          <span id="legend-active-layer-tag">[LOLA DEM]</span>
         </div>
-        <div class="legend-gradient-bar" id="legend-gradient-bar"></div>
-        <div id="legend-ticks-row" style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono, monospace); color: var(--text-muted, #8c867c);">
+        <div class="legend-bar-container">
+          <div class="legend-gradient-bar" id="legend-gradient-bar"></div>
+          <div class="legend-ruler-ticks" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div id="legend-ticks-row" class="legend-ticks-row">
           <span id="legend-tick-low">0° (Flat / Safe)</span>
           <span id="legend-tick-mid">8° (Moderate)</span>
           <span id="legend-tick-high">20°+ (Steep Hazard)</span>
         </div>
       </div>
 
-      <div class="meta-citation" id="legend-citation-text" style="margin-top: 8px; font-size: 9px; color: var(--text-muted, #8c867c); line-height: 1.4;">
+      <div class="meta-citation" id="legend-citation-text">
         Data Source: NASA Lunar Reconnaissance Orbiter (LRO) LOLA Laser Altimeter DEM. IAU 1,737.4 km lunar sphere datum.
       </div>
     </section>
