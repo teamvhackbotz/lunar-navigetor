@@ -53,6 +53,123 @@
 }
 
 /* ==========================================================================
+   1A. PERSISTENT BOTTOM EDGE HANDLE (Docked flush above bottom cockpit toolbar)
+   ========================================================================== */
+#handle-bottom-map,
+.drawer-edge-handle.handle-bottom {
+  position: fixed !important;
+  top: auto !important;
+  bottom: var(--height-bottom-cockpit, 92px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  border-bottom: none !important;
+  border-radius: 6px 6px 0 0 !important;
+  padding: 5px 14px;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  background: rgba(18, 20, 24, 0.94);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: none;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.5);
+  color: var(--text-secondary, #beb7ac);
+  cursor: pointer;
+  z-index: 105;
+  user-select: none;
+  transition: bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+#handle-bottom-map:hover,
+.drawer-edge-handle.handle-bottom:hover {
+  background: rgba(30, 34, 40, 0.96);
+  border-color: var(--accent-terracotta, #c87d55);
+  color: #fff;
+  box-shadow: 0 -4px 14px rgba(200, 125, 85, 0.28);
+}
+
+#handle-bottom-map .handle-label,
+.drawer-edge-handle.handle-bottom .handle-label {
+  writing-mode: horizontal-tb;
+  transform: none;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: inherit;
+}
+
+#handle-bottom-map .handle-icon,
+.drawer-edge-handle.handle-bottom .handle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#handle-bottom-map .handle-icon svg,
+.drawer-edge-handle.handle-bottom .handle-icon svg {
+  stroke: var(--accent-sand, #c99e52);
+  display: block;
+}
+
+#handle-bottom-map .handle-arrow,
+.drawer-edge-handle.handle-bottom .handle-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#handle-bottom-map .handle-arrow svg,
+.drawer-edge-handle.handle-bottom .handle-arrow svg {
+  stroke: var(--text-muted, #8c867c);
+  display: block;
+  transition: stroke 0.15s ease;
+}
+
+#handle-bottom-map:hover .handle-arrow svg,
+.drawer-edge-handle.handle-bottom:hover .handle-arrow svg {
+  stroke: #fff;
+}
+
+/* Closed state: Enforce bottom dock flush position */
+#toggle-bottom-map:not(:checked) ~ #mount-map-2d #handle-bottom-map,
+#toggle-bottom-map:not(:checked) ~ #handle-bottom-map {
+  top: auto !important;
+  bottom: var(--height-bottom-cockpit, 92px) !important;
+}
+
+#toggle-bottom-map:not(:checked) ~ #mount-map-2d #handle-bottom-map .handle-arrow,
+#toggle-bottom-map:not(:checked) ~ #handle-bottom-map .handle-arrow {
+  transform: rotate(0deg) !important;
+}
+
+/* When 2D maps drawer opens, handle slides up to dock on the top edge of drawer */
+#toggle-bottom-map:checked ~ #mount-map-2d #handle-bottom-map,
+#toggle-bottom-map:checked ~ #handle-bottom-map {
+  top: auto !important;
+  bottom: calc(var(--height-bottom-cockpit, 92px) + var(--height-bottom-map, 390px)) !important;
+}
+
+#toggle-bottom-map:checked ~ #mount-map-2d #handle-bottom-map .handle-arrow,
+#toggle-bottom-map:checked ~ #handle-bottom-map .handle-arrow {
+  transform: rotate(180deg) !important;
+}
+
+/* Maximized Height Modifier: Only active when drawer is open AND maximized */
+#toggle-bottom-map:checked ~ #mount-map-2d .drawer-bottom-map.is-maximized ~ #handle-bottom-map,
+#toggle-bottom-map:checked ~ .drawer-bottom-map.is-maximized ~ #handle-bottom-map {
+  top: auto !important;
+  bottom: calc(var(--height-bottom-cockpit, 92px) + var(--height-bottom-map-max, 500px)) !important;
+}
+
+/* ==========================================================================
    2. DRAWER HEADER & CONTROLS
    ========================================================================== */
 .drawer-bottom-map .drawer-header {

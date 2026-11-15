@@ -121,6 +121,37 @@ body {
   pointer-events: none;
 }
 
+/* 3a. Bottom 2D Map Edge Tab Handle Transitions */
+#handle-bottom-map,
+.drawer-edge-handle.handle-bottom,
+#toggle-bottom-map:not(:checked) ~ #mount-map-2d #handle-bottom-map,
+#toggle-bottom-map:not(:checked) ~ #handle-bottom-map {
+  top: auto !important;
+  bottom: var(--height-bottom-cockpit, 92px) !important;
+}
+
+#toggle-bottom-map:not(:checked) ~ #mount-map-2d #handle-bottom-map .handle-arrow,
+#toggle-bottom-map:not(:checked) ~ #handle-bottom-map .handle-arrow {
+  transform: rotate(0deg) !important;
+}
+
+#toggle-bottom-map:checked ~ #mount-map-2d #handle-bottom-map,
+#toggle-bottom-map:checked ~ #handle-bottom-map {
+  top: auto !important;
+  bottom: calc(var(--height-bottom-cockpit, 92px) + var(--height-bottom-map, 390px)) !important;
+}
+
+#toggle-bottom-map:checked ~ #mount-map-2d #handle-bottom-map .handle-arrow,
+#toggle-bottom-map:checked ~ #handle-bottom-map .handle-arrow {
+  transform: rotate(180deg) !important;
+}
+
+#toggle-bottom-map:checked ~ #mount-map-2d .drawer-bottom-map.is-maximized ~ #handle-bottom-map,
+#toggle-bottom-map:checked ~ .drawer-bottom-map.is-maximized ~ #handle-bottom-map {
+  top: auto !important;
+  bottom: calc(var(--height-bottom-cockpit, 92px) + var(--height-bottom-map-max, 500px)) !important;
+}
+
 /* 4. Bottom-Right AI Chat Widget Open/Close */
 #toggle-ai-chat:checked ~ .ai-widget-container .ai-chat-window,
 #toggle-ai-chat:checked ~ #mount-ai-dr-raj .ai-chat-window {
