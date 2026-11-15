@@ -134,6 +134,17 @@ const LunarPhysics = (function() {
           return catalog[id];
         }
       }
+
+      // Robust dynamic slug, timestamp, and delimiter normalization (e.g. "malapert_massif_1794723..." -> malapert)
+      const sanitized = query.replace(/_\d+$/, "").replace(/[-_]/g, " ").trim();
+      for (const id in catalog) {
+        const nameNorm = (catalog[id].name || "").toLowerCase().replace(/[-_]/g, " ");
+        const idNorm = id.toLowerCase().replace(/[-_]/g, " ");
+        if (nameNorm === sanitized || idNorm === sanitized) return catalog[id];
+        if (nameNorm.includes(sanitized) || sanitized.includes(nameNorm)) return catalog[id];
+        if (idNorm.includes(sanitized) || sanitized.includes(idNorm)) return catalog[id];
+      }
+
       return null;
     }
 
