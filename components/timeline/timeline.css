@@ -1,562 +1,398 @@
-/* ==========================================================================
-   Lunar Landing Site Navigator - Global Timeline & Cockpit Dock
-   File: components/timeline/timeline.css
-   Role: Layout, button styles, typography, SVG scale, and timeline configuration editing
-   ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   1. Bottom Cockpit Dock Container
-   Fixed bottom bar (height: 92px) spanning 100% viewport width.
-   Stacks above the 3D globe canvas (z: 1) and comparison cards (z: 90) at z-index: 100.
-   -------------------------------------------------------------------------- */
-#mount-timeline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--height-bottom-cockpit, 92px);
-  min-height: 92px;
-  z-index: 100;
-}
+/* =========================================
+   LUNAR NAVIGATOR - TIMELINE
+   ========================================= */
 
-.bottom-cockpit-bar {
+#lunar-timeline {
+  --lt-bg: #17191c;
+  --lt-panel: #202226;
+  --lt-border: #303237;
+  --lt-text: #d0d1d3;
+  --lt-muted: #777c85;
+  --lt-orange: #d7895e;
+  --lt-blue: #6e91a8;
+
+  width: 100%;
+  height: auto;
+  min-height: 78px;
+  background: var(--lt-bg);
+  color: var(--lt-text);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #34363a;
+  overflow: hidden;
   position: relative;
-  width: 100%;
-  height: 100%;
-  background: var(--bg-surface-dark, #1e2022);
-  border-top: 1px solid var(--border-subtle, #3a3c3f);
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+  z-index: 10;
 }
 
-/* --------------------------------------------------------------------------
-   2. Tier 1: Upper Mission Toolbar (Height: 44px)
-   Horizontal bar housing tools, telemetry readouts, and simulation controls.
-   -------------------------------------------------------------------------- */
-.mission-toolbar {
-  height: 44px;
-  min-height: 44px;
+#lunar-timeline *,
+#lunar-timeline *::before,
+#lunar-timeline *::after {
+  box-sizing: border-box;
+}
+
+/* TOP TOOLBAR */
+
+.lt-toolbar {
+  min-height: 45px;
+  padding: 5px 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  flex-shrink: 0;
-  gap: 8px;
-  overflow: hidden;
+  gap: 10px;
+  background: #1b1d20;
+  border-bottom: 1px solid #303237;
+  flex-wrap: nowrap;
 }
 
-/* Playback and speed control group */
-.toolbar-playback-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.lt-playback {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
 
-/* Media button base style */
-.btn-media {
-  width: 28px; height: 28px;
+.lt-icon-btn,
+.lt-play-btn {
+  height: 30px;
+  min-width: 30px;
+  padding: 0 7px;
+  border: 1px solid #41444a;
   border-radius: 4px;
-  background: var(--bg-card, #27292b);
-  border: 1px solid var(--border-medium, #4e4f52);
-  color: var(--text-primary, #ede8e1);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px;
-}
-.btn-media:hover { background: var(--bg-card-hover, #313336); }
-
-/* Play/Pause toggle button states */
-.btn-play { background: var(--accent-terracotta, #c87d55); border-color: var(--accent-terracotta, #c87d55); color: #fff; }
-.btn-play.playing { background: var(--accent-sand, #c99e52); border-color: var(--accent-sand, #c99e52); color: #000; }
-
-/* Simulation speed multiplier pill buttons */
-.speed-selector { display: flex; align-items: center; gap: 3px; margin-left: 6px; margin-right: 4px; }
-.speed-label { font-size: 10px; color: var(--text-muted, #8c867c); }
-.btn-speed {
-  font-size: 10px; padding: 2px 6px;
-  background: var(--bg-card, #27292b); border: 1px solid var(--border-subtle, #3a3c3f);
-  border-radius: 3px; color: var(--text-secondary, #beb7ac); cursor: pointer;
-}
-.btn-speed.active { background: var(--accent-slate, #5f798a); color: #fff; }
-
-/* --------------------------------------------------------------------------
-   3. Telemetry & Coordinate Center Status Readouts
-   Monospace text group displaying UTC simulation timestamp and marked target.
-   -------------------------------------------------------------------------- */
-.toolbar-center-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  font-family: var(--font-mono, monospace);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex-shrink: 1;
-}
-.status-clock { color: var(--accent-sand, #c99e52); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; transition: color 0.15s ease; flex-shrink: 0; white-space: nowrap; }
-.status-clock:hover { color: var(--accent-terracotta, #c87d55); }
-.status-coord { color: var(--text-primary, #ede8e1); display: inline-flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.status-coord span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.status-phase { color: var(--text-muted, #8c867c); display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; white-space: nowrap; }
-.status-divider { color: var(--border-medium, #4e4f52); flex-shrink: 0; }
-
-/* --------------------------------------------------------------------------
-   4. Mission Tools Group (Right)
-   Interactive tool buttons (Mark Site pin drop, 2D Maps drawer, Dr. Raj AI).
-   -------------------------------------------------------------------------- */
-.toolbar-tools-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.btn-tool {
-  font-size: 11px; font-weight: 600; padding: 5px 12px;
-  background: var(--bg-card, #27292b); border: 1px solid var(--border-medium, #4e4f52);
-  border-radius: 4px; color: var(--text-secondary, #beb7ac); cursor: pointer;
-  display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s ease;
-}
-.btn-tool:hover { background: var(--bg-card-hover, #313336); border-color: var(--border-active, #c87d55); color: var(--text-primary, #ede8e1); }
-.btn-tool.active {
-  background: var(--accent-terracotta, #c87d55) !important;
-  border-color: var(--accent-terracotta, #c87d55) !important;
-  color: #ffffff !important;
-  box-shadow: 0 0 10px rgba(200, 125, 85, 0.45) !important;
-}
-.label-tool { cursor: pointer; }
-
-/* Edit Timeline trigger button in toolbar */
-.btn-edit-timeline {
-  border-color: var(--border-medium, #4e4f52);
-  gap: 4px;
-}
-.btn-edit-timeline:hover {
-  border-color: var(--accent-terracotta, #c87d55);
-}
-.btn-edit-timeline.active {
-  background: var(--accent-terracotta, #c87d55) !important;
-  border-color: var(--accent-terracotta, #c87d55) !important;
-  color: #fff !important;
-}
-
-/* --------------------------------------------------------------------------
-   5. Tier 2: Lower Timeline & Precision Scale Strip (Height: 48px)
-   Houses the calendar meta labels, SVG graduation tick ruler, and range slider.
-   -------------------------------------------------------------------------- */
-.full-timeline-strip {
-  height: 48px;
-  min-height: 48px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0 16px 4px;
-  box-sizing: border-box;
-  flex-shrink: 0;
-}
-
-/* Date boundary and event labels row */
-.timeline-meta-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 9px;
-  font-family: var(--font-mono, monospace);
-  color: var(--text-muted, #8c867c);
-  margin-bottom: 2px;
-}
-.timeline-date-edge {
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-.timeline-date-edge:hover {
-  color: var(--text-primary, #ede8e1);
-}
-.timeline-marker-event { color: var(--accent-sand, #c99e52); }
-.timeline-interval-indicator {
-  color: var(--accent-slate, #5f798a);
-  font-weight: 600;
-}
-
-/* SVG scale ruler displaying equal interval tick graduations */
-.timeline-precision-ruler {
-  width: 100%;
-  height: 8px;
-  margin-bottom: 2px;
-}
-.ruler-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.ruler-svg line {
-  stroke-width: 0.65px !important;
-  stroke-linecap: round;
-}
-
-/* Scrubber container & native slider input */
-.timeline-track-container { width: 100%; }
-.full-width-slider {
-  width: 100%;
-  height: 14px;
-  margin: 0;
-  padding: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
-  cursor: pointer;
-  display: block;
-}
-.full-width-slider:focus { outline: none; }
-.full-width-slider:focus-visible::-webkit-slider-thumb {
-  filter: brightness(1.2);
-}
-.full-width-slider:focus-visible::-moz-range-thumb {
-  filter: brightness(1.2);
-}
-.full-width-slider::-webkit-slider-runnable-track {
-  height: 2px;
-  border: 0;
-  border-radius: 2px;
-  background: rgba(237, 232, 225, 0.28);
-}
-.full-width-slider::-moz-range-track {
-  height: 2px;
-  border: 0;
-  border-radius: 2px;
-  background: rgba(237, 232, 225, 0.28);
-}
-.full-width-slider::-webkit-slider-thumb {
-  width: 2px;
-  height: 12px;
-  box-sizing: border-box;
-  margin-top: -5px;
-  appearance: none;
-  -webkit-appearance: none;
-  border: 0;
-  border-radius: 0;
-  background: var(--accent-terracotta, #c87d55);
-  box-shadow: none;
-}
-.full-width-slider::-moz-range-thumb {
-  width: 2px;
-  height: 12px;
-  box-sizing: border-box;
-  border: 0;
-  border-radius: 0;
-  background: var(--accent-terracotta, #c87d55);
-  box-shadow: none;
-}
-
-/* --------------------------------------------------------------------------
-   6. Floating Timeline Configuration Popover Panel
-   -------------------------------------------------------------------------- */
-.timeline-edit-popover {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 16px;
-  width: 520px;
-  max-width: calc(100vw - 32px);
-  background: var(--bg-surface-dark, #1e2022);
-  border: 1px solid var(--border-subtle, #3a3c3f);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 16px;
-  z-index: 105;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  animation: timelinePopoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes timelinePopoverFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.timeline-edit-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 10px;
-}
-
-.timeline-edit-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary, #ede8e1);
-  letter-spacing: 0.2px;
-}
-
-.timeline-edit-actions-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.timeline-interval-pill {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  background: rgba(200, 125, 85, 0.15);
-  color: var(--accent-terracotta, #c87d55);
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(200, 125, 85, 0.3);
-}
-
-.timeline-edit-close {
-  background: transparent;
-  border: none;
-  color: var(--text-muted, #8c867c);
+  background: #25282c;
+  color: #e0e0e0;
   font-size: 14px;
   cursor: pointer;
-  padding: 2px 6px;
+}
+
+.lt-play-btn {
+  background: var(--lt-orange);
+  color: white;
+  border-color: var(--lt-orange);
+  min-width: 30px;
+}
+
+.lt-icon-btn:hover,
+.lt-play-btn:hover {
+  filter: brightness(1.2);
+}
+
+.lt-speed {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--lt-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.lt-speed-btn {
+  padding: 4px 7px;
+  background: #272a2e;
+  border: 1px solid #383b40;
+  color: #c4c8cc;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.lt-speed-btn.active {
+  background: var(--lt-blue);
+  color: #fff;
+  border-color: var(--lt-blue);
+}
+
+.lt-edit-btn {
+  height: 30px;
+  padding: 0 11px;
+  background: #25282c;
+  border: 1px solid #41444a;
   border-radius: 4px;
-  line-height: 1;
-  transition: color 0.15s, background-color 0.15s;
-}
-.timeline-edit-close:hover {
-  color: var(--text-primary, #ede8e1);
-  background: rgba(255, 255, 255, 0.08);
+  color: #d5d5d5;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.timeline-edit-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.lt-edit-btn:hover {
+  background: #34373c;
+}
+
+.lt-edit-btn span {
+  font-size: 15px;
+  margin-right: 4px;
+}
+
+.lt-toolbar-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+.lt-information {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 10px;
+}
+
+.lt-info-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.lt-info-item strong {
+  font-weight: 600;
+}
+
+.lt-clock {
+  color: #d9b36b;
+}
+
+.lt-location {
+  color: #d0d1d3;
+}
+
+.lt-info-icon {
+  font-size: 12px;
+}
+
+.lt-daylight {
+  color: #c6aa6e;
+}
+
+/* EDIT PANEL */
+
+.lt-edit-panel {
+  padding: 12px;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
+  background: #22252a;
+  border-bottom: 1px solid var(--lt-border);
 }
 
-.timeline-field {
+.lt-edit-panel[hidden] {
+  display: none;
+}
+
+.lt-edit-field {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-.timeline-field label {
-  font-size: 11px;
-  color: var(--text-secondary, #beb7ac);
-  font-weight: 500;
-}
-
-.field-label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.field-hint {
+.lt-edit-field label {
+  color: #aeb2b8;
   font-size: 10px;
-  color: var(--text-muted, #8c867c);
 }
 
-.timeline-input {
-  background: var(--bg-cockpit, #17181a);
-  border: 1px solid var(--border-medium, #4e4f52);
-  color: var(--text-primary, #ede8e1);
-  font-family: var(--font-mono, monospace);
-  font-size: 12px;
-  padding: 6px 10px;
+.lt-edit-field input,
+.lt-edit-field select {
+  background: #15171a;
+  border: 1px solid #44484e;
   border-radius: 4px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.timeline-input:focus {
-  border-color: var(--accent-terracotta, #c87d55);
-  box-shadow: 0 0 0 1px var(--accent-terracotta, #c87d55);
-}
-.timeline-input[aria-invalid="true"] {
-  border-color: #d66b64;
+  color: white;
+  padding: 7px;
+  font-size: 11px;
 }
 
-.timeline-interval-control {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.interval-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.btn-interval-preset {
-  font-size: 10px;
-  padding: 3px 6px;
-  background: var(--bg-card, #27292b);
-  border: 1px solid var(--border-subtle, #3a3c3f);
-  border-radius: 3px;
-  color: var(--text-secondary, #beb7ac);
+#lt-apply-edit,
+#lt-cancel-edit {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #44484e;
+  background: #30343a;
+  color: white;
   cursor: pointer;
-  transition: all 0.15s;
-}
-.btn-interval-preset:hover {
-  border-color: var(--accent-terracotta, #c87d55);
-  color: var(--text-primary, #ede8e1);
-}
-.btn-interval-preset.active {
-  background: var(--accent-terracotta, #c87d55);
-  border-color: var(--accent-terracotta, #c87d55);
-  color: #fff;
 }
 
-.timeline-edit-footer {
+#lt-apply-edit {
+  background: var(--lt-orange);
+  border-color: var(--lt-orange);
+}
+
+/* RULER HEADER */
+
+.lt-ruler-header {
+  height: 23px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 10px;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  color: #838891;
+  font-size: 9px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.btn-timeline-reset {
+.lt-range-start,
+.lt-range-end {
+  flex-shrink: 0;
+  color: #9b9fa5;
+  font-family: monospace;
+  font-size: 9px;
+}
+
+.lt-window-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #c4c6ca;
+}
+
+.lt-window-info strong {
+  color: #d5d6d9;
+}
+
+.lt-rocket {
+  color: #d98a71;
+}
+
+.lt-interval-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--lt-blue);
+}
+
+#lt-interval {
   background: transparent;
-  border: 1px solid var(--border-subtle, #3a3c3f);
-  color: var(--text-muted, #8c867c);
-  font-size: 11px;
-  padding: 5px 10px;
-  border-radius: 4px;
+  border: none;
+  outline: none;
+  color: #91a8b9;
+  font-size: 9px;
   cursor: pointer;
-  transition: all 0.15s;
-}
-.btn-timeline-reset:hover {
-  color: var(--text-primary, #ede8e1);
-  border-color: var(--border-medium, #4e4f52);
 }
 
-.btn-timeline-apply {
-  background: var(--accent-terracotta, #c87d55);
-  border: 1px solid var(--accent-terracotta, #c87d55);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.btn-timeline-apply:hover {
-  opacity: 0.9;
+#lt-interval option {
+  background: #202226;
+  color: white;
 }
 
-@media (max-width: 1180px) and (min-width: 901px) {
-  .mission-toolbar {
-    padding: 0 10px;
+/* RULER */
+
+.lt-ruler-container {
+  height: 15px;
+  padding: 0 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.lt-ruler {
+  height: 15px;
+  width: 100%;
+  position: relative;
+  overflow: visible;
+  border-top: 1px solid #383a3e;
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(1% - 1px),
+    rgba(150, 155, 165, 0.04) 1%
+  );
+}
+
+.lt-ruler-ticks {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lt-tick {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 5px;
+  background: #555961;
+}
+
+.lt-tick.major {
+  height: 9px;
+  background: #858991;
+}
+
+.lt-tick-label {
+  position: absolute;
+  top: -17px;
+  transform: translateX(-50%);
+  font-size: 8px;
+  color: #737881;
+  white-space: nowrap;
+}
+
+.lt-current-marker {
+  position: absolute;
+  top: -1px;
+  height: 16px;
+  width: 10px;
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.lt-marker-line {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  height: 13px;
+  width: 2px;
+  background: var(--lt-orange);
+  box-shadow: 0 0 5px rgba(215, 137, 94, 0.4);
+}
+
+.lt-marker-dot {
+  position: absolute;
+  left: 2px;
+  bottom: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--lt-orange);
+  border-radius: 50%;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1050px) {
+  .lt-information {
+    gap: 8px;
+  }
+
+  .lt-location {
+    display: none;
+  }
+}
+
+@media (max-width: 650px) {
+  .lt-toolbar {
     gap: 6px;
-  }
-  .btn-edit-timeline span {
-    display: none;
-  }
-  .btn-edit-timeline {
-    padding: 5px 8px;
-  }
-  .toolbar-center-status {
-    font-size: 10px;
-    gap: 6px;
-  }
-  .status-coord {
-    max-width: 200px;
-  }
-  .btn-tool {
-    padding: 4px 8px;
-    font-size: 10px;
-  }
-  .full-timeline-strip {
-    padding: 0 10px 4px;
-  }
-}
-
-@media (max-width: 900px) {
-  :root { --height-bottom-cockpit: 116px; }
-
-  #mount-timeline {
-    height: 116px !important;
-    min-height: 116px !important;
+    padding: 5px 7px;
   }
 
-  .mission-toolbar {
-    height: 68px;
-    min-height: 68px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: 32px 28px;
-    gap: 0 6px;
-    padding: 4px 8px;
-    overflow: visible;
-  }
-
-  .toolbar-playback-group {
-    grid-column: 1;
-    grid-row: 1;
-    gap: 4px;
-  }
-
-  .btn-edit-timeline span {
-    display: none;
-  }
-  .btn-edit-timeline {
-    padding: 4px 6px;
-  }
-
-  .toolbar-tools-group {
-    grid-column: 2;
-    grid-row: 1;
-    gap: 4px;
-  }
-
-  .toolbar-tools-group .btn-tool {
-    padding: 4px 6px;
-    font-size: 10px;
-  }
-
-  .toolbar-center-status {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-content: center;
-    gap: 6px;
-    white-space: nowrap;
-    font-size: 10px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .status-coord {
-    max-width: 260px;
-  }
-
-  .full-timeline-strip {
-    height: 48px;
-    min-height: 48px;
-    padding: 0 8px 4px;
-  }
-}
-
-@media (max-width: 600px) {
-  :root { --height-bottom-cockpit: 122px; }
-
-  #mount-timeline {
-    height: 122px !important;
-    min-height: 122px !important;
-  }
-
-  .mission-toolbar {
-    height: 74px;
-    min-height: 74px;
-  }
-
-  .status-phase {
+  .lt-information {
     display: none;
   }
 
-  .speed-selector .speed-label {
-    display: none;
+  .lt-ruler-header {
+    padding: 0 7px;
+    gap: 5px;
   }
 
-  .toolbar-tools-group .btn-tool-map,
-  .toolbar-tools-group .btn-tool-ai {
-    display: none;
+  .lt-window-info {
+    font-size: 8px;
+  }
+
+  .lt-range-start,
+  .lt-range-end {
+    font-size: 8px;
+  }
+
+  .lt-ruler-container {
+    padding: 0 7px;
   }
 }
