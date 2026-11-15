@@ -33,6 +33,9 @@ assert(html.includes("Hey, I'm Dr. Raj") && html.includes("Got a lunar site or d
 assert(html.includes('id="ai-input-form"'), "ai-input-form must be present");
 assert(html.includes('id="ai-input-text"'), "ai-input-text field must be present");
 assert(html.includes('class="chip-btn"'), "Quick prompt chips must be present");
+const timelineHtml = fs.readFileSync(path.join(__dirname, "../components/timeline/timeline.html"), "utf8");
+assert(timelineHtml.includes('class="btn-tool-ai-label">AI</span>'), "AI toolbar button should show an AI label");
+assert(!timelineHtml.includes("icon-sparkles icon-sm icon-sand"), "AI toolbar button should no longer use the sparkle icon");
 console.log("✓ HTML markup structure and control anchors verified");
 
 // 2. Verify CSS rules
