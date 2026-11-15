@@ -2,6 +2,26 @@
  * ============================================================================
  * COMPONENT: Three.js 3D Moon Viewport (components/moon_3d/)
  * SCRIPT: moon_3d.js
+ *
+ * ROLE:
+ * Renders the primary interactive 3D WebGL lunar globe using Three.js:
+ * - Spherical 3D Moon model with NASA LROC high-resolution albedo texture.
+ * - OrbitControls for rotation, pitch, and zoom focusing on the South Pole.
+ * - Dynamic solar illumination that orbits based on mission timeline progression.
+ * - Raycaster click-to-pin system converting 3D ray intersections to lunar (lat, lon).
+ * - Real-time surface pin marker with normal vector orientation to the sphere.
+ *
+ * DATA FLOW & EVENTBUS INTEGRATION:
+ * 📥 DATA IN (Listens to):
+ *    - "site:marked"  -> Payload: { lat, lon, name, focus?, openDetails?, detailTab? }
+ *                        Updates the 3D surface pin and optionally focuses the camera.
+ *    - "time:changed" -> Payload: { sliderValue: number (0-100), timeISO: string }
+ *                        Orbits the directional sunlight around the lunar ecliptic plane
+ *                        with a 1.54° axial tilt simulation.
+ *
+ * 📤 DATA OUT (Emits):
+ *    - "site:marked"  -> Payload: { lat, lon, name, source: "moon-3d" }
+ *                        Fires when the user clicks anywhere on the 3D lunar surface.
  * ============================================================================
  */
 
@@ -12,10 +32,25 @@
   let pinsContainer = null;
   let lastEphemerisRequest = null;
   let ephemerisCache = new Map();
+  let targetCameraPos = null;
+  let isCameraFocusing = false;
 
+  // Standard WebGL world radius of the lunar sphere
   const MOON_RADIUS = 2.5;
 
   function initThreeMoon() {
+
+    // Wire up bottom 4K / 8K HUD texture switcher buttons
+    const clarityButtons = document.querySelectorAll('.moon-clarity-hud .hud-pill-btn');
+    clarityButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetRes = btn.dataset.res; // '4k' or '8k'
+        if (targetRes) {
+          applyTextureResolution(targetRes);
+        }
+      });
+    });
+
     const container = document.getElementById("moon-webgl-canvas");
     if (!container) return;
 
@@ -214,6 +249,8 @@
     updateCursor();
 
     renderer.domElement.addEventListener("mousedown", (e) => {
+      isCameraFocusing = false;
+      targetCameraPos = null;
       isDragging = true;
       downX = e.clientX;
       downY = e.clientY;
@@ -292,6 +329,28 @@
         isPlaying = !isPlaying;
       });
 
+      // Synchronize all candidate landing site pins with comparison deck
+      window.eventBus.on("cards:synced", (data) => {
+        if (data && Array.isArray(data.cards)) {
+          syncPinsFromCards(data.cards);
+        }
+      });
+
+      // Highlight active pin when an external component selects a site
+      window.eventBus.on("site:marked", (data) => {
+        if (!data || !Number.isFinite(data.lat) || !Number.isFinite(data.lon) ||
+            data.lat < -90 || data.lat > 90) return;
+        window._lastMarkedSite = { lat: data.lat, lon: data.lon, name: data.name };
+        const foundPin = updateActivePin(data.lat, data.lon);
+        if (!foundPin) {
+          createOrUpdate3DPin({ ...data, active: true });
+        }
+        if (data.focus !== false) {
+          focusOnCoordinates(data.lat, data.lon);
+        }
+      });
+
+      // Dynamically revolve the Sun around the Moon as timeline progresses
       window.eventBus.on("time:changed", (data) => {
         if (!data) return;
 
@@ -349,6 +408,14 @@
 
     function animate() {
       requestAnimationFrame(animate);
+      if (isCameraFocusing && targetCameraPos && camera) {
+        camera.position.lerp(targetCameraPos, 0.08);
+        if (controls) controls.target.set(0, 0, 0);
+        if (camera.position.distanceTo(targetCameraPos) < 0.02) {
+          camera.position.copy(targetCameraPos);
+          isCameraFocusing = false;
+        }
+      }
 
       // Check playback state or active play buttons/classes
       const anyPlayBtnActive = document.querySelector(
@@ -384,6 +451,15 @@
     const vector = new THREE.Vector3(x, y, z);
     const normal = vector.clone().normalize();
     return { x, y, z, vector, normal };
+  }
+
+  function focusOnCoordinates(lat, lon) {
+    if (!camera || typeof THREE === "undefined" || !Number.isFinite(lat) ||
+        !Number.isFinite(lon) || lat < -90 || lat > 90) return false;
+    const coords = getCartesianCoords(lat, lon);
+    targetCameraPos = coords.normal.clone().multiplyScalar(5.4);
+    isCameraFocusing = true;
+    return true;
   }
 
   function createNumberSprite(numberStr, isActive) {
@@ -584,9 +660,11 @@
   }
 
   function updateActivePin(lat, lon) {
+    let foundPin = false;
     pinsMap.forEach(entry => {
       const isMatch = (Math.abs(entry.data.lat - lat) < 0.25) &&
-                      (Math.abs(entry.data.lon - lon) < 1.0);
+                      (Math.abs((entry.data.lon - lon + 540) % 360 - 180) < 1.0);
+      if (isMatch) foundPin = true;
       entry.data.active = isMatch;
       entry.headMesh.material.color.setHex(isMatch ? 0xc87d55 : 0x8ea8c3);
       entry.ringMesh.material.color.setHex(isMatch ? 0xc87d55 : 0x5a6068);
@@ -603,6 +681,7 @@
         pinEntryGroup.add(newSprite);
       }
     });
+    return foundPin;
   }
 
   function update3DPinPosition(lat, lon) {
