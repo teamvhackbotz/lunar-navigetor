@@ -296,23 +296,32 @@
           </div>
           <div class="subcard-zero-line" style="top: 72.5%;"></div>
           <svg viewBox="0 0 360 80" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="solar-subcard-grad-${siteKey}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#c99e52" stop-opacity="0.32"/>
+                <stop offset="100%" stop-color="#c99e52" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
             <g class="subcard-chart-grid">
               <line x1="0" y1="4" x2="360" y2="4"></line>
               <line x1="0" y1="58" x2="360" y2="58"></line>
               <line x1="0" y1="76" x2="360" y2="76"></line>
               <line x1="0" y1="0" x2="0" y2="80"></line>
+              <line x1="90" y1="0" x2="90" y2="80"></line>
               <line x1="180" y1="0" x2="180" y2="80"></line>
+              <line x1="270" y1="0" x2="270" y2="80"></line>
               <line x1="359" y1="0" x2="359" y2="80"></line>
             </g>
-            <path d="${sol.svgPath}" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="2"></path>
+            <path d="${sol.svgPath} L360,80 L0,80 Z" fill="url(#solar-subcard-grad-${siteKey})"></path>
+            <path d="${sol.svgPath}" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="1.8"></path>
           </svg>
         </div>
-        <div class="subcard-axis-caption"><span>Solar elevation (°)</span><span>Mission day</span></div>
-        <div class="subcard-profile-x-ticks" aria-hidden="true"><span>1</span><span>7</span><span>14</span></div>
+        <div class="subcard-axis-caption"><span>Solar Elevation (°)</span><span>Timeline (Day 1 - 14)</span></div>
+        <div class="subcard-profile-x-ticks" aria-hidden="true"><span>Day 1</span><span>Day 7</span><span>Day 14</span></div>
         <div class="subcard-slope-stat-grid">
           <div class="subcard-stat-item">
             <span class="subcard-stat-label">Daylight Ratio</span>
-            <span class="subcard-stat-val">${sol.daylightPct}</span>
+            <span class="subcard-stat-val status-safe">${sol.daylightPct}</span>
           </div>
           <div class="subcard-stat-item">
             <span class="subcard-stat-label">Continuous Stay</span>
@@ -368,13 +377,28 @@
       tabBtns.forEach(b => {
         b.classList.toggle("active", b.dataset.tab === tab);
       });
-      const tabTitles = {
-        horizon: "🌄 360° Panoramic Skyline Mask",
-        slope: "📈 Radial Crater Cross-Section",
-        solar: "☀️ 14-Day Solar Illumination Window",
-        comms: "📡 Direct-to-Earth Line of Sight"
+      const tabMeta = {
+        horizon: {
+          title: "360° Skyline Profile",
+          svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>'
+        },
+        slope: {
+          title: "Crater Radial Profile",
+          svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>'
+        },
+        solar: {
+          title: "14-Day Solar Profile",
+          svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>'
+        },
+        comms: {
+          title: "Direct-to-Earth Comms",
+          svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>'
+        }
       };
-      if (titleEl) titleEl.textContent = tabTitles[tab] || "Site Detail";
+      const meta = tabMeta[tab] || { title: "Site Detail", svg: "" };
+      if (titleEl) {
+        titleEl.innerHTML = `${meta.svg}<span>${meta.title}</span>`;
+      }
       if (bodyEl) {
         bodyEl.innerHTML = renderSubcardContent(siteKey, tab);
       }
@@ -1092,10 +1116,17 @@
       <!-- Attached Secondary Detail Sub-Card -->
       <div class="secondary-detail-card" id="subcard-${siteKey}" data-site-id="${siteKey}">
         <div class="subcard-header">
-          <span class="subcard-title" id="subcard-title-${siteKey}">🌄 360° Skyline Mask</span>
+          <div class="subcard-title" id="subcard-title-${siteKey}">
+            <svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
+            <span>360° Skyline Profile</span>
+          </div>
           <div class="subcard-actions">
-            <button class="btn-subcard-action btn-grow-inspect" title="Expand / Grow View">⛶ Grow</button>
-            <button class="btn-subcard-action btn-close-subcard" title="Close Sub-Card">✕</button>
+            <button class="btn-subcard-action btn-grow-inspect" title="Expand detailed inspection modal" aria-label="Expand view">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </button>
+            <button class="btn-subcard-action btn-close-subcard" title="Close detail view" aria-label="Close">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
         </div>
         <div class="subcard-body" id="subcard-body-${siteKey}"></div>
@@ -1525,9 +1556,9 @@
 
               // Next Sunset / Sunrise countdown (Index 2)
               if (evalData.isSunVis) {
-                metricValues[2].innerHTML = `☀️ Sunset in <strong>${evalData.nextSunsetHrs}h</strong>`;
+                metricValues[2].innerHTML = `${evalData.nextSunsetHrs}h <span class="metric-sub">(Sunset)</span>`;
               } else {
-                metricValues[2].innerHTML = `🌑 Sunrise in <strong>${evalData.nextSunriseHrs}h</strong>`;
+                metricValues[2].innerHTML = `${evalData.nextSunriseHrs}h <span class="metric-sub">(Sunrise)</span>`;
               }
 
               // Earth Visibility (Index 3)
