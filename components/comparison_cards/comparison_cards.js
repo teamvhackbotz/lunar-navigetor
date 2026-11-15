@@ -938,9 +938,13 @@
     for (const col of columns) {
       const card = col.querySelector(".site-card");
       if (!card) continue;
+      const cName = card.dataset.name;
       const cLat = parseFloat(card.dataset.lat);
       const cLon = parseFloat(card.dataset.lon);
 
+      if (name && cName && name.trim().toLowerCase() === cName.trim().toLowerCase()) {
+        return col;
+      }
       if (!isNaN(cLat) && !isNaN(cLon)) {
         const dLat = Math.abs(cLat - lat);
         const dLon = Math.abs((cLon - lon + 540) % 360 - 180);
@@ -1325,8 +1329,7 @@
        *    Find existing card or dynamically create a new comparison card, highlight, and ensure drawer is open!
        */
       window.eventBus.on("site:marked", (data) => {
-         if (!data || !Number.isFinite(data.lat) || !Number.isFinite(data.lon) ||
-             data.lat < -90 || data.lat > 90) return;
+        if (!data || typeof data.lat !== "number" || typeof data.lon !== "number") return;
 
         // Micro-step coordinate nudges or card selection only highlights without spawning duplicates
         if (data.source === "comparison-cards" || data.source === "keyboard-nudge") {

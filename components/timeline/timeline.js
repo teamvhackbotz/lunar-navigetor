@@ -109,8 +109,7 @@
 
     const intervalMs = state.intervalHours * 3600 * 1000;
     const intervalCount = Math.floor(totalMs / intervalMs + 1e-9);
-    // Allow denser ticks (up to ~800) so the precision scale matches the continuous ruler look
-    const stride = Math.max(1, Math.ceil(intervalCount / 800));
+    const stride = Math.max(1, Math.ceil(intervalCount / 500));
 
     const tickIndices = new Set([0, intervalCount]);
     for (let i = stride; i < intervalCount; i += stride) tickIndices.add(i);
@@ -133,27 +132,26 @@
       const isDayBoundary = (tickDate.getUTCHours() === 0 && tickDate.getUTCMinutes() === 0);
       const isMidpoint = Math.abs(frac - 0.5) <= (intervalMs / totalMs / 2);
 
-      // Most ticks short & uniform to match the dense precision scale in the design
-      let y1 = 5;
-      let stroke = "rgba(255, 255, 255, 0.32)";
-      let strokeWidth = "0.7";
+      let y1 = 6;
+      let stroke = "rgba(255, 255, 255, 0.28)";
+      let strokeWidth = "1";
 
       if (isStartOrEnd) {
         y1 = 0;
-        stroke = "rgba(237, 232, 225, 0.95)";
-        strokeWidth = "1.5";
+        stroke = "rgba(237, 232, 225, 0.9)";
+        strokeWidth = "2";
       } else if (isMidpoint) {
         y1 = 0;
-        stroke = "rgba(201, 158, 82, 0.95)"; // Sand gold midpoint marker
-        strokeWidth = "1.5";
+        stroke = "rgba(201, 158, 82, 0.95)"; // Sand gold solstice / midpoint
+        strokeWidth = "2";
       } else if (isDayBoundary) {
         y1 = 2;
-        stroke = "rgba(200, 125, 85, 0.75)"; // Terracotta daily boundary
-        strokeWidth = "1";
+        stroke = "rgba(200, 125, 85, 0.8)"; // Terracotta daily tick
+        strokeWidth = "1.5";
       } else if (Math.floor(i / stride) % 2 === 0) {
         y1 = 4;
-        stroke = "rgba(255, 255, 255, 0.42)";
-        strokeWidth = "0.85";
+        stroke = "rgba(255, 255, 255, 0.4)";
+        strokeWidth = "1.25";
       }
 
       lines.push(`<line x1="${x.toFixed(2)}" y1="${y1}" x2="${x.toFixed(2)}" y2="12" stroke="${stroke}" stroke-width="${strokeWidth}" />`);
@@ -301,15 +299,13 @@
         state.isPlaying = !state.isPlaying;
 
         // Update play/pause icon
-        // Update play/pause icon
-elements.btnPlay.innerHTML = state.isPlaying
-  ? `<svg class="icon icon-pause icon-sm" viewBox="0 0 24 24">
-       <rect x="6" y="4" width="4" height="16"></rect>
-       <rect x="14" y="4" width="4" height="16"></rect>
-     </svg>`
-  : `<svg class="icon icon-play icon-sm" viewBox="0 0 24 24">
-       <polygon points="6 4 20 12 6 20 6 4"></polygon>
-     </svg>`;
+        if (window.Icons && typeof window.Icons.svg === "function") {
+          elements.btnPlay.innerHTML = state.isPlaying
+            ? window.Icons.svg("pause", { size: "sm" })
+            : window.Icons.svg("play", { size: "sm" });
+        } else {
+          elements.btnPlay.textContent = state.isPlaying ? "⏸" : "▶";
+        }
         elements.btnPlay.classList.toggle("playing", state.isPlaying);
 
         if (state.isPlaying) {

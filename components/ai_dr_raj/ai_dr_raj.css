@@ -28,19 +28,9 @@
    2. Floating Bubble Trigger Button
    Circular/pill trigger providing visual callout when chat is minimized.
    -------------------------------------------------------------------------- */
+/* Floating bubble launcher button (disabled / hidden in favor of bottom dock ✨ launcher) */
 .ai-bubble-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--bg-surface, #1e2022);
-  border: 1px solid var(--border-subtle, #3a3c3f);
-  padding: 8px 14px 8px 10px;
-  border-radius: 28px;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: all 0.2s ease;
+  display: none !important;
 }
 
 .ai-bubble-btn[hidden] {

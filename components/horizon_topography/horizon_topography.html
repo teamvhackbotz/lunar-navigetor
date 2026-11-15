@@ -39,10 +39,18 @@
   
   <!-- Drawer Header -->
   <header class="drawer-header">
-    <div>
-      <div class="drawer-tag">Artemis III Surface Operations</div>
+    <div style="flex: 1; min-width: 0;">
+      <div class="drawer-tag" id="planner-mission-tag">Artemis III Surface Operations</div>
       <h3 class="drawer-title">Mission & Traverse Planner</h3>
       <span class="drawer-subtitle" id="planner-site-name">📍 Active: Peak Near Shackleton</span>
+
+      <!-- Mission Archetype Selector -->
+      <div class="mission-archetype-selector" role="tablist" aria-label="Mission Archetype">
+        <button type="button" class="archetype-pill active" data-archetype="crewed" title="Artemis Crewed Sortie (LTV)">🧑‍🚀 Crewed</button>
+        <button type="button" class="archetype-pill" data-archetype="rover" title="Robotic Prospecting Rover (VIPER/CADRE)">🤖 Rover</button>
+        <button type="button" class="archetype-pill" data-archetype="lander" title="Stationary Science Lander (CLPS)">📡 Lander</button>
+        <button type="button" class="archetype-pill" data-archetype="basecamp" title="Extended Surface Outpost / Base Camp">🏗️ Base Camp</button>
+      </div>
     </div>
     
     <!-- Close Button: Collapses the left drawer -->
@@ -72,16 +80,16 @@
       <!-- Power Telemetry Readouts Grid -->
       <div class="planner-metrics-grid">
         <div class="planner-metric-card">
-          <span class="p-label">Primary Power</span>
-          <span class="p-val status-safe">10.0 kW (VSAT)</span>
+          <span class="p-label" id="label-primary-power">Primary Power</span>
+          <span class="p-val status-safe" id="val-primary-power">10.0 kW (VSAT)</span>
         </div>
         <div class="planner-metric-card">
-          <span class="p-label">Darkness Reserve</span>
-          <span class="p-val">72 hrs (RFC)</span>
+          <span class="p-label" id="label-darkness-reserve">Darkness Reserve</span>
+          <span class="p-val" id="val-darkness-reserve">72 hrs (RFC)</span>
         </div>
         <div class="planner-metric-card">
-          <span class="p-label">Crew Compliment</span>
-          <span class="p-val">2 Astronauts</span>
+          <span class="p-label" id="label-crew-compliment">Crew Compliment</span>
+          <span class="p-val" id="val-crew-compliment">2 Astronauts</span>
         </div>
         <div class="planner-metric-card">
           <span class="p-label">Daylight Margin</span>
@@ -92,7 +100,7 @@
       <!-- Battery SoC Indicator -->
       <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
         <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted, #8c867c);">
-          <span>Lander Battery State-of-Charge</span>
+          <span id="label-battery-soc">Lander Battery State-of-Charge</span>
           <span style="color: var(--accent-sage, #7d967e); font-weight: 600;" id="val-battery-soc">94% Nominal</span>
         </div>
         <div class="bar-track">
@@ -104,27 +112,27 @@
     <!-- Section 2: Rover Mobility & LTV Constraints -->
     <section class="panel-section">
       <div class="section-title-row">
-        <span class="section-tag">Surface Mobility</span>
-        <h4 class="section-heading">Lunar Terrain Vehicle (LTV)</h4>
+        <span class="section-tag" id="mobility-section-tag">Surface Mobility</span>
+        <h4 class="section-heading" id="mobility-section-heading">Lunar Terrain Vehicle (LTV)</h4>
       </div>
-      <p class="section-desc">Traverse boundaries and maximum unassisted walk-back radius.</p>
+      <p class="section-desc" id="mobility-section-desc">Traverse boundaries and maximum unassisted walk-back radius.</p>
 
       <div class="planner-metrics-grid">
         <div class="planner-metric-card">
-          <span class="p-label">Operating Radius</span>
-          <span class="p-val">12.5 km</span>
+          <span class="p-label" id="label-operating-radius">Operating Radius</span>
+          <span class="p-val" id="val-operating-radius">12.5 km</span>
         </div>
         <div class="planner-metric-card">
-          <span class="p-label">Nominal Speed</span>
-          <span class="p-val">8.0 km/h</span>
+          <span class="p-label" id="label-nominal-speed">Nominal Speed</span>
+          <span class="p-val" id="val-nominal-speed">8.0 km/h</span>
         </div>
         <div class="planner-metric-card">
           <span class="p-label">Planned Traverse</span>
           <span class="p-val" id="val-total-traverse">18.4 km total</span>
         </div>
         <div class="planner-metric-card">
-          <span class="p-label">Walk-Back Margin</span>
-          <span class="p-val status-safe">Safe (&lt; 5.0 km)</span>
+          <span class="p-label" id="label-safety-margin">Walk-Back Margin</span>
+          <span class="p-val status-safe" id="val-walkback-safety">Safe (&lt; 5.0 km)</span>
         </div>
       </div>
     </section>
@@ -181,10 +189,10 @@
     <section class="panel-section">
       <div class="section-title-row">
         <span class="section-tag">Science Objectives</span>
-        <h4 class="section-heading">Deployable Instrument Roster</h4>
+        <h4 class="section-heading" id="payload-section-heading">Deployable Instrument Roster</h4>
       </div>
 
-      <div class="checklist-grid">
+      <div class="checklist-grid" id="science-payload-checklist">
         <label class="check-item">
           <input type="checkbox" checked>
           <span>Regolith Volatiles Mass Spectrometer (PCMS)</span>
@@ -236,27 +244,39 @@
       <p class="section-desc">Select surface reflectance or shaded relief basemap for 3D/2D viewports.</p>
 
       <div class="basemap-picker-grid">
-        <label class="basemap-card active" data-basemap="lroc">
+        <label class="basemap-card active" data-basemap="lroc" tabindex="0">
           <input type="radio" name="gis-basemap" value="lroc" checked>
           <div class="basemap-info">
-            <span class="b-name">LROC WAC Albedo Mosaic</span>
-            <span class="b-desc">NASA LRO 100m/px Visible Monochrome</span>
+            <div class="basemap-header-row">
+              <span class="b-name">LROC WAC Albedo Mosaic</span>
+              <span class="basemap-res-chip">100 m/px</span>
+            </div>
+            <span class="basemap-spec-tag">NASA LRO · WAC (395–689 nm)</span>
+            <span class="b-desc">Photometrically normalized global reflectance albedo.</span>
           </div>
         </label>
 
-        <label class="basemap-card" data-basemap="lola">
+        <label class="basemap-card" data-basemap="lola" tabindex="0">
           <input type="radio" name="gis-basemap" value="lola">
           <div class="basemap-info">
-            <span class="b-name">LOLA Topographic Relief</span>
-            <span class="b-desc">Laser Altimeter Shaded Elevation Model</span>
+            <div class="basemap-header-row">
+              <span class="b-name">LOLA Topographic Relief</span>
+              <span class="basemap-res-chip">59 m/px</span>
+            </div>
+            <span class="basemap-spec-tag">NASA LRO · LOLA (1064 nm Laser)</span>
+            <span class="b-desc">Laser altimeter shaded DEM (±1 m vertical precision).</span>
           </div>
         </label>
 
-        <label class="basemap-card" data-basemap="kaguya">
+        <label class="basemap-card" data-basemap="kaguya" tabindex="0">
           <input type="radio" name="gis-basemap" value="kaguya">
           <div class="basemap-info">
-            <span class="b-name">Kaguya TC Ortho Terrain</span>
-            <span class="b-desc">JAXA Terrain Camera High-Contrast Ortho</span>
+            <div class="basemap-header-row">
+              <span class="b-name">Kaguya TC Ortho Terrain</span>
+              <span class="basemap-res-chip">10 m/px</span>
+            </div>
+            <span class="basemap-spec-tag">JAXA SELENE · TC (Stereo Ortho)</span>
+            <span class="b-desc">High-contrast stereoscopic morphology orthomosaic.</span>
           </div>
         </label>
       </div>
@@ -272,39 +292,41 @@
 
       <div class="overlay-toggle-list">
         <!-- Slope Gradient Heatmap -->
-        <label class="overlay-toggle-item">
+        <label class="overlay-toggle-item" id="overlay-item-slope">
           <div class="toggle-text">
             <span class="t-title">LOLA Slope Gradient Heatmap</span>
             <span class="t-sub">Safe (&lt;5° Green) · Moderate (5°-8° Yellow) · Hazard (&gt;8° Red)</span>
           </div>
-          <input type="checkbox" id="layer-toggle-slope" checked class="switch-checkbox">
+          <input type="checkbox" id="layer-toggle-slope" checked class="layer-checkbox" aria-label="Toggle LOLA Slope Gradient Heatmap">
         </label>
 
         <!-- Permanently Shadowed Regions (PSRs) -->
-        <label class="overlay-toggle-item">
+        <label class="overlay-toggle-item" id="overlay-item-psr">
           <div class="toggle-text">
             <span class="t-title">Permanently Shadowed Regions (PSRs)</span>
             <span class="t-sub">Extreme cold traps below 40 K (-233°C)</span>
+            <span class="layer-context-badge" id="badge-psr-context" style="display: none;"></span>
           </div>
-          <input type="checkbox" id="layer-toggle-psr" checked class="switch-checkbox">
+          <input type="checkbox" id="layer-toggle-psr" checked class="layer-checkbox" aria-label="Toggle Permanently Shadowed Regions">
         </label>
 
         <!-- Water Equivalent Hydrogen (WEH) -->
-        <label class="overlay-toggle-item">
+        <label class="overlay-toggle-item" id="overlay-item-ice">
           <div class="toggle-text">
             <span class="t-title">Water-Equivalent Hydrogen (WEH)</span>
             <span class="t-sub">Subsurface volatiles (&gt; 0.5 wt% H) from LEND epithermal neutrons</span>
           </div>
-          <input type="checkbox" id="layer-toggle-ice" class="switch-checkbox">
+          <input type="checkbox" id="layer-toggle-ice" class="layer-checkbox" aria-label="Toggle Water Equivalent Hydrogen">
         </label>
 
         <!-- Direct-to-Earth (DTE) Occlusion -->
-        <label class="overlay-toggle-item">
+        <label class="overlay-toggle-item" id="overlay-item-dte">
           <div class="toggle-text">
             <span class="t-title">Earth Radio Occlusion Mask</span>
             <span class="t-sub">Regions with blocked line-of-sight during minimum libration</span>
+            <span class="layer-context-badge" id="badge-dte-context" style="display: none;"></span>
           </div>
-          <input type="checkbox" id="layer-toggle-dte" class="switch-checkbox">
+          <input type="checkbox" id="layer-toggle-dte" class="layer-checkbox" aria-label="Toggle Earth Radio Occlusion Mask">
         </label>
       </div>
     </section>
@@ -323,6 +345,14 @@
         </div>
         <input type="range" id="slider-layer-opacity" min="10" max="100" value="75" class="custom-range" style="width: 100%;">
       </div>
+
+      <!-- Quick Blend Presets -->
+      <div class="opacity-preset-row">
+        <button type="button" class="preset-pill" data-opacity="30">30% Subtle</button>
+        <button type="button" class="preset-pill" data-opacity="60">60% Balanced</button>
+        <button type="button" class="preset-pill active" data-opacity="75">75% Standard</button>
+        <button type="button" class="preset-pill" data-opacity="90">90% Analytical</button>
+      </div>
     </section>
 
     <!-- Section 4: Instrument Legend & Citations -->
@@ -333,17 +363,20 @@
       </div>
 
       <div class="legend-scale-wrap">
-        <span style="font-size: 9px; color: var(--text-muted, #8c867c); text-transform: uppercase;">Slope Scale Incline:</span>
-        <div class="legend-gradient-bar"></div>
-        <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono, monospace); color: var(--text-muted, #8c867c);">
-          <span>0° (Safe)</span>
-          <span>5° (Caution)</span>
-          <span>10°+ (Hazard)</span>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span id="legend-instrument-title" style="font-size: 9px; color: var(--text-muted, #8c867c); text-transform: uppercase;">Slope Scale Incline:</span>
+          <span id="legend-active-layer-tag" style="font-size: 8px; font-family: var(--font-mono, monospace); color: var(--accent-sand, #c99e52);">[LOLA DEM]</span>
+        </div>
+        <div class="legend-gradient-bar" id="legend-gradient-bar"></div>
+        <div id="legend-ticks-row" style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono, monospace); color: var(--text-muted, #8c867c);">
+          <span id="legend-tick-low">0° (Flat / Safe)</span>
+          <span id="legend-tick-mid">8° (Moderate)</span>
+          <span id="legend-tick-high">20°+ (Steep Hazard)</span>
         </div>
       </div>
 
-      <div class="meta-citation" style="margin-top: 8px; font-size: 9px; color: var(--text-muted, #8c867c); line-height: 1.4;">
-        Data Source: NASA Lunar Reconnaissance Orbiter (LRO) LOLA / LROC Science Teams. Projected at 1,737.4 km lunar sphere datum.
+      <div class="meta-citation" id="legend-citation-text" style="margin-top: 8px; font-size: 9px; color: var(--text-muted, #8c867c); line-height: 1.4;">
+        Data Source: NASA Lunar Reconnaissance Orbiter (LRO) LOLA Laser Altimeter DEM. IAU 1,737.4 km lunar sphere datum.
       </div>
     </section>
 
