@@ -11,8 +11,7 @@
        Expanded Chat / Intelligence Window
        Initially hidden; opened by the bottom mission toolbar sparkles button (✨) or Shift + ?
        ======================================================================== -->
-  <div class="ai-chat-window" id="ai-chat-window" style="display: none;">
-
+  <div class="ai-chat-window" id="ai-chat-window" style="display: none">
     <!-- Chat window header with agent identity & status -->
     <div class="ai-chat-header">
       <div class="ai-header-left">
@@ -29,13 +28,24 @@
       </div>
       <!-- Header window controls -->
       <div class="ai-header-actions">
-        <button type="button" class="ai-personality-toggle" id="ai-personality-toggle" role="switch" aria-checked="false" title="Toggle Dr. Raj personality">
+        <button
+          type="button"
+          class="ai-personality-toggle"
+          id="ai-personality-toggle"
+          role="switch"
+          aria-checked="false"
+          title="Toggle Dr. Raj personality"
+        >
           <span>Dr. Raj</span>
-          <span class="ai-personality-track" aria-hidden="true"><span></span></span>
+          <span class="ai-personality-track" aria-hidden="true"
+            ><span></span
+          ></span>
           <span id="ai-personality-mode">Off</span>
         </button>
         <!-- Minimize button collapses chat window -->
-        <button class="ai-header-btn" id="ai-minimize-btn" title="Minimize">&minus;</button>
+        <button class="ai-header-btn" id="ai-minimize-btn" title="Minimize">
+          &minus;
+        </button>
       </div>
     </div>
 
@@ -44,10 +54,24 @@
          Pre-canned queries for one-click prompt entry regarding key lunar science topics.
          ======================================================================== -->
     <div class="ai-quick-chips">
-      <button class="chip-btn" data-query="Assess Shackleton Connecting Ridge">📍 Shackleton Ridge</button>
-      <button class="chip-btn" data-query="Check Earth Comms for Malapert Mountain">📡 Malapert Comms</button>
-      <button class="chip-btn" data-query="Explain Libration Impact on DTE">🌍 Libration Effect</button>
-      <button class="chip-btn" data-query="Best Artemis site for 6-day solar stay?">☀️ Solar Stay</button>
+      <button class="chip-btn" data-query="Assess Shackleton Connecting Ridge">
+        📍 Shackleton Ridge
+      </button>
+      <button
+        class="chip-btn"
+        data-query="Check Earth Comms for Malapert Mountain"
+      >
+        📡 Malapert Comms
+      </button>
+      <button class="chip-btn" data-query="Explain Libration Impact on DTE">
+        🌍 Libration Effect
+      </button>
+      <button
+        class="chip-btn"
+        data-query="Best Artemis site for 6-day solar stay?"
+      >
+        ☀️ Solar Stay
+      </button>
     </div>
 
     <details class="ai-diagnostics" id="ai-diagnostics">
@@ -56,7 +80,13 @@
         <span id="ai-diagnostics-status">Idle</span>
         <span id="ai-diagnostics-elapsed">00:00</span>
       </summary>
-      <div class="ai-diagnostics-log" id="ai-diagnostics-log" role="log" aria-live="polite" aria-relevant="additions"></div>
+      <div
+        class="ai-diagnostics-log"
+        id="ai-diagnostics-log"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+      ></div>
     </details>
 
     <!-- ========================================================================
@@ -68,7 +98,9 @@
       <div class="ai-msg msg-assistant">
         <div class="msg-bubble">
           <strong>Lunar Mission Analyst online.</strong>
-          Select a site or provide a date range for a preliminary assessment of illumination, Earth communications, and terrain hazards. Verify results against validated mission data and constraints.
+          Select a site or provide a date range for a preliminary assessment of
+          illumination, Earth communications, and terrain hazards. Verify
+          results against validated mission data and constraints.
         </div>
         <div class="msg-time">Decision support — not a mission go/no-go</div>
       </div>
@@ -79,14 +111,42 @@
          Text input field and submit button for custom conversational queries.
          ======================================================================== -->
     <form class="ai-input-form" id="ai-input-form">
-      <input type="text" class="ai-input-field" id="ai-input-text" placeholder="Ask Dr. Raj about lunar sites..." autocomplete="off">
-      <button type="submit" class="ai-send-btn" id="ai-send-btn" title="Send Query" aria-label="Send Query">
+      <input
+        type="text"
+        class="ai-input-field"
+        id="ai-input-text"
+        placeholder="Ask Dr. Raj about lunar sites..."
+        autocomplete="off"
+      />
+      <button
+        type="submit"
+        class="ai-send-btn"
+        id="ai-send-btn"
+        title="Send Query"
+        aria-label="Send Query"
+      >
         <!-- Paper airplane send icon -->
-        <svg class="ai-send-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <svg
+          class="ai-send-icon"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
           <line x1="22" y1="2" x2="11" y2="13"></line>
           <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
         </svg>
-        <svg class="ai-stop-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <svg
+          class="ai-stop-icon"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
           <rect x="6" y="6" width="12" height="12" rx="1"></rect>
         </svg>
       </button>
