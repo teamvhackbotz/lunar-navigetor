@@ -7,11 +7,24 @@
 
 <!-- Floating assistant wrapper pinned to bottom-right corner above timeline cockpit -->
 <div class="ai-assistant-wrapper" id="ai-assistant-wrapper">
+  <button
+    type="button"
+    class="ai-bubble-btn"
+    id="ai-bubble-btn"
+    aria-label="Open Dr. Raj mission analyst"
+    aria-controls="ai-chat-window"
+    aria-expanded="false"
+    title="Open Dr. Raj mission analyst">
+    <span class="ai-avatar-badge" aria-hidden="true">👨‍🚀</span>
+    <span class="ai-bubble-text">
+      <span class="ai-bubble-name">Dr. Raj</span>
+      <span class="ai-bubble-role">Lunar Mission Analyst</span>
+    </span>
+  </button>
 
   <!-- ========================================================================
        Expanded Chat / Intelligence Window
-       Initially hidden (display: none); toggled open/closed via the "👨‍🚀 Dr. Raj AI"
-       button in the bottom mission toolbar (emits 'ai:toggle' across EventBus).
+       Initially hidden; opened by the floating launcher or bottom mission toolbar.
        ======================================================================== -->
   <div class="ai-chat-window" id="ai-chat-window" style="display: none;">
 

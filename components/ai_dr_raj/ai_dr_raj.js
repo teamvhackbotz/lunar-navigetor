@@ -716,6 +716,7 @@ DR. RAJ PERSONALITY:
   // ---------------------------------------------------------------------------
   function initDrRaj() {
     const chatWindow   = document.getElementById("ai-chat-window");
+    const bubbleBtn    = document.getElementById("ai-bubble-btn");
     const minimizeBtn  = document.getElementById("ai-minimize-btn");
     const form         = document.getElementById("ai-input-form");
     const inputField   = document.getElementById("ai-input-text");
@@ -800,9 +801,18 @@ DR. RAJ PERSONALITY:
     function isChatOpen() {
       return chatWindow && chatWindow.style.display !== "none";
     }
+    function syncFloatingBubbleState() {
+      if (!bubbleBtn) return;
+      const open = isChatOpen();
+      bubbleBtn.hidden = open;
+      bubbleBtn.setAttribute("aria-expanded", String(open));
+      bubbleBtn.setAttribute("aria-label", open ? "Close Dr. Raj mission analyst" : "Open Dr. Raj mission analyst");
+      bubbleBtn.title = open ? "Close Dr. Raj mission analyst" : "Open Dr. Raj mission analyst";
+    }
     function openChat() {
       if (!chatWindow) return;
       chatWindow.style.display = "flex";
+      syncFloatingBubbleState();
       const cb = document.getElementById("toggle-ai-chat");
       if (cb && !cb.checked) cb.checked = true;
       if (inputField) inputField.focus();
@@ -810,10 +820,19 @@ DR. RAJ PERSONALITY:
     function closeChat() {
       if (!chatWindow) return;
       chatWindow.style.display = "none";
+      syncFloatingBubbleState();
       const cb = document.getElementById("toggle-ai-chat");
       if (cb && cb.checked) cb.checked = false;
     }
 
+    syncFloatingBubbleState();
+    if (bubbleBtn) bubbleBtn.addEventListener("click", () => {
+      if (isChatOpen()) {
+        closeChat();
+      } else {
+        openChat();
+      }
+    });
     const toggleCheckbox = document.getElementById("toggle-ai-chat");
     if (toggleCheckbox) {
       toggleCheckbox.addEventListener("change", () => {

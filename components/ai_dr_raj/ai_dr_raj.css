@@ -43,6 +43,10 @@
   transition: all 0.2s ease;
 }
 
+.ai-bubble-btn[hidden] {
+  display: none;
+}
+
 .ai-bubble-btn:hover {
   border-color: var(--border-active, #c87d55);
   transform: translateY(-2px);
