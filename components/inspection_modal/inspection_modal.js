@@ -217,10 +217,10 @@
 
     if (modeLabel && modeIcon) {
       if (mode === "modal") {
-        modeIcon.textContent = "◰";
+        modeIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>`;
         modeLabel.textContent = "Float HUD";
       } else {
-        modeIcon.textContent = "▣";
+        modeIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="12" cy="12" r="3"/></svg>`;
         modeLabel.textContent = "Dock Center";
       }
     }
@@ -296,15 +296,66 @@
   }
 
   /**
+   * Scales a 300x80 slope profile path to the high-resolution 520x200 inspector coordinate space.
+   *
+   * @param {string} rawPath - 300x80 SVG path string
+   * @returns {{scaledPath: string, touchdownX: number, touchdownY: number}}
+   */
+  function scaleSlopeToHighRes(rawPath) {
+    const path = rawPath || "M0,45 Q70,41 120,36 T200,56 T300,68";
+    const scaleX = 520 / 300;
+    const scaleY = 200 / 80;
+    const m = path.match(/Q\s*([0-9.]+)\s*,\s*([0-9.]+)\s+([0-9.]+)\s*,\s*([0-9.]+)/);
+    const srcTdX = m ? parseFloat(m[3]) : 110;
+    const srcTdY = m ? parseFloat(m[4]) : 34;
+
+    const scaledPath = path.replace(/([0-9.]+)\s*,\s*([0-9.]+)/g, (match, x, y) => {
+      return (parseFloat(x) * scaleX).toFixed(1) + "," + (parseFloat(y) * scaleY).toFixed(1);
+    });
+
+    return {
+      scaledPath,
+      touchdownX: +(srcTdX * scaleX).toFixed(1),
+      touchdownY: +(srcTdY * scaleY).toFixed(1)
+    };
+  }
+
+  /**
    * Resolves site dataset using authentic NASA LunarPhysics data when available.
    */
   function getInspectorSite(siteKeyOrData) {
     const input = siteKeyOrData || activeSiteData || activeSiteKey || "shackleton";
 
     if (window.LunarPhysics) {
-      let raw = window.LunarPhysics.findSite(input);
+      let raw = null;
 
-      // If not in catalog, check if coordinates exist or synthesize
+      // 1. If activeSiteData already has authentic NASA profile attached
+      if (activeSiteData && activeSiteData._authentic) {
+        raw = activeSiteData._authentic;
+      }
+
+      // 2. Direct lookup by input
+      if (!raw) {
+        raw = window.LunarPhysics.findSite(input);
+      }
+
+      // 3. Fallback: if input was a dynamic key (e.g. malapert_massif_1794723...), try stripped slug
+      if (!raw && typeof input === "string") {
+        const stripped = input.replace(/_\d+$/, "");
+        raw = window.LunarPhysics.findSite(stripped) || window.LunarPhysics.findSite(stripped.replace(/_/g, " "));
+      }
+
+      // 4. Fallback: lookup by activeSiteData name or coordinates
+      if (!raw && activeSiteData) {
+        if (activeSiteData.name) {
+          raw = window.LunarPhysics.findSite(activeSiteData.name);
+        }
+        if (!raw && activeSiteData.lat !== undefined && activeSiteData.lon !== undefined) {
+          raw = window.LunarPhysics.findSite({ lat: activeSiteData.lat, lon: activeSiteData.lon });
+        }
+      }
+
+      // 5. Synthesize custom site only if genuinely not a catalog site
       if (!raw) {
         let lat = null;
         let lon = null;
@@ -333,12 +384,16 @@
         const sunClearanceDelta = evalData ? (evalData.sunEl - crestAtSun).toFixed(1) : "1.0";
         const clearanceDesc = evalData && evalData.isSunVis
           ? `+${sunClearanceDelta}° above regional terrain crest`
-          : `${sunClearanceDelta}° below regional crest (Topographic Shadow)`;
+          : `${sunClearanceDelta}° below regional crest`;
+
+        const isCustom = raw.name && (raw.name.startsWith("Custom (") || raw.type === "Custom Coordinate");
+        const displayName = isCustom ? "Custom Target Site" : (raw.name || "Candidate Site");
+        const displayTag = isCustom ? "Custom Coordinate" : (raw.type || "Artemis III Candidate");
 
         return {
           _raw: raw,
-          tag: raw.type || "Artemis III Candidate",
-          name: raw.name || "Candidate Site",
+          tag: displayTag,
+          name: displayName,
           coords: `${Math.abs(coords.lat).toFixed(2)}° ${coords.lat < 0 ? 'S' : 'N'} · ${coords.lon.toFixed(1)}° E · +${coords.elevation_m.toLocaleString()} m`,
           lat: coords.lat,
           lon: coords.lon,
@@ -354,9 +409,9 @@
             pillClass: evalData && evalData.isSunVis ? "pill-ok" : "pill-warn"
           },
           slope: {
-            svgPath: terrain.slope_svg_path || "M0,110 Q140,105 240,75 T420,165 T520,185",
-            touchdownX: 240,
-            touchdownY: 75,
+            svgPath: scaleSlopeToHighRes(terrain.slope_svg_path).scaledPath,
+            touchdownX: scaleSlopeToHighRes(terrain.slope_svg_path).touchdownX,
+            touchdownY: scaleSlopeToHighRes(terrain.slope_svg_path).touchdownY,
             slopeVal: `${terrain.slope_touchdown_deg || 4.2}°`,
             slopeStatus: `${terrain.slope_status || 'Safe'} (< ${(terrain.slope_touchdown_deg || 4.2) < 5 ? '5°' : '8°'})`,
             distIce: `${terrain.dist_to_psr_km || 1.8} km`,
@@ -401,9 +456,9 @@
         pillClass: "pill-ok"
       },
       slope: {
-        svgPath: "M0,110 Q140,105 240,75 T420,165 T520,185",
-        touchdownX: 240,
-        touchdownY: 75,
+        svgPath: scaleSlopeToHighRes("M0,45 Q70,41 120,36 T200,56 T300,68").scaledPath,
+        touchdownX: scaleSlopeToHighRes("M0,45 Q70,41 120,36 T200,56 T300,68").touchdownX,
+        touchdownY: scaleSlopeToHighRes("M0,45 Q70,41 120,36 T200,56 T300,68").touchdownY,
         slopeVal: "4.5°",
         slopeStatus: "Safe (< 5°)",
         distIce: "2.0 km",
@@ -435,7 +490,8 @@
     if (siteData) {
       activeSiteData = siteData;
     }
-    activeSiteKey = typeof siteKeyOrData === "string" ? siteKeyOrData : (siteKeyOrData?.site_id || siteKeyOrData?.name || "shackleton");
+    const site = getInspectorSite(siteKeyOrData);
+    activeSiteKey = site?._raw?.site_id || (typeof siteKeyOrData === "string" ? siteKeyOrData.replace(/_\d+$/, "") : (siteKeyOrData?.site_id || siteKeyOrData?.name || "shackleton"));
     activeTab = tab || "horizon";
 
     // Proactively query FastAPI backend /api/sites/{site_id} endpoint
@@ -444,8 +500,6 @@
         renderActiveView();
       });
     }
-
-    const site = getInspectorSite(siteKeyOrData);
 
     // Update header fields
     const tagEl = document.getElementById("inspector-site-tag");
@@ -550,6 +604,12 @@
 
         <!-- SVG Skyline Silhouette + Zero Line -->
         <svg viewBox="0 0 520 200" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="skyline-poly-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3d3832" />
+              <stop offset="100%" stop-color="#18191b" />
+            </linearGradient>
+          </defs>
           <!-- Background Grid Lines -->
           <line x1="0" y1="25" x2="520" y2="25" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 4" />
           <line x1="0" y1="65" x2="520" y2="65" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 4" />
@@ -557,7 +617,7 @@
           <line x1="0" y1="145" x2="520" y2="145" stroke="rgba(201,158,82,0.3)" stroke-dasharray="4 4" />
           <line x1="0" y1="185" x2="520" y2="185" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 4" />
           <!-- Topographic Skyline Polygon -->
-          <path d="${h.svgPath}" fill="#2e2b27" stroke="#6b6359" stroke-width="2" />
+          <path d="${h.svgPath}" fill="url(#skyline-poly-grad)" stroke="#6b6359" stroke-width="1.8" />
         </svg>
 
         <!-- Interactive Crosshair Guidelines -->
@@ -623,18 +683,41 @@
           <span>High</span><span>Mid</span><span>Low</span>
         </div>
         <svg viewBox="0 0 520 200" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="slope-terrain-gradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7d967e" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#7d967e" stop-opacity="0.02"/>
+            </linearGradient>
+          </defs>
           <g class="inspector-chart-grid">
-            <line x1="0" y1="15" x2="520" y2="15" />
-            <line x1="0" y1="100" x2="520" y2="100" />
-            <line x1="0" y1="185" x2="520" y2="185" />
-            <line x1="1" y1="0" x2="1" y2="200" />
-            <line x1="260" y1="0" x2="260" y2="200" />
-            <line x1="519" y1="0" x2="519" y2="200" />
+            <line x1="0" y1="15" x2="520" y2="15" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 3" />
+            <line x1="0" y1="100" x2="520" y2="100" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 3" />
+            <line x1="0" y1="185" x2="520" y2="185" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 3" />
+            <line x1="1" y1="0" x2="1" y2="200" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 3" />
+            <line x1="260" y1="0" x2="260" y2="200" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 3" />
+            <line x1="519" y1="0" x2="519" y2="200" stroke="rgba(255,255,255,0.08)" stroke-dasharray="2 3" />
           </g>
-          <path d="${s.svgPath}" fill="none" stroke="var(--accent-sage, #7d967e)" stroke-width="3.5" />
-          <circle cx="${s.touchdownX}" cy="${s.touchdownY}" r="7" fill="var(--accent-terracotta, #c87d55)" stroke="#fff" stroke-width="1.5" />
-          <text x="${s.touchdownX + 12}" y="${s.touchdownY - 8}" fill="#ede8e1" font-size="12" font-weight="600" font-family="sans-serif">Touchdown Target (${s.slopeVal})</text>
-          <text x="350" y="180" fill="var(--text-muted, #8c867c)" font-size="11" font-family="sans-serif">Permanently Shadowed Cold Trap (PSR)</text>
+          <!-- Shaded Lunar Regolith Terrain Fill -->
+          <path d="${s.svgPath} L520,200 L0,200 Z" fill="url(#slope-terrain-gradient)" />
+          <!-- Slope Surface Line -->
+          <path d="${s.svgPath}" fill="none" stroke="var(--accent-sage, #7d967e)" stroke-width="2.5" stroke-linecap="round" />
+
+          <!-- HUD Touchdown Target Reticle -->
+          <circle cx="${s.touchdownX}" cy="${s.touchdownY}" r="7" fill="none" stroke="rgba(200, 125, 85, 0.45)" stroke-width="1.2" stroke-dasharray="3 2" />
+          <circle cx="${s.touchdownX}" cy="${s.touchdownY}" r="3.5" fill="var(--accent-terracotta, #c87d55)" stroke="#fff" stroke-width="1.2" />
+          <line x1="${s.touchdownX - 11}" y1="${s.touchdownY}" x2="${s.touchdownX - 5}" y2="${s.touchdownY}" stroke="rgba(200, 125, 85, 0.85)" stroke-width="1.2" />
+          <line x1="${s.touchdownX + 5}" y1="${s.touchdownY}" x2="${s.touchdownX + 11}" y2="${s.touchdownY}" stroke="rgba(200, 125, 85, 0.85)" stroke-width="1.2" />
+          <line x1="${s.touchdownX}" y1="${s.touchdownY - 11}" x2="${s.touchdownX}" y2="${s.touchdownY - 5}" stroke="rgba(200, 125, 85, 0.85)" stroke-width="1.2" />
+          <line x1="${s.touchdownX}" y1="${s.touchdownY + 5}" x2="${s.touchdownX}" y2="${s.touchdownY + 11}" stroke="rgba(200, 125, 85, 0.85)" stroke-width="1.2" />
+
+          <!-- Touchdown Callout Badge -->
+          <g transform="translate(${s.touchdownX + 12}, ${Math.max(12, s.touchdownY - 14)})">
+            <rect x="0" y="0" width="108" height="18" rx="3" fill="rgba(14, 16, 18, 0.92)" stroke="rgba(200, 125, 85, 0.65)" stroke-width="0.9" />
+            <text x="8" y="12.5" fill="#ede8e1" font-size="9" font-weight="600" font-family="var(--font-mono, monospace)">TARGET (${s.slopeVal})</text>
+          </g>
+
+          <!-- Permanently Shadowed Region (PSR) Label -->
+          <text x="505" y="188" text-anchor="end" fill="var(--accent-cyan, #5bc0be)" font-size="9.5" font-family="var(--font-mono, monospace)">❄ PSR Cold Trap (${s.distIce})</text>
         </svg>
       </div>
       <div class="inspector-profile-axis-caption"><span>Relative elevation</span><span>Radial distance (%)</span></div>
@@ -672,17 +755,28 @@
           <span>+5°</span><span>0°</span><span>-5°</span>
         </div>
         <svg viewBox="0 0 520 200" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="inspector-solar-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c99e52" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#c99e52" stop-opacity="0.01"/>
+            </linearGradient>
+          </defs>
           <g class="inspector-chart-grid">
             <line x1="0" y1="15" x2="520" y2="15" />
             <line x1="0" y1="100" x2="520" y2="100" />
             <line x1="0" y1="185" x2="520" y2="185" />
             <line x1="1" y1="0" x2="1" y2="200" />
+            <line x1="130" y1="0" x2="130" y2="200" />
             <line x1="260" y1="0" x2="260" y2="200" />
+            <line x1="390" y1="0" x2="390" y2="200" />
             <line x1="519" y1="0" x2="519" y2="200" />
           </g>
-          <line x1="0" y1="120" x2="520" y2="120" stroke="var(--accent-sand, #c99e52)" stroke-dasharray="3 3" />
+          <line x1="0" y1="120" x2="520" y2="120" stroke="rgba(201, 158, 82, 0.4)" stroke-dasharray="3 3" />
+          <!-- Solar Curve Area Gradient Fill -->
+          <path d="${sol.svgPath} L520,200 L0,200 Z" fill="url(#inspector-solar-grad)" />
+          <!-- Authentic Solar Elevation Path -->
           <path id="inspector-solar-curve" d="${sol.svgPath}" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="2.5" />
-          <text x="45" y="112" fill="var(--accent-sand, #c99e52)" font-size="10" font-family="sans-serif">0° Local Solar Horizon</text>
+          <text x="45" y="112" fill="var(--accent-sand, #c99e52)" font-size="10" font-family="var(--font-mono, monospace)">0° Local Solar Horizon</text>
 
           <!-- Dynamic Timeline Cursor for Solar Stay Curve -->
           <line id="inspector-solar-cursor-line" x1="${sol.cursorX}" y1="0" x2="${sol.cursorX}" y2="200" stroke="var(--accent-cyan, #5bc0be)" stroke-width="1.5" stroke-dasharray="3 3" />
@@ -815,7 +909,7 @@
     const clearanceDelta = +(live.sunEl - crestAtSun).toFixed(1);
     const clearanceDesc = live.isSunVis
       ? `+${clearanceDelta}° above regional terrain crest`
-      : `${clearanceDelta}° below regional crest (Topographic Shadow)`;
+      : `${clearanceDelta}° below regional crest`;
     const statusPill = live.isSunVis ? "✓ Line of Sight Maintained" : "✗ Topographic Shadow";
     const pillClass = live.isSunVis ? "pill-ok" : "pill-warn";
 
