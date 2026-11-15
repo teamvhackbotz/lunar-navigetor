@@ -14,6 +14,7 @@
    * Dynamically populated from authentic NASA LOLA and JPL Horizons data on-demand.
    */
   const SITE_PROFILES = {};
+  let pendingComparison = null;
 
   // Undo / Redo stacks
   const undoStack = [];
@@ -705,7 +706,8 @@
   async function runSiteComparison() {
     const button = document.getElementById("btn-compare-sites");
     const track = document.getElementById("carousel-track");
-    if (!button || !track) return;
+    if (!button || !track) return { error: "The Compare button or candidate-card list is unavailable." };
+    if (button.disabled) return { error: "A candidate comparison is already running." };
 
     let range;
     let windowData;
@@ -726,13 +728,13 @@
       }
     } catch (error) {
       setComparisonStatus(error.message, true);
-      return;
+      return { error: error.message };
     }
 
     const columns = Array.from(track.querySelectorAll(".site-card-column"));
     if (columns.length < 2) {
       setComparisonStatus("Mark at least two candidate locations before comparing.", true);
-      return;
+      return { error: "Mark at least two candidate locations before comparing." };
     }
 
     button.disabled = true;
@@ -784,6 +786,12 @@
       unavailable.length > 0
     );
     button.disabled = false;
+    return {
+      start: startLabel,
+      end: endLabel,
+      ranked: ranked.map(({ result }) => ({ ...result })),
+      unavailable
+    };
   }
 
   function initComparisonControls() {
@@ -798,7 +806,9 @@
     toInput.min = formatUtcInputValue(COMPARISON_START_MS + HOUR_MS);
     toInput.max = formatUtcInputValue(COMPARISON_END_MS);
     toInput.value = formatUtcInputValue(COMPARISON_END_MS);
-    button.addEventListener("click", runSiteComparison);
+    button.addEventListener("click", () => {
+      pendingComparison = runSiteComparison();
+    });
   }
 
   /**
@@ -826,6 +836,49 @@
   /**
    * Undoes the last card action (dismissal or addition).
    */
+  function dismissSiteCard(target) {
+    const track = document.getElementById("carousel-track");
+    const normalizedTarget = String(target || "").trim().toLowerCase();
+    if (!track) return { error: "The candidate-card list is unavailable." };
+
+    const columns = Array.from(track.querySelectorAll(".site-card-column"));
+    let matches;
+    if (!normalizedTarget) {
+      matches = columns.filter(column => {
+        const card = column.querySelector(".site-card");
+        return card && card.classList.contains("active");
+      });
+      if (matches.length !== 1) {
+        return {
+          error: matches.length
+            ? "Several candidate cards are active; specify the site name or displayed card number."
+            : "Specify a candidate site name or card number to remove."
+        };
+      }
+    } else {
+      const cardNumberMatch = normalizedTarget.match(/^(?:card\s*)?(\d+)$/);
+      const cardNumber = cardNumberMatch ? Number(cardNumberMatch[1]) : null;
+      matches = columns.filter(column => {
+        const card = column.querySelector(".site-card");
+        if (!card) return false;
+        if (cardNumber !== null) return Number(card.dataset.cardIndex) === cardNumber;
+        return String(card.dataset.name || "").trim().toLowerCase() === normalizedTarget;
+      });
+    }
+
+    if (matches.length === 0) {
+      return { error: `No candidate card matched "${target}".` };
+    }
+    if (matches.length > 1) {
+      return { error: `More than one candidate card is named "${target}"; use its displayed card number.` };
+    }
+
+    const card = matches[0].querySelector(".site-card");
+    const siteName = card.dataset.name || `Card ${card.dataset.cardIndex}`;
+    dismissCard(matches[0]);
+    return { siteName };
+  }
+
   function undo() {
     if (undoStack.length === 0) return;
     const item = undoStack.pop();
@@ -1511,7 +1564,32 @@
       undo: undo,
       redo: redo,
       sync: renumberCardsAndSync,
-      getProfiles: () => ({ ...SITE_PROFILES })
+      getProfiles: () => ({ ...SITE_PROFILES }),
+      dismissSiteCard,
+      compareCurrentSites: () => {
+        const button = document.getElementById("btn-compare-sites");
+        if (!button) return Promise.resolve({ error: "The Compare button is unavailable." });
+        if (button.disabled) return Promise.resolve({ error: "A candidate comparison is already running." });
+        pendingComparison = null;
+        button.click();
+        return pendingComparison || Promise.resolve({ error: "The Compare action did not start." });
+      },
+      getMarkedSites: () => {
+        const currentTrack = document.getElementById("carousel-track");
+        if (!currentTrack) return [];
+        return Array.from(currentTrack.querySelectorAll(".site-card-column"))
+          .map(column => {
+            const card = column.querySelector(".site-card");
+            if (!card) return null;
+            return {
+              name: card.dataset.name || "",
+              lat: Number(card.dataset.lat),
+              lon: Number(card.dataset.lon)
+            };
+          })
+          .filter(site => site && site.name &&
+            Number.isFinite(site.lat) && Number.isFinite(site.lon));
+      }
     };
   }
 

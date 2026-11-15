@@ -83,16 +83,23 @@
       if (mentions.length) match = [mentions[0].canonicalName, mentions[0].site];
     }
 
+    const markedSite = !match && normalizedName &&
+      window.ComparisonCards &&
+      typeof window.ComparisonCards.getMarkedSites === "function"
+      ? window.ComparisonCards.getMarkedSites().find(site =>
+        normalizeSiteName(site.name) === normalizedName
+      )
+      : null;
     const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lon);
     if (hasCoordinates && (lat < -90 || lat > 90)) return null;
-    if (!hasCoordinates && !match) return null;
+    if (!hasCoordinates && !match && !markedSite) return null;
 
     const canonicalName = match ? match[0] : "";
     const site = match ? match[1] : null;
     return {
-      name: canonicalName || String(name || "Custom Site").trim(),
-      lat: hasCoordinates ? lat : site.lat,
-      lon: hasCoordinates ? lon : site.lon
+      name: canonicalName || (markedSite && markedSite.name) || String(name || "Custom Site").trim(),
+      lat: hasCoordinates ? lat : site ? site.lat : markedSite.lat,
+      lon: hasCoordinates ? lon : site ? site.lon : markedSite.lon
     };
   }
 
@@ -125,11 +132,17 @@ SAFETY AND EVIDENCE:
 - Do not imply that a tool evaluated factors it did not report.
 
 TOOL USE:
-- When the user asks where to land or what the best site is for a date window, you MUST call find_best_landing_site.
+- When the user asks for the best site across the full candidate set for a date window, call find_best_landing_site.
+- When the user asks which of the already marked pins/candidate cards is best or asks to compare them, call compare_marked_sites. It presses the app's Compare button and waits for its ranking; do not substitute a profile-only summary or the full-set scoring tool.
+- When the user asks Raj to press or run the Compare button, call compare_marked_sites.
+- When the user asks to close the comparison-card drawer, use control_app_ui to close "Comparison Cards"; this hides the deck without removing candidates.
+- When the user asks to close/remove one candidate card, call dismiss_candidate_card with its site name or displayed card number. If there is no explicit target, remove only when exactly one card is active; otherwise ask which card. A dismissed card remains undoable.
 - When the user asks to show, find, visit, or locate a named landing site or crater, or asks where a named mission landed, call show_landing_site. Use canonical coordinates when available.
 - When the user asks to compare two sites, call compare_sites.
+- When the user asks to compare manually marked pins or current candidate cards, call compare_marked_sites. It runs the existing comparison for the selected time window, including custom coordinates; it is not the separate full-set scoring tool.
 - When the user explicitly asks to place a map pin, call mark_site_on_map; known site names are resolved to canonical coordinates.
 - When the user wants to adjust or jump the timeline date, call set_timeline_range.
+- When the user asks to change or navigate the application UI, use control_app_ui. Use open or close for drawers and panels, click for tabs and buttons, set_value for sliders, numeric fields, and selects, toggle or a true/false set_value for switches, and scroll for a page or drawer. Target controls by their visible name, and report when the target is missing or ambiguous.
 - After receiving a tool result, summarize the relevant metrics, source, limitations, and safety implications. If a tool times out, state that it timed out and do not invent a result.`;
 
   const SYSTEM_PROMPT = `${COMMON_MISSION_PROMPT}
@@ -151,6 +164,7 @@ DR. RAJ PERSONALITY:
 - If you are wrong or lack evidence, acknowledge it plainly and correct it. Treat analytical errors as serious professional failures without claiming personal guilt or emotion. Never bluff.
 - Call show_landing_site for requests to show, find, visit, or locate a named site or for questions about where a named mission landed.
 - Call compare_sites whenever the user asks for a comparison of two named sites.
+- Call compare_marked_sites whenever the user asks to compare the pins or candidate cards already in the app.
 - Keep answers to one or two concise paragraphs. Do not use pop-culture references, movie tangents, ethnic stereotypes, or sitcom tropes.`;
 
   // ---------------------------------------------------------------------------
@@ -234,6 +248,29 @@ DR. RAJ PERSONALITY:
           }
         },
         {
+          name: "compare_marked_sites",
+          description:
+            "Presses the application's Compare button for the currently marked candidate cards, waits for its date-window ranking, and returns the ranked results and comparison limits. Includes custom-coordinate pins.",
+          parameters: {
+            type: "OBJECT",
+            properties: {}
+          }
+        },
+        {
+          name: "dismiss_candidate_card",
+          description:
+            "Removes one candidate card by site name or displayed card number, using the app's normal dismiss action so it remains undoable. If target is omitted, removes the only active card; returns an error if there is not exactly one active card.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              target: {
+                type: "STRING",
+                description: "Exact candidate site name or displayed card number. Omit only when a single active card should be dismissed."
+              }
+            }
+          }
+        },
+        {
           name: "set_timeline_range",
           description:
             "Moves the mission timeline scrubber to a specific date, updating the solar vector on the 3D globe.",
@@ -246,6 +283,39 @@ DR. RAJ PERSONALITY:
               }
             },
             required: ["date"]
+          }
+        },
+        {
+          name: "control_app_ui",
+          description:
+            "Controls a visible Lunar Navigator UI element. Open or close drawers and panels, click buttons and tabs, set slider/numeric/text/select values, toggle switches, or scroll a named panel or the page. Use the exact visible control name when possible.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              action: {
+                type: "STRING",
+                enum: ["click", "open", "close", "toggle", "set_value", "scroll"],
+                description: "UI operation. Use open/close for drawers; set_value for form controls; scroll for a page or panel."
+              },
+              target: {
+                type: "STRING",
+                description: "Visible control or area name, such as Comparison Cards, Mission & Traverse, GIS Overlays, Flat tab, Stay Duration, Coordinate Grid Overlay, or page."
+              },
+              value: {
+                type: "STRING",
+                description: "Value for set_value: numeric/text/select value or true/false (also on/off) for a checkbox or switch."
+              },
+              direction: {
+                type: "STRING",
+                enum: ["up", "down", "left", "right"],
+                description: "Scroll direction; used only when action is scroll."
+              },
+              amount: {
+                type: "NUMBER",
+                description: "Scroll distance in pixels; defaults to 400 and is capped at 2000."
+              }
+            },
+            required: ["action", "target"]
           }
         }
       ]
@@ -325,6 +395,364 @@ DR. RAJ PERSONALITY:
   // 5. TOOL EXECUTION (EventBus bridge)
   // ---------------------------------------------------------------------------
 
+  const UI_CONTROL_ALIASES = [
+    { id: "toggle-left-horizon", terms: ["left drawer", "mission planner", "mission traverse planner", "mission and traverse planner", "mission and traverse"] },
+    { id: "toggle-right-horizon", terms: ["right drawer", "gis overlays", "gis layers and overlays", "overlays drawer"] },
+    { id: "toggle-bottom-map", terms: ["bottom drawer", "2d maps", "2d map deck", "2d map drawer"] },
+    { id: "toggle-top-cards", terms: ["comparison cards", "candidate cards", "cards deck", "comparison deck"] },
+    { id: "toggle-ai-chat", terms: ["dr raj chat", "assistant chat", "ai chat"] }
+  ];
+
+  const UI_SCROLL_ALIASES = [
+    { selector: ".drawer-left-horizon .drawer-content-scroll", terms: ["left drawer", "mission planner", "mission traverse planner"] },
+    { selector: ".drawer-right-horizon .drawer-content-scroll", terms: ["right drawer", "gis overlays", "overlays drawer"] },
+    { selector: ".drawer-bottom-map", terms: ["bottom drawer", "2d maps", "2d map drawer"] },
+    { selector: ".carousel-container", terms: ["comparison cards", "candidate cards", "cards deck"] }
+  ];
+
+  function normalizeUiText(value) {
+    return String(value == null ? "" : value)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/&/g, " and ")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  function normalizeUiTarget(value) {
+    return normalizeUiText(value)
+      .replace(/^(please )?(open|close|show|hide|toggle|click|scroll|set|change|adjust)\s+/, "")
+      .trim();
+  }
+
+  function getAssociatedControl(element) {
+    if (!element) return null;
+    if (element.control) return element.control;
+    if (element.tagName === "LABEL" && element.htmlFor) {
+      return document.getElementById(element.htmlFor) || element;
+    }
+    return element;
+  }
+
+  function getUiElementLabels(element) {
+    const labels = [];
+    const add = (value) => {
+      if (typeof value === "string" && value.trim()) labels.push(value.trim());
+    };
+
+    add(element.getAttribute && element.getAttribute("aria-label"));
+    add(element.getAttribute && element.getAttribute("title"));
+    add(element.innerText);
+    add(element.textContent);
+    add(element.placeholder);
+    add(element.name);
+    add(element.id && element.id.replace(/[-_]+/g, " "));
+
+    if (element.labels) {
+      Array.from(element.labels).forEach(label => add(label.innerText || label.textContent));
+    }
+    if (element.tagName === "LABEL") {
+      const control = getAssociatedControl(element);
+      if (control && control !== element) {
+        add(control.id && control.id.replace(/[-_]+/g, " "));
+        add(control.getAttribute && control.getAttribute("aria-label"));
+      }
+    }
+
+    return Array.from(new Set(labels));
+  }
+
+  function isUiElementVisible(element) {
+    if (!element || element.hidden ||
+        (element.getAttribute && element.getAttribute("aria-hidden") === "true")) {
+      return false;
+    }
+    const style = window.getComputedStyle ? window.getComputedStyle(element) : null;
+    if (style && (style.display === "none" || style.visibility === "hidden")) return false;
+    return typeof element.getClientRects !== "function" || element.getClientRects().length > 0;
+  }
+
+  function scoreUiElement(element, target) {
+    const targetWords = target.split(" ").filter(word => word.length > 1);
+    let bestScore = 0;
+
+    getUiElementLabels(element).forEach(label => {
+      const normalizedLabel = normalizeUiText(label);
+      if (!normalizedLabel) return;
+      if (normalizedLabel === target) {
+        bestScore = Math.max(bestScore, 1000);
+        return;
+      }
+      if (normalizedLabel.includes(target)) {
+        bestScore = Math.max(bestScore, 800 + target.length - normalizedLabel.length / 100);
+        return;
+      }
+      if (target.includes(normalizedLabel) && normalizedLabel.length >= 4) {
+        bestScore = Math.max(bestScore, 700 + normalizedLabel.length);
+        return;
+      }
+      const labelWords = new Set(normalizedLabel.split(" "));
+      const matchedWords = targetWords.filter(word => labelWords.has(word));
+      if (matchedWords.length) {
+        bestScore = Math.max(
+          bestScore,
+          400 + (matchedWords.length / Math.max(1, targetWords.length)) * 100
+        );
+      }
+    });
+
+    return bestScore;
+  }
+
+  function resolveUiTarget(target, action) {
+    const normalizedTarget = normalizeUiTarget(target);
+    if (!normalizedTarget) return { error: "Name the UI control or area to operate." };
+
+    for (const alias of UI_CONTROL_ALIASES) {
+      if (alias.terms.some(term => normalizedTarget === term || normalizedTarget.includes(term))) {
+        const element = document.getElementById(alias.id);
+        if (element) return { element };
+      }
+    }
+
+    const selector = action === "scroll"
+      ? "button, a[href], input, select, textarea, label[for], [role=button], [role=tab], [role=switch], [tabindex], [aria-label][tabindex], [title][tabindex], main, aside, section, article"
+      : "button, a[href], input, select, textarea, label[for], [role=button], [role=tab], [role=switch], [tabindex], [aria-label][tabindex], [title][tabindex], summary";
+    const candidates = Array.from(document.querySelectorAll(selector))
+      .filter(isUiElementVisible);
+    const bestByControl = new Map();
+    candidates.forEach(candidate => {
+      const element = getAssociatedControl(candidate);
+      const score = Math.max(
+        scoreUiElement(candidate, normalizedTarget),
+        element === candidate ? 0 : scoreUiElement(element, normalizedTarget)
+      );
+      if (score > 0) {
+        const previous = bestByControl.get(element);
+        if (!previous || score > previous.score) {
+          bestByControl.set(element, { element, score });
+        }
+      }
+    });
+    const scored = Array.from(bestByControl.values())
+      .sort((a, b) => b.score - a.score);
+
+    if (!scored.length) {
+      return { error: `No visible UI control matched "${target}". Open its drawer first or name a visible control.` };
+    }
+    if (scored.length > 1 && scored[0].score === scored[1].score) {
+      const names = scored
+        .filter(candidate => candidate.score === scored[0].score)
+        .slice(0, 4)
+        .map(candidate => getUiElementLabels(candidate.element).find(Boolean) || candidate.element.tagName);
+      return { error: `The target "${target}" is ambiguous. Specify one of: ${names.join("; ")}.` };
+    }
+    return { element: scored[0].element };
+  }
+
+  function dispatchUiInputEvents(element) {
+    const EventConstructor = window.Event || Event;
+    element.dispatchEvent(new EventConstructor("input", { bubbles: true }));
+    element.dispatchEvent(new EventConstructor("change", { bubbles: true }));
+  }
+
+  function parseUiBoolean(value) {
+    const normalized = normalizeUiText(value);
+    if (["true", "on", "yes", "enabled", "checked", "open"].includes(normalized)) return true;
+    if (["false", "off", "no", "disabled", "unchecked", "closed"].includes(normalized)) return false;
+    return null;
+  }
+
+  function setUiChecked(element, checked) {
+    const control = getAssociatedControl(element);
+    if (!control) return false;
+
+    if (control.type === "checkbox") {
+      if (control.checked !== checked) control.click();
+      return true;
+    }
+    const ariaPressed = control.getAttribute && control.getAttribute("aria-pressed");
+    const ariaChecked = control.getAttribute && control.getAttribute("aria-checked");
+    if (ariaPressed === "true" || ariaPressed === "false" ||
+        ariaChecked === "true" || ariaChecked === "false") {
+      const current = ariaPressed === "true" || ariaChecked === "true";
+      if (current !== checked) control.click();
+      return true;
+    }
+    return false;
+  }
+
+  function getUiOpenState(element) {
+    const control = getAssociatedControl(element);
+    if (!control) return null;
+    if (control.type === "checkbox") return !!control.checked;
+    const expanded = control.getAttribute && control.getAttribute("aria-expanded");
+    if (expanded === "true" || expanded === "false") return expanded === "true";
+    const pressed = control.getAttribute && control.getAttribute("aria-pressed");
+    if (pressed === "true" || pressed === "false") return pressed === "true";
+    const controlledId = control.getAttribute && control.getAttribute("aria-controls");
+    if (controlledId) {
+      const panel = document.getElementById(controlledId);
+      if (panel) return isUiElementVisible(panel);
+    }
+    return null;
+  }
+
+  function isScrollable(element) {
+    return element && (
+      Number(element.scrollHeight) > Number(element.clientHeight) + 1 ||
+      Number(element.scrollWidth) > Number(element.clientWidth) + 1
+    );
+  }
+
+  function findScrollContainer(element) {
+    for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+      if (isScrollable(ancestor)) return ancestor;
+    }
+    if (element && element.querySelectorAll) {
+      return Array.from(element.querySelectorAll("*")).find(isScrollable) || null;
+    }
+    return null;
+  }
+
+  function controlAppUI(args) {
+    const action = String(args.action || "").toLowerCase();
+    const target = String(args.target || "").trim();
+    const allowedActions = ["click", "open", "close", "toggle", "set_value", "scroll"];
+    if (!allowedActions.includes(action)) return `Unsupported UI action "${action}".`;
+    if (!target) return "Name the UI control or area to operate.";
+
+    if (action === "scroll") {
+      const normalizedTarget = normalizeUiTarget(target);
+      let scrollElement = null;
+      if (["page", "screen", "app"].includes(normalizedTarget)) {
+        scrollElement = document.scrollingElement || document.documentElement || document.body;
+      } else {
+        for (const alias of UI_SCROLL_ALIASES) {
+          if (alias.terms.some(term => normalizedTarget === term || normalizedTarget.includes(term))) {
+            scrollElement = document.querySelector(alias.selector);
+            if (scrollElement) break;
+          }
+        }
+        if (!scrollElement) {
+          const result = resolveUiTarget(target, "scroll");
+          if (result.error) return result.error;
+          scrollElement = findScrollContainer(result.element);
+        }
+      }
+      if (!isScrollable(scrollElement)) {
+        return `The "${target}" area has no scrollable content right now.`;
+      }
+      const direction = ["up", "down", "left", "right"].includes(args.direction)
+        ? args.direction
+        : "down";
+      const requestedAmount = args.amount == null ? NaN : Number(args.amount);
+      const amount = Number.isFinite(requestedAmount)
+        ? Math.max(1, Math.min(2000, Math.round(Math.abs(requestedAmount))))
+        : 400;
+      const needsHorizontalScroll = direction === "left" || direction === "right";
+      const canScroll = needsHorizontalScroll
+        ? Number(scrollElement.scrollWidth) > Number(scrollElement.clientWidth) + 1
+        : Number(scrollElement.scrollHeight) > Number(scrollElement.clientHeight) + 1;
+      if (!canScroll) {
+        return `The "${target}" area cannot scroll ${direction} right now.`;
+      }
+      if (direction === "up") scrollElement.scrollTop = Math.max(0, scrollElement.scrollTop - amount);
+      if (direction === "down") scrollElement.scrollTop = Math.min(scrollElement.scrollHeight - scrollElement.clientHeight, scrollElement.scrollTop + amount);
+      if (direction === "left") scrollElement.scrollLeft = Math.max(0, scrollElement.scrollLeft - amount);
+      if (direction === "right") scrollElement.scrollLeft = Math.min(scrollElement.scrollWidth - scrollElement.clientWidth, scrollElement.scrollLeft + amount);
+      return `Scrolled "${target}" ${direction} by ${amount}px.`;
+    }
+
+    const result = resolveUiTarget(target, action);
+    if (result.error) return result.error;
+    const element = getAssociatedControl(result.element);
+    if (!element) return `Could not resolve a control for "${target}".`;
+    const label = getUiElementLabels(result.element).find(Boolean) ||
+      getUiElementLabels(element).find(Boolean) || target;
+    if (element.disabled) return `"${label}" is disabled and was not changed.`;
+
+    if (action === "click" || action === "toggle") {
+      element.click();
+      return `Clicked "${label}".`;
+    }
+
+    if (action === "open" || action === "close") {
+      const desiredState = action === "open";
+      const currentState = getUiOpenState(element);
+      if (currentState === null) {
+        return `Cannot determine whether "${label}" is open or closed. Target a drawer toggle or a control with an expanded state.`;
+      }
+      if (currentState !== desiredState) element.click();
+      return `${currentState === desiredState ? "Already" : "Now"} ${action === "open" ? "open" : "closed"}: "${label}".`;
+    }
+
+    if (action === "set_value") {
+      const boolValue = parseUiBoolean(args.value);
+      if (element.type === "checkbox" || element.getAttribute("role") === "switch") {
+        if (boolValue === null) return `Use true/false or on/off to set "${label}".`;
+        if (!setUiChecked(element, boolValue)) {
+          return `Could not set "${label}" because it does not expose a controllable on/off state.`;
+        }
+        return `Set "${label}" ${boolValue ? "on" : "off"}.`;
+      }
+      if (element.type === "radio") {
+        if (boolValue === null) return `Use true/false or on/off to set "${label}".`;
+        if (!boolValue && element.checked) {
+          return `"${label}" is selected and cannot be unchecked without selecting another option.`;
+        }
+        if (boolValue && !element.checked) element.click();
+        return `${boolValue ? "Selected" : "Already off"}: "${label}".`;
+      }
+      const valueControl = element.tagName === "SELECT" ||
+        element.tagName === "TEXTAREA" ||
+        (element.tagName === "INPUT" && [
+          "text", "search", "email", "url", "tel", "password",
+          "number", "range", "date", "datetime-local", "time",
+          "month", "week", "color"
+        ].includes(element.type));
+      if (!valueControl) return `"${label}" is not a value control.`;
+
+      const value = String(args.value ?? "");
+      if (element.tagName === "SELECT" && element.options) {
+        const normalizedValue = normalizeUiText(value);
+        const option = Array.from(element.options).find(candidate =>
+          candidate.value === value ||
+          normalizeUiText(candidate.textContent) === normalizedValue
+        );
+        if (!option) return `No option matching "${value}" exists for "${label}".`;
+        element.value = option.value;
+      } else if (element.type === "range" || element.type === "number") {
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) return `"${value}" is not a number for "${label}".`;
+        const minimum = typeof element.min === "string" && element.min !== ""
+          ? Number(element.min)
+          : null;
+        const maximum = typeof element.max === "string" && element.max !== ""
+          ? Number(element.max)
+          : null;
+        if ((minimum !== null && numericValue < minimum) ||
+            (maximum !== null && numericValue > maximum)) {
+          return `"${value}" is outside the allowed range for "${label}".`;
+        }
+        const step = element.step === "any" ? null : Number(element.step || 1);
+        const stepBase = minimum === null ? 0 : minimum;
+        if (step && Number.isFinite(step) &&
+            Math.abs((numericValue - stepBase) / step - Math.round((numericValue - stepBase) / step)) > 1e-7) {
+          return `"${value}" does not match the allowed step for "${label}".`;
+        }
+        element.value = value;
+      } else {
+        element.value = value;
+      }
+      dispatchUiInputEvents(element);
+      return `Set "${label}" to ${element.value}.`;
+    }
+
+    return `UI action "${action}" was not completed.`;
+  }
+
   /**
    * Executes a Gemini function call by bridging to the EventBus.
    * Returns a plain-text result string fed back to Gemini as the tool response.
@@ -341,6 +769,17 @@ DR. RAJ PERSONALITY:
       if (signal && signal.aborted) {
         logDiagnostic(`Tool ${name} cancelled before execution.`, "warning");
         resolve("Request cancelled.");
+        return;
+      }
+
+      if (name === "control_app_ui") {
+        const result = controlAppUI(args || {});
+        const succeeded = /^(Clicked |Set |Scrolled |Now open:|Now closed:|Already open:|Already closed:)/.test(result);
+        logDiagnostic(
+          succeeded ? `UI control completed: ${result}` : `UI control was not completed: ${result}`,
+          succeeded ? "success" : "warning"
+        );
+        resolve(result);
         return;
       }
 
@@ -418,6 +857,70 @@ DR. RAJ PERSONALITY:
         return;
       }
 
+      if (name === "compare_marked_sites") {
+        const cards = window.ComparisonCards;
+        if (!cards || typeof cards.compareCurrentSites !== "function") {
+          logDiagnostic("Cannot compare marked candidates: the Compare action is unavailable.", "error");
+          resolve("The application's Compare action is unavailable, so I could not rank the marked candidates.");
+          return;
+        }
+
+        Promise.resolve(cards.compareCurrentSites()).then(comparison => {
+          if (!comparison || comparison.error) {
+            const message = comparison && comparison.error
+              ? comparison.error
+              : "The Compare action returned no ranking.";
+            logDiagnostic(`Marked candidate comparison failed: ${message}`, "warning");
+            resolve(message);
+            return;
+          }
+          if (!Array.isArray(comparison.ranked)) {
+            logDiagnostic("Marked candidate comparison returned an invalid ranking.", "error");
+            resolve("The Compare action completed without a usable ranking.");
+            return;
+          }
+
+          const ranking = comparison.ranked.map((site, index) => {
+            const slope = Number.isFinite(site.slope)
+              ? `${site.slope.toFixed(1)}° (${site.slopeStatus})`
+              : `not evaluated (${site.slopeStatus})`;
+            const solarAndEarth = site.available
+              ? `sunlit ${site.sunlitPercent.toFixed(1)}% (${site.sunlitHours.toFixed(1)} h), Earth-visible ${site.earthVisiblePercent.toFixed(1)}% (${site.earthVisibleHours.toFixed(1)} h), maximum Sun elevation ${site.maxSunElevation === null ? "unavailable" : `${site.maxSunElevation.toFixed(2)}°`}`
+              : "time-window telemetry unavailable";
+            return `${index + 1}. ${site.siteName}: slope ${slope}; ${solarAndEarth}`;
+          }).join(" ");
+          logDiagnostic(`Compared and ranked ${comparison.ranked.length} marked candidates using the Compare button.`, "success");
+          resolve(
+            `Ran the Compare button for ${comparison.start} to ${comparison.end} UTC. Ranked best-first by slope class, then sunlit time and Earth visibility: ${ranking} Roughness, landing dispersion, and touchdown velocity are not assessed.`
+          );
+        }).catch(error => {
+          logDiagnostic(`Marked candidate comparison failed: ${error.message}`, "error");
+          resolve(`The marked candidate comparison failed: ${error.message}`);
+        });
+        return;
+      }
+
+      if (name === "dismiss_candidate_card") {
+        const cards = window.ComparisonCards;
+        if (!cards || typeof cards.dismissSiteCard !== "function") {
+          logDiagnostic("Cannot remove candidate card: comparison-card controls are unavailable.", "error");
+          resolve("The comparison-card controls are unavailable, so no card was removed.");
+          return;
+        }
+        const result = cards.dismissSiteCard(args && args.target);
+        if (!result || result.error) {
+          const message = result && result.error
+            ? result.error
+            : "No candidate card was removed.";
+          logDiagnostic(`Candidate card dismissal was not completed: ${message}`, "warning");
+          resolve(message);
+          return;
+        }
+        logDiagnostic(`Removed candidate card "${result.siteName}".`, "success");
+        resolve(`Removed only the "${result.siteName}" candidate card. The comparison-card drawer remains open, and the card can be restored with Undo.`);
+        return;
+      }
+
       if (name === "set_timeline_range") {
         if (window.eventBus) {
           window.eventBus.emit("timeline:jump", { isoString: args.date });
@@ -431,6 +934,13 @@ DR. RAJ PERSONALITY:
         if (!window.eventBus) {
           logDiagnostic("Cannot run find_best_landing_site: EventBus is unavailable.", "error");
           resolve("Algorithm unavailable: EventBus not loaded.");
+          return;
+        }
+        const scoringListeners = window.eventBus.listeners &&
+          window.eventBus.listeners["algorithm:find_best_site"];
+        if (!Array.isArray(scoringListeners) || scoringListeners.length === 0) {
+          logDiagnostic("No application handler is registered for landing-site scoring.", "error");
+          resolve("The app has no automated landing-site scoring handler connected, so I cannot return a date-window best-site result. I can compare the currently marked candidate pins instead.");
           return;
         }
 
@@ -482,7 +992,7 @@ DR. RAJ PERSONALITY:
         // Timeout fallback if algorithm doesn't respond in 8s
         timeoutId = setTimeout(() => {
           finish(
-            "Algorithm did not respond in time. The teammate's scoring module may not be loaded yet.",
+            "No landing-site scoring result arrived within 8.0 seconds. The app did not return a date-window recommendation.",
             "warning",
             "timed out after 8.0s"
           );
