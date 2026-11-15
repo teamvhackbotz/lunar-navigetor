@@ -151,4 +151,91 @@ if (topNavJs.includes("cards:synced") && topNavJs.includes("top-nav-compare-badg
   process.exit(1);
 }
 
+if (js.includes("pendingComparison = runSiteComparison()") &&
+    js.includes("button.click();") &&
+    js.includes("compareCurrentSites: () => {") &&
+    js.includes("ranked.map(({ result }) => ({ ...result }))")) {
+  console.log("  ✓ Dr. Raj can trigger the Compare button and receive its completed ranking");
+} else {
+  console.error("  ✗ Missing Compare-button controller or ranked result return");
+  process.exit(1);
+}
+
+if (js.includes("function dismissSiteCard(target)") &&
+    js.includes("card.classList.contains(\"active\")") &&
+    js.includes("dismissCard(matches[0])")) {
+  console.log("  ✓ A single candidate card can be dismissed by name, number, or sole active selection");
+} else {
+  console.error("  ✗ Missing targeted, undoable candidate-card dismissal");
+  process.exit(1);
+}
+
+const dismissFunction = js.match(/function dismissSiteCard\(target\) \{[\s\S]*?\n  \}/);
+if (!dismissFunction) {
+  console.error("  ✗ Could not load the candidate-card dismissal function for behavior checks");
+  process.exit(1);
+}
+const makeDismissSiteCard = new Function(
+  "document",
+  "dismissCard",
+  `${dismissFunction[0]}; return dismissSiteCard;`
+);
+const makeCardColumn = (number, name, active) => {
+  const card = {
+    dataset: { cardIndex: String(number), name },
+    classList: { contains: cls => cls === "active" && active }
+  };
+  return { card, column: { querySelector: selector => selector === ".site-card" ? card : null } };
+};
+const cardFixtures = [
+  makeCardColumn(1, "Custom North", false),
+  makeCardColumn(2, "Custom South", true)
+];
+let dismissedColumn = null;
+const fakeDocument = {
+  getElementById: id => id === "carousel-track"
+    ? { querySelectorAll: () => cardFixtures.map(fixture => fixture.column) }
+    : null
+};
+const dismissCandidate = makeDismissSiteCard(fakeDocument, column => {
+  dismissedColumn = column;
+});
+
+if (dismissCandidate("Custom North").siteName !== "Custom North" ||
+    dismissedColumn !== cardFixtures[0].column) {
+  console.error("  ✗ Dismiss by exact site name did not select only the requested card");
+  process.exit(1);
+}
+if (dismissCandidate("card 2").siteName !== "Custom South" ||
+    dismissedColumn !== cardFixtures[1].column) {
+  console.error("  ✗ Dismiss by displayed card number did not select the requested card");
+  process.exit(1);
+}
+if (dismissCandidate().siteName !== "Custom South" ||
+    dismissedColumn !== cardFixtures[1].column) {
+  console.error("  ✗ Dismiss without a name did not target the sole active card");
+  process.exit(1);
+}
+if (!dismissCandidate("Unknown Site").error) {
+  console.error("  ✗ Missing candidate names should return an explicit error");
+  process.exit(1);
+}
+const ambiguousFixtures = [
+  makeCardColumn(1, "Custom North", true),
+  makeCardColumn(2, "Custom South", true)
+];
+dismissedColumn = null;
+const ambiguousDismiss = makeDismissSiteCard({
+  getElementById: () => ({
+    querySelectorAll: () => ambiguousFixtures.map(fixture => fixture.column)
+  })
+}, () => {
+  dismissedColumn = null;
+});
+if (!ambiguousDismiss().error || dismissedColumn !== null) {
+  console.error("  ✗ Ambiguous active cards must not be dismissed implicitly");
+  process.exit(1);
+}
+console.log("  ✓ Individual dismissal resolves names, card numbers, and one unambiguous active card");
+
 console.log("\n✅ All Comparison Cards Clean-Slate & Authentic Telemetry tests passed successfully!\n");
