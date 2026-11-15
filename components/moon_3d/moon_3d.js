@@ -7,7 +7,7 @@
  * Renders the primary interactive 3D WebGL lunar globe using Three.js:
  * - Spherical 3D Moon model with NASA LROC high-resolution albedo texture.
  * - OrbitControls for rotation, pitch, and zoom focusing on the South Pole.
- * - Dynamic solar illumination that orbits based on mission timeline progression.
+ * - Timeline-driven Keplerian Earth and apparent solar motion.
  * - Raycaster click-to-pin system converting 3D ray intersections to lunar (lat, lon).
  * - Real-time surface pin marker with normal vector orientation to the sphere.
  *
@@ -16,8 +16,7 @@
  *    - "site:marked"  -> Payload: { lat, lon, name, focus?, openDetails?, detailTab? }
  *                        Updates the 3D surface pin and optionally focuses the camera.
  *    - "time:changed" -> Payload: { sliderValue: number (0-100), timeISO: string }
- *                        Orbits the directional sunlight around the lunar ecliptic plane
- *                        with a 1.54° axial tilt simulation.
+ *                        Updates Keplerian Earth/Sun positions and lunar illumination.
  *
  * 📤 DATA OUT (Emits):
  *    - "site:marked"  -> Payload: { lat, lon, name, source: "moon-3d" }
@@ -30,6 +29,10 @@
   let moonMesh, sunLight;
   const pinsMap = new Map();
   let pinsContainer = null;
+  let celestialSystem = null;
+  let celestialMoon = null;
+  let celestialMoonLabel = null;
+  let celestialSunRay = null;
   let lastEphemerisRequest = null;
   let ephemerisCache = new Map();
   let targetCameraPos = null;
@@ -41,6 +44,49 @@
 
   // Standard WebGL world radius of the lunar sphere
   const MOON_RADIUS = 2.5;
+  const MOON_MEAN_RADIUS_KM = 1737.4;
+  const SCENE_UNITS_PER_KM = MOON_RADIUS / MOON_MEAN_RADIUS_KM;
+  const EARTH_MEAN_RADIUS = 6371 * SCENE_UNITS_PER_KM;
+  const SUN_RADIUS = 695700 * SCENE_UNITS_PER_KM;
+  const EARTH_MOON_DISTANCE = 384400 * SCENE_UNITS_PER_KM;
+  const EARTH_SUN_DISTANCE = 149597870.7 * SCENE_UNITS_PER_KM;
+  const SYSTEM_MAX_DISTANCE = EARTH_SUN_DISTANCE * 4;
+  const SYSTEM_INITIAL_DISTANCE = 16;
+  const TWO_PI = Math.PI * 2;
+  const EARTH_ORBIT_PERIOD_DAYS = 27.321661;
+  const EARTH_ORBIT_ECCENTRICITY = 0.0549;
+  const SUN_APPARENT_PERIOD_DAYS = 29.53059;
+  const LUNAR_ORBIT_INCLINATION = 5.145 * (Math.PI / 180);
+
+  function solveKeplerEquation(meanAnomaly, eccentricity) {
+    const mean = ((meanAnomaly % TWO_PI) + TWO_PI) % TWO_PI;
+    let eccentricAnomaly = mean + eccentricity * Math.sin(mean);
+    for (let iteration = 0; iteration < 8; iteration++) {
+      const error =
+        (eccentricAnomaly - eccentricity * Math.sin(eccentricAnomaly) - mean) /
+        (1 - eccentricity * Math.cos(eccentricAnomaly));
+      eccentricAnomaly -= error;
+      if (Math.abs(error) < 1e-10) break;
+    }
+    return eccentricAnomaly;
+  }
+
+  function keplerOrbitPosition(meanAnomaly, orbit) {
+    const eccentricAnomaly = solveKeplerEquation(meanAnomaly, orbit.eccentricity);
+    const semiMinorAxis =
+      orbit.semiMajorAxis * Math.sqrt(1 - orbit.eccentricity ** 2);
+    const transverse = semiMinorAxis * Math.sin(eccentricAnomaly);
+    const trueAnomaly = 2 * Math.atan2(
+      Math.sqrt(1 + orbit.eccentricity) * Math.sin(eccentricAnomaly / 2),
+      Math.sqrt(1 - orbit.eccentricity) * Math.cos(eccentricAnomaly / 2)
+    );
+    return {
+      x: orbit.semiMajorAxis * (Math.cos(eccentricAnomaly) - orbit.eccentricity),
+      y: transverse * orbit.verticalScale,
+      z: transverse * orbit.depthScale,
+      trueAnomaly
+    };
+  }
 
   function initThreeMoon() {
 
@@ -67,12 +113,21 @@
     const height = container.clientHeight || window.innerHeight - 92;
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    camera = new THREE.PerspectiveCamera(
+      45,
+      width / height,
+      0.01,
+      EARTH_SUN_DISTANCE * 30
+    );
 
     // MATCH REFERENCE VIEW: Centered full-globe framing
     camera.position.set(0, 0, 5.5);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      logarithmicDepthBuffer: true
+    });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -87,8 +142,9 @@
       controls.dampingFactor = 0.05;
       controls.enablePan = false;
       controls.screenSpacePanning = false;
-      controls.minDistance = 3.0;
-      controls.maxDistance = 10.0;
+      controls.minDistance = MOON_RADIUS * 1.005;
+      controls.maxDistance = 15;
+      controls.zoomSpeed = 1.1;
       controls.target.set(0, 0, 0);
     }
 
@@ -113,8 +169,14 @@
     function updateSunPosition(angle) {
       if (!sunLight) return;
       const radius = 15;
-      sunLight.position.x = Math.cos(angle) * radius;
-      sunLight.position.z = Math.sin(angle) * radius;
+      const position = keplerOrbitPosition(angle, {
+        semiMajorAxis: radius,
+        eccentricity: 0,
+        verticalScale: 0,
+        depthScale: 1
+      });
+      sunLight.position.x = position.x;
+      sunLight.position.z = position.z;
       sunLight.position.y = 3.5;
     }
 
@@ -122,8 +184,7 @@
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy
       ? renderer.capabilities.getMaxAnisotropy()
       : 8;
-    let activeResolution =
-      localStorage.getItem("moon_texture_resolution") || "8k";
+    let activeResolution = "8k";
 
     function configureTexture(tex) {
       tex.wrapS = THREE.ClampToEdgeWrapping;
@@ -143,11 +204,13 @@
 
     const normalTexture = textureLoader.load(
       `${assetBase}static/images/moon_normal.png`,
-      () => {
+      (texture) => {
+        configureTexture(texture);
         if (renderer && scene && camera) renderer.render(scene, camera);
       },
+      undefined,
+      (error) => console.error("Failed to load the lunar normal map.", error),
     );
-    configureTexture(normalTexture);
 
     const geometry = new THREE.SphereGeometry(MOON_RADIUS, 128, 128);
     const material = new THREE.MeshStandardMaterial({
@@ -160,6 +223,403 @@
     moonMesh = new THREE.Mesh(geometry, material);
     scene.add(moonMesh);
     defaultSpinAxis = new THREE.Vector3(0, 1, 0);
+
+    celestialSystem = new THREE.Group();
+    celestialSystem.visible = false;
+    scene.add(celestialSystem);
+
+    const starPositions = [];
+    for (let i = 0; i < 260; i++) {
+      const seed = i * 127.1 + 311.7;
+      const random = (value) => {
+        const x = Math.sin(value) * 43758.5453;
+        return x - Math.floor(x);
+      };
+      const zDirection = random(seed) * 2 - 1;
+      const azimuth = random(seed + 1) * TWO_PI;
+      const planarRadius = Math.sqrt(1 - zDirection * zDirection);
+      const starRadius = EARTH_SUN_DISTANCE * 15;
+      starPositions.push(
+        starRadius * planarRadius * Math.cos(azimuth),
+        starRadius * zDirection,
+        starRadius * planarRadius * Math.sin(azimuth)
+      );
+    }
+    const starGeometry = new THREE.BufferGeometry();
+    starGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starPositions, 3));
+    const stars = new THREE.Points(
+      starGeometry,
+      new THREE.PointsMaterial({
+        color: 0xb9c7e4,
+        size: 1.5,
+        sizeAttenuation: false,
+        transparent: true,
+        opacity: 0.8
+      })
+    );
+    celestialSystem.add(stars);
+
+    function createCelestialLabel(text, color) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 96;
+      const context = canvas.getContext("2d");
+      context.font = "700 36px Arial, sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.shadowColor = "rgba(0, 0, 0, 0.9)";
+      context.shadowBlur = 12;
+      context.fillStyle = color;
+      context.fillText(text, 256, 48);
+      const texture = new THREE.CanvasTexture(canvas);
+      const label = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false
+      }));
+      label.scale.set(1.1, 0.21, 1);
+      label.renderOrder = 5;
+      return label;
+    }
+
+    const earthOrbit = {
+      semiMajorAxis: EARTH_MOON_DISTANCE,
+      eccentricity: EARTH_ORBIT_ECCENTRICITY,
+      periodDays: EARTH_ORBIT_PERIOD_DAYS,
+      phaseAtEpoch: -1.1,
+      verticalScale: Math.sin(LUNAR_ORBIT_INCLINATION),
+      depthScale: Math.cos(LUNAR_ORBIT_INCLINATION)
+    };
+    const sunOrbit = {
+      semiMajorAxis: EARTH_SUN_DISTANCE,
+      eccentricity: 0,
+      periodDays: SUN_APPARENT_PERIOD_DAYS,
+      phaseAtEpoch: 0,
+      verticalScale: Math.sin(LUNAR_ORBIT_INCLINATION),
+      depthScale: Math.cos(LUNAR_ORBIT_INCLINATION)
+    };
+
+    function createKeplerOrbitPoints(orbit, segments) {
+      const points = [];
+      const semiMinorAxis =
+        orbit.semiMajorAxis * Math.sqrt(1 - orbit.eccentricity ** 2);
+      for (let i = 0; i < segments; i++) {
+        const eccentricAnomaly = (i / segments) * TWO_PI;
+        const transverse = semiMinorAxis * Math.sin(eccentricAnomaly);
+        points.push(new THREE.Vector3(
+          orbit.semiMajorAxis *
+            (Math.cos(eccentricAnomaly) - orbit.eccentricity),
+          transverse * orbit.verticalScale,
+          transverse * orbit.depthScale
+        ));
+      }
+      return points;
+    }
+
+    celestialSystem.add(new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(createKeplerOrbitPoints(earthOrbit, 180)),
+      new THREE.LineBasicMaterial({ color: 0x263fc4, transparent: true, opacity: 0.72 })
+    ));
+
+    celestialSystem.add(new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(createKeplerOrbitPoints(sunOrbit, 160)),
+      new THREE.LineBasicMaterial({ color: 0x837a36, transparent: true, opacity: 0.22 })
+    ));
+
+    const rayMaterial = new THREE.LineBasicMaterial({
+      color: 0xe6d454,
+      transparent: true,
+      opacity: 0.5
+    });
+    celestialSunRay = new THREE.Line(
+      new THREE.BufferGeometry(),
+      rayMaterial
+    );
+    celestialSystem.add(celestialSunRay);
+
+    // NASA/Goddard Blue Marble Earth and NASA SDO/AIA 193 Å Sun imagery.
+    function useOrthographicDiskProjection(material, crop) {
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms.uDiskCrop = { value: crop };
+        shader.vertexShader = shader.vertexShader.replace(
+          "#include <common>",
+          "#include <common>\nvarying vec3 vDiskSpherePosition;"
+        ).replace(
+          "#include <begin_vertex>",
+          "#include <begin_vertex>\nvDiskSpherePosition = normalize(position);"
+        );
+        shader.fragmentShader = shader.fragmentShader.replace(
+          "#include <common>",
+          "#include <common>\nvarying vec3 vDiskSpherePosition;\nuniform vec4 uDiskCrop;"
+        ).replace(
+          "#include <map_fragment>",
+          `#ifdef USE_MAP
+            vec3 diskSpherePosition = normalize(vDiskSpherePosition);
+            if (diskSpherePosition.z < 0.0) {
+              diskSpherePosition.x = -diskSpherePosition.x;
+            }
+            vec2 diskUv = uDiskCrop.xy +
+              (diskSpherePosition.xy * 0.5 + 0.5) * uDiskCrop.zw;
+            vec4 texelColor = texture2D(map, diskUv);
+            texelColor = mapTexelToLinear(texelColor);
+            diffuseColor *= texelColor;
+          #endif`
+        );
+      };
+      material.customProgramCacheKey = () => "nasa-orthographic-disk-projection";
+    }
+
+    const earthMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.8,
+      metalness: 0
+    });
+    useOrthographicDiskProjection(
+      earthMaterial,
+      new THREE.Vector4(0.04, 0.04, 0.92, 0.92)
+    );
+    textureLoader.load(
+      `${assetBase}static/images/earth_blue_marble_2007.jpg`,
+      (texture) => {
+        configureTexture(texture);
+        texture.encoding = THREE.sRGBEncoding;
+        earthMaterial.map = texture;
+        earthMaterial.needsUpdate = true;
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      },
+      undefined,
+      (error) => console.error("Failed to load the NASA Blue Marble Earth image.", error),
+    );
+    const earthMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(EARTH_MEAN_RADIUS, 64, 64),
+      earthMaterial
+    );
+    celestialSystem.add(earthMesh);
+    const atmosphere = new THREE.Mesh(
+      new THREE.SphereGeometry(EARTH_MEAN_RADIUS * 1.06, 32, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0x55b9ff,
+        transparent: true,
+        opacity: 0.2,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    earthMesh.add(atmosphere);
+    const earthLabel = createCelestialLabel("EARTH", "#a9d8ff");
+    earthLabel.position.set(0, EARTH_MEAN_RADIUS * 1.2, 0);
+    celestialSystem.add(earthLabel);
+
+    celestialMoon = new THREE.Mesh(
+      new THREE.SphereGeometry(MOON_RADIUS, 128, 128),
+      material
+    );
+    celestialSystem.add(celestialMoon);
+    celestialMoonLabel = createCelestialLabel("MOON", "#e7e1d8");
+    celestialSystem.add(celestialMoonLabel);
+
+    const sunGroup = new THREE.Group();
+    const solarMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      toneMapped: false
+    });
+    useOrthographicDiskProjection(
+      solarMaterial,
+      new THREE.Vector4(0.055, 0.055, 0.89, 0.89)
+    );
+    textureLoader.load(
+      `${assetBase}static/images/sun_sdo_aia_193_4k.jpg`,
+      (texture) => {
+        configureTexture(texture);
+        texture.encoding = THREE.sRGBEncoding;
+        solarMaterial.map = texture;
+        solarMaterial.needsUpdate = true;
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      },
+      undefined,
+      (error) => console.error("Failed to load the NASA SDO/AIA Sun image.", error),
+    );
+    const solarDisc = new THREE.Mesh(
+      new THREE.SphereGeometry(SUN_RADIUS, 64, 64),
+      solarMaterial
+    );
+    sunGroup.add(solarDisc);
+    const sunGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(SUN_RADIUS * 1.12, 32, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xffa52f,
+        transparent: true,
+        opacity: 0.15,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        toneMapped: false
+      })
+    );
+    sunGroup.add(sunGlow);
+    const sunLabel = createCelestialLabel("SUN", "#ffe29a");
+    sunLabel.position.set(0, SUN_RADIUS * 1.2, 0);
+    sunGroup.add(sunLabel);
+    celestialSystem.add(sunGroup);
+
+    const SYSTEM_REFERENCE_EPOCH = Date.UTC(2026, 10, 1);
+    function updateCelestialPositions(epochMs) {
+      const elapsedDays = (epochMs - SYSTEM_REFERENCE_EPOCH) / 86400000;
+      const earthMeanAnomaly =
+        (elapsedDays / earthOrbit.periodDays) * TWO_PI + earthOrbit.phaseAtEpoch;
+      const earthPositionValues = keplerOrbitPosition(
+        earthMeanAnomaly,
+        earthOrbit
+      );
+      const earthPosition = new THREE.Vector3(
+        earthPositionValues.x,
+        earthPositionValues.y,
+        earthPositionValues.z
+      );
+      earthMesh.position.copy(earthPosition);
+      earthMesh.rotation.y = -earthPositionValues.trueAnomaly;
+      earthLabel.position.copy(earthPosition).add(
+        new THREE.Vector3(0, EARTH_MEAN_RADIUS * 1.2, 0)
+      );
+
+      celestialMoon.position.set(0, 0, 0);
+      celestialMoon.rotation.y = moonMesh.rotation.y;
+      celestialMoonLabel.position.set(0, MOON_RADIUS * 1.18, 0);
+
+      currentSunAngle =
+        (elapsedDays / sunOrbit.periodDays) * TWO_PI + sunOrbit.phaseAtEpoch;
+      const sunPositionValues = keplerOrbitPosition(currentSunAngle, sunOrbit);
+      const sunPosition = new THREE.Vector3(
+        sunPositionValues.x,
+        sunPositionValues.y,
+        sunPositionValues.z
+      );
+      sunGroup.position.copy(sunPosition);
+      const towardMoon = sunPosition.clone().negate().normalize();
+      celestialSunRay.geometry.setFromPoints([
+        sunPosition.clone().addScaledVector(towardMoon, SUN_RADIUS * 1.02),
+        towardMoon.clone().multiplyScalar(MOON_RADIUS * 1.05)
+      ]);
+      updateSunPosition(currentSunAngle);
+    }
+
+    updateCelestialPositions(Date.UTC(2026, 10, 15, 14));
+
+    let isSystemView = false;
+    let lastGalaxyOpacity = -1;
+    const zoomBodies = [
+      { mesh: celestialMoon, radius: MOON_RADIUS },
+      { mesh: earthMesh, radius: EARTH_MEAN_RADIUS },
+      { mesh: solarDisc, radius: SUN_RADIUS }
+    ];
+    const zoomRaycaster = new THREE.Raycaster();
+    renderer.domElement.addEventListener(
+      "wheel",
+      (event) => {
+        if (!isSystemView || !controls || !controls.enabled) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const bounds = renderer.domElement.getBoundingClientRect();
+        const pointer = new THREE.Vector2(
+          ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
+          -((event.clientY - bounds.top) / bounds.height) * 2 + 1
+        );
+        zoomRaycaster.setFromCamera(pointer, camera);
+        const intersections = zoomRaycaster.intersectObjects(
+          zoomBodies.map(({ mesh }) => mesh),
+          false
+        );
+        if (intersections.length) {
+          const focusedBody = zoomBodies.find(
+            ({ mesh }) => mesh === intersections[0].object
+          );
+          if (focusedBody) {
+            controls.target.copy(
+              focusedBody.mesh.getWorldPosition(new THREE.Vector3())
+            );
+            controls.minDistance = focusedBody.radius * 1.005;
+          }
+        }
+
+        const offset = camera.position.clone().sub(controls.target);
+        const zoomFactor = Math.exp(event.deltaY * 0.0035);
+        const nextDistance = THREE.MathUtils.clamp(
+          offset.length() * zoomFactor,
+          controls.minDistance,
+          controls.maxDistance
+        );
+        offset.setLength(nextDistance);
+        camera.position.copy(controls.target).add(offset);
+        controls.update();
+      },
+      { capture: true, passive: false }
+    );
+
+    function setViewportMode(mode) {
+      isSystemView = mode === "system";
+      celestialSystem.visible = isSystemView;
+      moonMesh.visible = !isSystemView;
+      if (pinsContainer) pinsContainer.visible = !isSystemView;
+      if (sunLight) sunLight.visible = true;
+
+      const clarityHud = document.getElementById("moon-clarity-hud");
+      const caption = document.getElementById("celestial-view-caption");
+      const surfaceButton = document.getElementById("btn-surface-view");
+      const systemButton = document.getElementById("btn-system-view");
+      if (clarityHud) clarityHud.hidden = isSystemView;
+      if (caption) caption.classList.toggle("visible", isSystemView);
+      if (surfaceButton) {
+        surfaceButton.classList.toggle("active", !isSystemView);
+        surfaceButton.setAttribute("aria-pressed", String(!isSystemView));
+      }
+      if (systemButton) {
+        systemButton.classList.toggle("active", isSystemView);
+        systemButton.setAttribute("aria-pressed", String(isSystemView));
+      }
+
+      if (camera && controls) {
+        controls.zoomSpeed = isSystemView ? 5 : 1.1;
+        controls.minDistance = MOON_RADIUS * 1.005;
+        controls.enablePan = isSystemView;
+        controls.screenSpacePanning = isSystemView;
+        controls.panSpeed = isSystemView ? 0.5 : 1;
+        controls.mouseButtons.LEFT = isSystemView
+          ? THREE.MOUSE.PAN
+          : THREE.MOUSE.ROTATE;
+        controls.mouseButtons.RIGHT = isSystemView
+          ? THREE.MOUSE.ROTATE
+          : THREE.MOUSE.PAN;
+        const solarOrbitFrameDistance =
+          EARTH_SUN_DISTANCE /
+          (Math.tan((camera.fov * Math.PI) / 360) * camera.aspect);
+        controls.maxDistance = isSystemView
+          ? Math.max(SYSTEM_MAX_DISTANCE, solarOrbitFrameDistance * 1.15)
+          : 15;
+        if (isSystemView) {
+          const directionToEarth = earthMesh.position.clone().normalize();
+          const cameraDirection = directionToEarth
+            .negate()
+            .applyAxisAngle(
+              new THREE.Vector3(0, 1, 0),
+              (22 * Math.PI) / 180
+            );
+          camera.position.copy(cameraDirection.multiplyScalar(SYSTEM_INITIAL_DISTANCE));
+        } else {
+          camera.position.set(0, 0, 5.5);
+        }
+        controls.target.set(0, 0, 0);
+        controls.update();
+      }
+      if (renderer && scene && camera) renderer.render(scene, camera);
+    }
+
+    document.getElementById("btn-surface-view")?.addEventListener("click", () => {
+      setViewportMode("surface");
+    });
+    document.getElementById("btn-system-view")?.addEventListener("click", () => {
+      setViewportMode("system");
+    });
 
     function updateHUDUI(res, state) {
       const dot = document.querySelector("#hud-clarity-status .hud-status-dot");
@@ -405,10 +865,12 @@
       window.eventBus.on("time:changed", (data) => {
         if (!data) return;
 
-        // 1. Advance the globe around the highlighted surface point when one is active.
+        // 1. Advance the globe around the highlighted surface point and update celestial system
         const timelineEpoch = Number.isFinite(data.currentEpoch)
           ? data.currentEpoch
-          : data.unixEpoch;
+          : Number.isFinite(data.unixEpoch)
+            ? data.unixEpoch
+            : Date.parse(data.isoString);
         if (Number.isFinite(timelineEpoch) && moonMesh) {
           const daysElapsed = timelineEpoch / (1000 * 60 * 60 * 24);
           if (lastTimelineEpoch === null && !activeSpinAxis) {
@@ -423,6 +885,7 @@
           lastTimelineEpoch = timelineEpoch;
           currentSunAngle = (daysElapsed / 29.53) * Math.PI * 2;
           updateSunPosition(currentSunAngle);
+          updateCelestialPositions(timelineEpoch);
         }
 
         // 2. Apply fallback immediately (simulated) for instant visual feedback
@@ -503,6 +966,20 @@
       }
 
       if (controls) controls.update();
+      if (controls && container) {
+        const cameraDistance = camera.position.distanceTo(controls.target);
+        const galaxyOpacity = isSystemView
+          ? THREE.MathUtils.smoothstep(
+              cameraDistance,
+              EARTH_SUN_DISTANCE * 0.2,
+              EARTH_SUN_DISTANCE * 0.7
+            )
+          : 0;
+        if (Math.abs(galaxyOpacity - lastGalaxyOpacity) > 0.01) {
+          container.style.setProperty("--galaxy-opacity", galaxyOpacity.toFixed(3));
+          lastGalaxyOpacity = galaxyOpacity;
+        }
+      }
       if (renderer && scene && camera) {
         renderer.render(scene, camera);
       }
@@ -922,7 +1399,14 @@
     if (!sunLight) return;
     // Lunar axial tilt is 1.54°. In November 2026, the southern hemisphere is tilted towards the Sun.
     const subLatRad = -1.54 * (Math.PI / 180);
-    const angle = ((sliderValue || 0) / 100) * Math.PI * 2;
+    const meanAnomaly = ((sliderValue || 0) / 100) * TWO_PI;
+    const orbitPosition = keplerOrbitPosition(meanAnomaly, {
+      semiMajorAxis: 1,
+      eccentricity: 0,
+      verticalScale: 0,
+      depthScale: 1
+    });
+    const angle = orbitPosition.trueAnomaly;
     const dist = 14;
 
     sunLight.position.set(

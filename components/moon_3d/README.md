@@ -6,8 +6,10 @@
 ## Overview
 This module manages the central 3D viewport of the cockpit using Three.js:
 - **Interactive WebGL Globe:** Renders a 3D spherical Moon ($R = 2.5$) textured with authentic NASA LROC global cylindrical albedo imagery.
-- **Camera & OrbitControls:** Smooth inertial rotation, pitch, and zoom clamped between $[3.0, 10.0]$ distance units, initially angled to inspect the lunar South Pole.
-- **Dynamic Solar Kinematics:** A directional Sun light source revolves around the Moon according to timeline scrubber progression, incorporating a simulated $1.54^\circ$ lunar axial inclination.
+- **Physical system scale:** Moon mean radius is 1,737.4 km at 2.5 scene units; Earth and Sun radii and their Moon-relative distances use the same conversion. Mean center-to-center distances are 384,400 km to Earth and 149.6 million km to the Sun.
+- **Camera & OrbitControls:** Surface drag rotates the Moon. In SYSTEM, left-drag pans between bodies and right-drag rotates the camera. Scrolling over the Moon, Earth, or Sun focuses the zoom on that body and allows close inspection of its loaded texture. Zoom ranges from the lunar surface through a viewport-dependent distance that frames the 1 AU solar path; the initial Moon close-up is 16 scene units. Logarithmic depth supports the range.
+- **Dynamic Solar Kinematics:** The Earth follows its eccentric lunar orbit and the Sun follows its apparent monthly path as the mission timeline changes. A directional light keeps lunar illumination consistent at the true rendered Sun distance.
+- **Deep-space backdrop:** A 2,048 × 2,048 pixel Milky Way illustration from NASA Science's The Milky Way Galaxy page fades in at wide system zoom.
 - **Click-to-Mark Raycasting:** Translates 2D screen clicks into 3D camera rays intersecting the lunar sphere, converting Cartesian $(x, y, z)$ coordinates into lunar latitude/longitude.
 - **3D Surface Pins:** Composite pin meshes are children of the Moon mesh, so each remains attached to its latitude/longitude as the globe rotates. While a comparison card is highlighted, the timeline spins around that site's world-space radial axis, keeping its marker fixed in view.
 - **Shared Surface Measurement:** Shift + right-click two marked site pins to select a pair, then right-click either pin and choose **Measure distance**. A blue great-circle arc and kilometer label remain attached to the Moon and stay synchronized with the 2D map views.
