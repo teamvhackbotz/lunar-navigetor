@@ -244,27 +244,39 @@
       <p class="section-desc">Select surface reflectance or shaded relief basemap for 3D/2D viewports.</p>
 
       <div class="basemap-picker-grid">
-        <label class="basemap-card active" data-basemap="lroc">
+        <label class="basemap-card active" data-basemap="lroc" tabindex="0">
           <input type="radio" name="gis-basemap" value="lroc" checked>
           <div class="basemap-info">
-            <span class="b-name">LROC WAC Albedo Mosaic</span>
-            <span class="b-desc">NASA LRO 100m/px Visible Monochrome</span>
+            <div class="basemap-header-row">
+              <span class="b-name">LROC WAC Albedo Mosaic</span>
+              <span class="basemap-res-chip">100 m/px</span>
+            </div>
+            <span class="basemap-spec-tag">NASA LRO · WAC (395–689 nm)</span>
+            <span class="b-desc">Photometrically normalized global reflectance albedo.</span>
           </div>
         </label>
 
-        <label class="basemap-card" data-basemap="lola">
+        <label class="basemap-card" data-basemap="lola" tabindex="0">
           <input type="radio" name="gis-basemap" value="lola">
           <div class="basemap-info">
-            <span class="b-name">LOLA Topographic Relief</span>
-            <span class="b-desc">Laser Altimeter Shaded Elevation Model</span>
+            <div class="basemap-header-row">
+              <span class="b-name">LOLA Topographic Relief</span>
+              <span class="basemap-res-chip">59 m/px</span>
+            </div>
+            <span class="basemap-spec-tag">NASA LRO · LOLA (1064 nm Laser)</span>
+            <span class="b-desc">Laser altimeter shaded DEM (±1 m vertical precision).</span>
           </div>
         </label>
 
-        <label class="basemap-card" data-basemap="kaguya">
+        <label class="basemap-card" data-basemap="kaguya" tabindex="0">
           <input type="radio" name="gis-basemap" value="kaguya">
           <div class="basemap-info">
-            <span class="b-name">Kaguya TC Ortho Terrain</span>
-            <span class="b-desc">JAXA Terrain Camera High-Contrast Ortho</span>
+            <div class="basemap-header-row">
+              <span class="b-name">Kaguya TC Ortho Terrain</span>
+              <span class="basemap-res-chip">10 m/px</span>
+            </div>
+            <span class="basemap-spec-tag">JAXA SELENE · TC (Stereo Ortho)</span>
+            <span class="b-desc">High-contrast stereoscopic morphology orthomosaic.</span>
           </div>
         </label>
       </div>

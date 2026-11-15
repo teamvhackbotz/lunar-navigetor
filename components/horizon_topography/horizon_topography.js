@@ -733,6 +733,81 @@
   }
 
   /**
+   * Orbital remote sensing basemap registry with authentic NASA / JAXA mission specifications.
+   */
+  const BASEMAP_CONFIGS = {
+    lroc: {
+      id: "lroc",
+      name: "LROC WAC Albedo Mosaic",
+      agency: "NASA",
+      mission: "Lunar Reconnaissance Orbiter (LRO)",
+      instrument: "Wide Angle Camera (WAC)",
+      spectrum: "Visible Monochrome (395–689 nm)",
+      resolution: "100 m/px global",
+      datum: "IAU 1,737.4 km lunar sphere",
+      description: "Photometrically normalized global surface reflectance showing albedo variations."
+    },
+    lola: {
+      id: "lola",
+      name: "LOLA Topographic Relief",
+      agency: "NASA",
+      mission: "Lunar Reconnaissance Orbiter (LRO)",
+      instrument: "Lunar Orbiter Laser Altimeter (LOLA)",
+      spectrum: "Near-IR Laser Pulse (1064 nm)",
+      resolution: "59 m/px polar DEM",
+      datum: "IAU 1,737.4 km lunar sphere (±1 m vertical precision)",
+      description: "Laser altimeter shaded digital elevation model with synthetic hillshade relief illumination."
+    },
+    kaguya: {
+      id: "kaguya",
+      name: "Kaguya TC Ortho Terrain",
+      agency: "JAXA",
+      mission: "SELENE / Kaguya",
+      instrument: "Terrain Camera (TC)",
+      spectrum: "Stereoscopic Optical Photometry",
+      resolution: "10 m/px high-contrast ortho",
+      datum: "SELENE 2007 lunar coordinate system",
+      description: "High-contrast stereoscopic imaging optimal for morphological feature tracing."
+    }
+  };
+
+  let activeBasemap = "lroc";
+
+  /**
+   * Switches the active cartographic basemap and synchronizes DOM and global EventBus.
+   * @param {string} basemapKey - 'lroc' | 'lola' | 'kaguya'
+   * @returns {Object} Active basemap configuration
+   */
+  function setBasemap(basemapKey) {
+    if (!BASEMAP_CONFIGS[basemapKey]) {
+      console.warn(`[GISOverlays] Unknown basemap '${basemapKey}'. Defaulting to 'lroc'.`);
+      basemapKey = "lroc";
+    }
+
+    activeBasemap = basemapKey;
+    const config = BASEMAP_CONFIGS[basemapKey];
+
+    // 1. Synchronize DOM cards and radio inputs
+    const basemapCards = document.querySelectorAll(".basemap-card");
+    basemapCards.forEach(card => {
+      const isTarget = card.dataset.basemap === basemapKey;
+      card.classList.toggle("active", isTarget);
+      const radio = card.querySelector('input[type="radio"]');
+      if (radio) radio.checked = isTarget;
+    });
+
+    // 2. Emit layer:basemap_change event across EventBus
+    if (window.eventBus) {
+      window.eventBus.emit("layer:basemap_change", {
+        basemap: basemapKey,
+        config: config
+      });
+    }
+
+    return config;
+  }
+
+  /**
    * Initializes Right Drawer: Basemap selector and layer overlay checkboxes.
    */
   function initRightGISOverlays() {
@@ -747,16 +822,16 @@
     // 1. Basemap Selector Radio Cards
     basemapCards.forEach(card => {
       card.addEventListener("click", () => {
-        basemapCards.forEach(c => c.classList.remove("active"));
-        card.classList.add("active");
-        const radio = card.querySelector('input[type="radio"]');
-        if (radio) radio.checked = true;
-
         const basemap = card.dataset.basemap;
-        if (window.eventBus) {
-          window.eventBus.emit("layer:basemap_change", { basemap: basemap });
+        setBasemap(basemap);
+      });
+
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          if (e.preventDefault) e.preventDefault();
+          const basemap = card.dataset.basemap;
+          setBasemap(basemap);
         }
-        console.log(`[GISOverlays] Switched optical basemap to: ${basemap}`);
       });
     });
 
@@ -840,6 +915,14 @@
     renderWaypoints: renderWaypoints,
     calculateLunarDistanceKm: calculateLunarDistanceKm,
     updatePowerBudgetAndStay: updatePowerBudgetAndStay
+  };
+
+  // Export public interface for Right Drawer GIS Remote Sensing & Spatial Overlays
+  window.GISOverlays = {
+    setBasemap: setBasemap,
+    getBasemap: () => activeBasemap,
+    getBasemapConfig: (key) => BASEMAP_CONFIGS[key || activeBasemap],
+    BASEMAPS: BASEMAP_CONFIGS
   };
 
   // Safe DOM ready check
