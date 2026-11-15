@@ -18,7 +18,6 @@ const ComponentLoader = (function() {
     { name: "comparison_cards", mountId: "mount-comparison-cards" },
     { name: "moon_3d", mountId: "mount-moon-3d" },
     { name: "horizon_topography", mountId: "mount-horizon-topography" },
-    { name: "minimap_triad", mountId: "mount-minimap-triad" },
     { name: "map_2d", mountId: "mount-map-2d" },
     { name: "timeline", mountId: "mount-timeline" },
     { name: "settings_modal", mountId: "mount-settings-modal" },

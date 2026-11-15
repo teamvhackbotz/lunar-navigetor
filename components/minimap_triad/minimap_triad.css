@@ -4,24 +4,9 @@
    Role: Layout, orbital rings, and celestial body positions for the triad widget
    ========================================================================== */
 
-/* Pinned to bottom-right viewport above the bottom mission cockpit dock */
+/* Pinned to bottom-right viewport above the bottom mission cockpit dock - DISABLED PER USER REQUEST */
 .minimap-triad {
-  position: absolute;
-  bottom: calc(var(--height-bottom-cockpit, 92px) + 14px);
-  right: 18px;
-  top: auto;
-  left: auto;
-  width: 170px;
-  background: rgba(30, 32, 34, 0.9);
-  border: 1px solid var(--border-subtle, #3a3c3f);
-  border-radius: 6px;
-  padding: 10px;
-  backdrop-filter: blur(6px);
-  z-index: 80;
-  cursor: pointer;
-  transition: bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              right 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.15s ease;
+  display: none !important;
 }
 
 .minimap-triad:hover {
