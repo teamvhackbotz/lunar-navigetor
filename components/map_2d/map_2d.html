@@ -16,7 +16,7 @@
      - Drawer open/close driven by pure CSS via #toggle-bottom-map in index.html.
      - Height configurable between 390px (Baseline) and 500px (Maximized Tactical Deck).
      - Clicking on any map computes lunar coordinates and dispatches 'site:marked'.
-     - Two consecutive clicks calculate geodesic distance on the lunar sphere (R = 1,737.4 km).
+     - Shift + right-click two marked sites, then right-click either and choose Measure distance.
      ========================================================================== -->
 
 <!-- Main Bottom Drawer: Positioned above the timeline, slides up when #toggle-bottom-map is checked -->
@@ -29,9 +29,9 @@
     <div class="map-controls-row">
       <h3 class="drawer-title">🗺️ 2D Maps</h3>
       
-      <!-- Distance Badge: Displays real-time geodesic distance between two user-clicked points -->
-      <span class="distance-pill" id="map-distance-display" aria-live="polite" title="Click 2 points on any map to measure lunar surface distance">
-        📏 <strong>0.0 km</strong>
+      <!-- Distance Badge: Displays pair selection status and the measured surface distance -->
+      <span class="distance-pill" id="map-distance-display" aria-live="polite" title="Shift + right-click two marked sites, then right-click either and choose Measure distance.">
+        📏 Select 2 sites
       </span>
 
       <!-- 8K Basemap Clarity Badge -->
@@ -138,7 +138,7 @@
         </div>
 
         <div class="polar-disc-wrapper">
-          <div class="polar-disc-mock disc-north" id="north-polar-map-disc" title="Click inside North Polar disc to mark coordinate">
+          <div class="polar-disc-mock disc-north" id="north-polar-map-disc" title="Click to mark a coordinate; Shift + right-click marked sites to select a distance pair">
             <!-- Concentric Latitude Boundary Rings (Percentage scaled) -->
             <div class="polar-ring ring-88" title="88° N Latitude Boundary"></div>
             <div class="polar-ring ring-85" title="85° N Latitude Boundary"></div>
@@ -170,7 +170,7 @@
         </div>
 
         <div class="rect-map-wrapper">
-          <div class="rect-map-canvas-mock" id="rect-map-canvas-mock" title="Click flat map to mark any lunar latitude">
+          <div class="rect-map-canvas-mock" id="rect-map-canvas-mock" title="Click to mark a coordinate; Shift + right-click marked sites to select a distance pair">
             <!-- Cartographic Grid Lines -->
             <div class="rect-grid-line lat-equator" title="Lunar Equator (0°)"></div>
             <div class="rect-grid-line lat-70n" title="70° N Polar Boundary"></div>
@@ -205,7 +205,7 @@
         </div>
 
         <div class="polar-disc-wrapper">
-          <div class="polar-disc-mock disc-south" id="south-polar-map-disc" title="Click inside South Polar disc to mark coordinate">
+          <div class="polar-disc-mock disc-south" id="south-polar-map-disc" title="Click to mark a coordinate; Shift + right-click marked sites to select a distance pair">
             <!-- Concentric Latitude Boundary Rings (Percentage scaled) -->
             <div class="polar-ring ring-88" title="88° S Latitude Boundary"></div>
             <div class="polar-ring ring-85" title="85° S Latitude Boundary"></div>

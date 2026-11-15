@@ -111,6 +111,16 @@ function runTests() {
       name: "12. Empty / null input -> null",
       input: null,
       expectedId: null
+    },
+    {
+      name: "13. Dynamic timestamped slug ('malapert_massif_1794723545465')",
+      input: "malapert_massif_1794723545465",
+      expectedId: "malapert"
+    },
+    {
+      name: "14. Underscore slug without timestamp ('malapert_massif')",
+      input: "malapert_massif",
+      expectedId: "malapert"
     }
   ];
 
@@ -132,5 +142,5 @@ function runTests() {
     process.exit(1);
   }
 
-  console.log("\n✅ All 12 findSite() multi-shape resolution tests passed successfully!\n");
+  console.log("\n✅ All 14 findSite() multi-shape resolution tests passed successfully!\n");
 }

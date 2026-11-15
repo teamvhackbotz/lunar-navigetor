@@ -27,6 +27,7 @@
   min-width: 440px;
   max-width: calc(100vw - 96px);
   height: var(--height-bottom-map, 390px);
+  max-height: calc(100dvh - var(--height-bottom-cockpit, 92px) - var(--height-top-nav, 54px) - 16px);
   background: rgba(24, 26, 28, 0.98);
   border-top: 2px solid var(--border-medium, #4e4f52);
   border-left: 1px solid var(--border-medium, #4e4f52);
@@ -819,6 +820,49 @@
   border: 1.5px solid #fff;
   border-radius: 50%;
   box-shadow: 0 0 10px var(--accent-terracotta, #c87d55);
+}
+
+.site-measurement-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.site-measure-point {
+  position: absolute;
+  z-index: 12;
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border: 1px solid #d5e5f5;
+  border-radius: 50%;
+  background: #596a7b;
+  color: #fff;
+  font: 700 9px var(--font-mono, monospace);
+  line-height: 17px;
+  text-align: center;
+  cursor: context-menu;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.8);
+}
+
+.site-measure-point:hover {
+  border-color: #fff;
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.site-measure-point.is-active {
+  background: var(--accent-terracotta, #c87d55);
+}
+
+.site-measure-point.is-measure-selected {
+  border: 2px solid #fff;
+  background: #168cff;
+  box-shadow: 0 0 0 3px rgba(41, 156, 255, 0.36), 0 0 12px #299cff;
 }
 
 /* ==========================================================================

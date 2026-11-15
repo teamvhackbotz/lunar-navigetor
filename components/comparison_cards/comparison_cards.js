@@ -14,6 +14,7 @@
    * Dynamically populated from authentic NASA LOLA and JPL Horizons data on-demand.
    */
   const SITE_PROFILES = {};
+  let pendingComparison = null;
 
   // Undo / Redo stacks
   const undoStack = [];
@@ -81,6 +82,9 @@
       const earthAz = live ? live.earthAz : 240;
       const isSunVis = live ? live.isSunVis : true;
       const nextSunset = live ? `${live.nextSunsetHrs}h 00m` : "96h 00m";
+      const tdMatch = (terrain.slope_svg_path || "").match(/Q\s*\d+\s*,\s*\d+\s+(\d+)\s*,\s*(\d+)/);
+      const tdX = tdMatch ? parseInt(tdMatch[1], 10) : 100;
+      const tdY = tdMatch ? parseInt(tdMatch[2], 10) : 34;
 
       return {
         _authentic: authentic,
@@ -102,10 +106,10 @@
             : `Sun is in <strong>Topographic Shadow</strong>. Direct Earth line-of-sight is <strong>${earthEl > 0 ? 'Clear (+' + earthEl + '°)' : 'Occluded'}</strong>.`
         },
         slope: {
-          title: "📈 Local Crater Radial Cross-Section",
+          title: "Crater Radial Profile",
           svgPath: terrain.slope_svg_path,
-          touchdownX: 100,
-          touchdownY: 34,
+          touchdownX: tdX,
+          touchdownY: tdY,
           slopeVal: `${terrain.slope_touchdown_deg}°`,
           slopeStatus: terrain.slope_status,
           slopeColor: terrain.slope_color,
@@ -250,6 +254,12 @@
             <span>High</span><span>Mid</span><span>Low</span>
           </div>
           <svg viewBox="0 0 300 80" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="slope-card-grad-${siteKey}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7d967e" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#7d967e" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
             <g class="subcard-chart-grid">
               <line x1="0" y1="8" x2="300" y2="8"></line>
               <line x1="0" y1="40" x2="300" y2="40"></line>
@@ -258,6 +268,7 @@
               <line x1="150" y1="0" x2="150" y2="80"></line>
               <line x1="299" y1="0" x2="299" y2="80"></line>
             </g>
+            <path d="${s.svgPath} L300,80 L0,80 Z" fill="url(#slope-card-grad-${siteKey})"></path>
             <path d="${s.svgPath}" fill="none" stroke="var(--accent-sage, #7d967e)" stroke-width="2.5"></path>
             <circle cx="${s.touchdownX}" cy="${s.touchdownY}" r="4.5" fill="var(--accent-terracotta, #c87d55)"></circle>
             <text x="${s.touchdownX + 8}" y="${s.touchdownY - 2}" fill="var(--text-primary, #ede8e1)" font-size="8.5" font-family="sans-serif">Touchdown</text>
@@ -296,23 +307,32 @@
           </div>
           <div class="subcard-zero-line" style="top: 72.5%;"></div>
           <svg viewBox="0 0 360 80" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="solar-subcard-grad-${siteKey}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#c99e52" stop-opacity="0.32"/>
+                <stop offset="100%" stop-color="#c99e52" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
             <g class="subcard-chart-grid">
               <line x1="0" y1="4" x2="360" y2="4"></line>
               <line x1="0" y1="58" x2="360" y2="58"></line>
               <line x1="0" y1="76" x2="360" y2="76"></line>
               <line x1="0" y1="0" x2="0" y2="80"></line>
+              <line x1="90" y1="0" x2="90" y2="80"></line>
               <line x1="180" y1="0" x2="180" y2="80"></line>
+              <line x1="270" y1="0" x2="270" y2="80"></line>
               <line x1="359" y1="0" x2="359" y2="80"></line>
             </g>
-            <path d="${sol.svgPath}" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="2"></path>
+            <path d="${sol.svgPath} L360,80 L0,80 Z" fill="url(#solar-subcard-grad-${siteKey})"></path>
+            <path d="${sol.svgPath}" fill="none" stroke="var(--accent-sand, #c99e52)" stroke-width="1.8"></path>
           </svg>
         </div>
-        <div class="subcard-axis-caption"><span>Solar elevation (°)</span><span>Mission day</span></div>
-        <div class="subcard-profile-x-ticks" aria-hidden="true"><span>1</span><span>7</span><span>14</span></div>
+        <div class="subcard-axis-caption"><span>Solar Elevation (°)</span><span>Mission Day (Nov 2026)</span></div>
+        <div class="subcard-profile-x-ticks" aria-hidden="true"><span>Day 1</span><span>Day 8</span><span>Day 15</span><span>Day 22</span><span>Day 30</span></div>
         <div class="subcard-slope-stat-grid">
           <div class="subcard-stat-item">
             <span class="subcard-stat-label">Daylight Ratio</span>
-            <span class="subcard-stat-val">${sol.daylightPct}</span>
+            <span class="subcard-stat-val status-safe">${sol.daylightPct}</span>
           </div>
           <div class="subcard-stat-item">
             <span class="subcard-stat-label">Continuous Stay</span>
@@ -368,13 +388,28 @@
       tabBtns.forEach(b => {
         b.classList.toggle("active", b.dataset.tab === tab);
       });
-      const tabTitles = {
-        horizon: "🌄 360° Panoramic Skyline Mask",
-        slope: "📈 Radial Crater Cross-Section",
-        solar: "☀️ 14-Day Solar Illumination Window",
-        comms: "📡 Direct-to-Earth Line of Sight"
+      const tabMeta = {
+        horizon: {
+          title: "360° Skyline Profile",
+          svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>'
+        },
+        slope: {
+          title: "Crater Radial Profile",
+          svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>'
+        },
+        solar: {
+          title: "Solar Stay Profile",
+          svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>'
+        },
+        comms: {
+          title: "Direct-to-Earth Comms",
+          svg: '<svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>'
+        }
       };
-      if (titleEl) titleEl.textContent = tabTitles[tab] || "Site Detail";
+      const meta = tabMeta[tab] || { title: "Site Detail", svg: "" };
+      if (titleEl) {
+        titleEl.innerHTML = `${meta.svg}<span>${meta.title}</span>`;
+      }
       if (bodyEl) {
         bodyEl.innerHTML = renderSubcardContent(siteKey, tab);
       }
@@ -705,7 +740,8 @@
   async function runSiteComparison() {
     const button = document.getElementById("btn-compare-sites");
     const track = document.getElementById("carousel-track");
-    if (!button || !track) return;
+    if (!button || !track) return { error: "The Compare button or candidate-card list is unavailable." };
+    if (button.disabled) return { error: "A candidate comparison is already running." };
 
     let range;
     let windowData;
@@ -726,13 +762,13 @@
       }
     } catch (error) {
       setComparisonStatus(error.message, true);
-      return;
+      return { error: error.message };
     }
 
     const columns = Array.from(track.querySelectorAll(".site-card-column"));
     if (columns.length < 2) {
       setComparisonStatus("Mark at least two candidate locations before comparing.", true);
-      return;
+      return { error: "Mark at least two candidate locations before comparing." };
     }
 
     button.disabled = true;
@@ -784,6 +820,12 @@
       unavailable.length > 0
     );
     button.disabled = false;
+    return {
+      start: startLabel,
+      end: endLabel,
+      ranked: ranked.map(({ result }) => ({ ...result })),
+      unavailable
+    };
   }
 
   function initComparisonControls() {
@@ -798,7 +840,9 @@
     toInput.min = formatUtcInputValue(COMPARISON_START_MS + HOUR_MS);
     toInput.max = formatUtcInputValue(COMPARISON_END_MS);
     toInput.value = formatUtcInputValue(COMPARISON_END_MS);
-    button.addEventListener("click", runSiteComparison);
+    button.addEventListener("click", () => {
+      pendingComparison = runSiteComparison();
+    });
   }
 
   /**
@@ -826,6 +870,49 @@
   /**
    * Undoes the last card action (dismissal or addition).
    */
+  function dismissSiteCard(target) {
+    const track = document.getElementById("carousel-track");
+    const normalizedTarget = String(target || "").trim().toLowerCase();
+    if (!track) return { error: "The candidate-card list is unavailable." };
+
+    const columns = Array.from(track.querySelectorAll(".site-card-column"));
+    let matches;
+    if (!normalizedTarget) {
+      matches = columns.filter(column => {
+        const card = column.querySelector(".site-card");
+        return card && card.classList.contains("active");
+      });
+      if (matches.length !== 1) {
+        return {
+          error: matches.length
+            ? "Several candidate cards are active; specify the site name or displayed card number."
+            : "Specify a candidate site name or card number to remove."
+        };
+      }
+    } else {
+      const cardNumberMatch = normalizedTarget.match(/^(?:card\s*)?(\d+)$/);
+      const cardNumber = cardNumberMatch ? Number(cardNumberMatch[1]) : null;
+      matches = columns.filter(column => {
+        const card = column.querySelector(".site-card");
+        if (!card) return false;
+        if (cardNumber !== null) return Number(card.dataset.cardIndex) === cardNumber;
+        return String(card.dataset.name || "").trim().toLowerCase() === normalizedTarget;
+      });
+    }
+
+    if (matches.length === 0) {
+      return { error: `No candidate card matched "${target}".` };
+    }
+    if (matches.length > 1) {
+      return { error: `More than one candidate card is named "${target}"; use its displayed card number.` };
+    }
+
+    const card = matches[0].querySelector(".site-card");
+    const siteName = card.dataset.name || `Card ${card.dataset.cardIndex}`;
+    dismissCard(matches[0]);
+    return { siteName };
+  }
+
   function undo() {
     if (undoStack.length === 0) return;
     const item = undoStack.pop();
@@ -987,34 +1074,65 @@
       <!-- Primary Summary Card -->
       <div class="site-card active" data-site-id="${siteKey}" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${p.name}">
         <div class="card-header">
-          <div>
+          <div class="card-header-main">
             <div class="card-header-badge-row">
               <span class="site-number-badge">1</span>
               <span class="site-tag ${tagClass}">${tagLabel}</span>
             </div>
             <h3 class="site-name">${p.name}</h3>
-            <span class="site-coords">${latStr} · ${lonStr} · ${p.elevation}</span>
+            <div class="site-coords-row">
+              <span class="site-coords">
+                <span class="coords-geo">${latStr} · ${lonStr}</span>
+                <span class="coords-sep">·</span>
+                <span class="coords-elev">${p.elevation}</span>
+              </span>
+            </div>
           </div>
-          <button class="card-dismiss" title="Remove site">×</button>
+          <button class="card-dismiss" title="Remove site" aria-label="Remove site">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
 
         <!-- 4-Metric Landing Hazard & Celestial Telemetry Grid -->
         <div class="card-metrics-grid">
           <div class="metric-item">
-            <span class="metric-label">Touchdown Slope</span>
-            <span class="metric-value ${p.slope.slopeColor}">${p.slope.slopeVal} <span class="tag-status">${p.slope.slopeStatus}</span></span>
+            <span class="metric-label">
+              <span class="metric-icon">∡</span>
+              <span>Touchdown Slope</span>
+            </span>
+            <span class="metric-value ${p.slope.slopeColor}">
+              <span class="metric-num">${p.slope.slopeVal}</span>
+              <span class="tag-status ${p.slope.slopeColor}">${p.slope.slopeStatus}</span>
+            </span>
           </div>
           <div class="metric-item">
-            <span class="metric-label">Solar Elevation</span>
-            <span class="metric-value ${p.horizon.sunEl > 0 ? "status-safe" : "status-danger"}">${p.horizon.sunEl > 0 ? "+" : ""}${p.horizon.sunEl}° <span class="metric-sub">(${p.horizon.sunEl > 0 ? "Rising" : "Shadow"})</span></span>
+            <span class="metric-label">
+              <span class="metric-icon">☼</span>
+              <span>Solar Elevation</span>
+            </span>
+            <span class="metric-value ${p.horizon.sunEl > 0 ? "status-safe" : "status-danger"}">
+              <span class="metric-num">${p.horizon.sunEl > 0 ? "+" : ""}${p.horizon.sunEl}°</span>
+              <span class="metric-sub">(${p.horizon.sunEl > 0 ? "Rising" : "Shadow"})</span>
+            </span>
           </div>
           <div class="metric-item">
-            <span class="metric-label">Next Sunset</span>
-            <span class="metric-value">${p.nextSunset || "96h 20m"}</span>
+            <span class="metric-label">
+              <span class="metric-icon">◷</span>
+              <span>Next Sunset</span>
+            </span>
+            <span class="metric-value">
+              <span class="metric-num">${p.nextSunset || "96h 20m"}</span>
+            </span>
           </div>
           <div class="metric-item">
-            <span class="metric-label">Earth Visibility</span>
-            <span class="metric-value status-safe">Clear (+${p.horizon.earthEl}°)</span>
+            <span class="metric-label">
+              <span class="metric-icon">☊</span>
+              <span>Earth Visibility</span>
+            </span>
+            <span class="metric-value status-safe">
+              <span class="metric-num">+${p.horizon.earthEl}°</span>
+              <span class="tag-status status-safe">Clear</span>
+            </span>
           </div>
         </div>
 
@@ -1031,25 +1149,47 @@
 
         <!-- Interactive Secondary View Selector Tabs -->
         <div class="card-detail-tabs">
-          <button class="btn-detail-tab" data-tab="horizon" title="360° Panoramic Skyline Mask">🌄 Horizon</button>
-          <button class="btn-detail-tab" data-tab="slope" title="Local Crater Radial Elevation Profile">📈 Slope</button>
-          <button class="btn-detail-tab" data-tab="solar" title="14-Day Solar Illumination Curve">☀️ Solar</button>
-          <button class="btn-detail-tab" data-tab="comms" title="Direct-to-Earth Line of Sight">📡 Comms</button>
+          <button class="btn-detail-tab" data-tab="horizon" title="360° Panoramic Skyline Mask">
+            <svg class="tab-svg-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18l6-6 4 4 8-8 2 2v8H2z"/></svg>
+            <span>Horizon</span>
+          </button>
+          <button class="btn-detail-tab" data-tab="slope" title="Local Crater Radial Elevation Profile">
+            <svg class="tab-svg-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+            <span>Slope</span>
+          </button>
+          <button class="btn-detail-tab" data-tab="solar" title="14-Day Solar Illumination Curve">
+            <svg class="tab-svg-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <span>Solar</span>
+          </button>
+          <button class="btn-detail-tab" data-tab="comms" title="Direct-to-Earth Line of Sight">
+            <svg class="tab-svg-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+            <span>Comms</span>
+          </button>
         </div>
 
         <!-- Card Action Toolbar -->
         <div class="card-actions">
-          <button class="btn-card-action btn-focus-site" title="Center 3D Moon camera on this site">Focus 3D</button>
+          <button class="btn-card-action btn-focus-site" title="Center 3D Moon camera on this site">
+            <svg class="btn-focus-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+            <span>Focus 3D</span>
+          </button>
         </div>
       </div>
 
       <!-- Attached Secondary Detail Sub-Card -->
       <div class="secondary-detail-card" id="subcard-${siteKey}" data-site-id="${siteKey}">
         <div class="subcard-header">
-          <span class="subcard-title" id="subcard-title-${siteKey}">🌄 360° Skyline Mask</span>
+          <div class="subcard-title" id="subcard-title-${siteKey}">
+            <svg class="subcard-title-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
+            <span>360° Skyline Profile</span>
+          </div>
           <div class="subcard-actions">
-            <button class="btn-subcard-action btn-grow-inspect" title="Expand / Grow View">⛶ Grow</button>
-            <button class="btn-subcard-action btn-close-subcard" title="Close Sub-Card">✕</button>
+            <button class="btn-subcard-action btn-grow-inspect" title="Expand detailed inspection modal" aria-label="Expand view">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </button>
+            <button class="btn-subcard-action btn-close-subcard" title="Close detail view" aria-label="Close">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
         </div>
         <div class="subcard-body" id="subcard-body-${siteKey}"></div>
@@ -1232,6 +1372,16 @@
       SITE_PROFILES[siteKey] = generateSiteProfile(siteKey, siteData);
     }
     const profile = SITE_PROFILES[siteKey];
+
+    // Remove any existing duplicate column for this site before appending
+    const existingCol = findCardByCoordsOrName(siteData.lat, siteData.lon, siteData.name);
+    if (existingCol) {
+      existingCol.remove();
+    }
+    const existingById = track.querySelector(`.site-card-column[data-site-id="${siteKey}"]`);
+    if (existingById) {
+      existingById.remove();
+    }
 
     // Remove empty placeholder if present
     const emptyMsg = track.querySelector(".cards-empty-state");
@@ -1469,9 +1619,9 @@
 
               // Next Sunset / Sunrise countdown (Index 2)
               if (evalData.isSunVis) {
-                metricValues[2].innerHTML = `☀️ Sunset in <strong>${evalData.nextSunsetHrs}h</strong>`;
+                metricValues[2].innerHTML = `${evalData.nextSunsetHrs}h <span class="metric-sub">(Sunset)</span>`;
               } else {
-                metricValues[2].innerHTML = `🌑 Sunrise in <strong>${evalData.nextSunriseHrs}h</strong>`;
+                metricValues[2].innerHTML = `${evalData.nextSunriseHrs}h <span class="metric-sub">(Sunrise)</span>`;
               }
 
               // Earth Visibility (Index 3)
@@ -1511,7 +1661,35 @@
       undo: undo,
       redo: redo,
       sync: renumberCardsAndSync,
-      getProfiles: () => ({ ...SITE_PROFILES })
+      getProfiles: () => ({ ...SITE_PROFILES }),
+      dismissSiteCard,
+      compareCurrentSites: () => {
+        const button = document.getElementById("btn-compare-sites");
+        if (!button) return Promise.resolve({ error: "The Compare button is unavailable." });
+        if (button.disabled) return Promise.resolve({ error: "A candidate comparison is already running." });
+        pendingComparison = null;
+        button.click();
+        return pendingComparison || Promise.resolve({ error: "The Compare action did not start." });
+      },
+      getMarkedSites: () => {
+        const currentTrack = document.getElementById("carousel-track");
+        if (!currentTrack) return [];
+        return Array.from(currentTrack.querySelectorAll(".site-card-column"))
+          .map(column => {
+            const card = column.querySelector(".site-card");
+            if (!card) return null;
+            return {
+              siteId: column.dataset.siteId,
+              number: Number(card.dataset.cardIndex),
+              name: card.dataset.name || "",
+              lat: Number(card.dataset.lat),
+              lon: Number(card.dataset.lon),
+              active: card.classList.contains("active")
+            };
+          })
+          .filter(site => site && site.name &&
+            Number.isFinite(site.lat) && Number.isFinite(site.lon));
+      }
     };
   }
 

@@ -157,7 +157,23 @@
       lines.push(`<line x1="${x.toFixed(2)}" y1="${y1}" x2="${x.toFixed(2)}" y2="12" stroke="${stroke}" stroke-width="${strokeWidth}" />`);
     });
 
-    rulerSvg.innerHTML = lines.join("");
+    try {
+      rulerSvg.innerHTML = lines.join("");
+    } catch (err) {
+      // Fallback for legacy WebKit/embedded SVG DOM implementations lacking SVGElement.innerHTML
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${lines.join("")}</svg>`, "image/svg+xml");
+        while (rulerSvg.firstChild) {
+          rulerSvg.removeChild(rulerSvg.firstChild);
+        }
+        Array.from(doc.documentElement.childNodes).forEach(node => {
+          rulerSvg.appendChild(document.importNode(node, true));
+        });
+      } catch (innerErr) {
+        console.warn("[Timeline] Defensive SVG ruler fallback notice:", innerErr);
+      }
+    }
   }
 
   /**
@@ -214,7 +230,11 @@
     }
 
     // 8. Regenerate equal-spaced ruler ticks
-    renderEqualSpacedRuler();
+    try {
+      renderEqualSpacedRuler();
+    } catch (rulerErr) {
+      console.warn("[Timeline] Ruler sync non-fatal error:", rulerErr);
+    }
 
     // 9. Sync input fields in the edit popover
     if (elements.inputStart && document.activeElement !== elements.inputStart) {

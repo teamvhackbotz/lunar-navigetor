@@ -22,7 +22,7 @@
   <div class="test-box">
     <h2 style="font-size: 18px; margin-bottom: 6px;">2D Cartographic Synchronizer - Standalone Test Harness</h2>
     <p style="font-size:12px; color:var(--text-secondary, #beb7ac); margin-bottom:14px;">
-      Test the redesigned 2D Map deck: toggle between <strong>Single Focused View</strong> (South Pole 🎯, Global Flat 🌐, North Pole ❄️) and <strong>Tri-Map Multi-View</strong> (◫), toggle the <strong>Tactical Wings Console</strong> (📊), test the <strong>Height Maximize</strong> toggle (⛶), and click two points to measure lunar geodesic distance.
+      Test the 2D Map deck: toggle between <strong>Single Focused View</strong> (South Pole 🎯, Global Flat 🌐, North Pole ❄️) and <strong>Tri-Map Multi-View</strong> (◫). Shift + right-click two marked sites, then right-click either and choose <strong>Measure distance</strong>.
     </p>
     
     <!-- Mount Point -->
@@ -39,6 +39,7 @@
 
   <script src="../../core/event_bus.js"></script>
   <script src="../../core/coord_math.js"></script>
+  <script src="../../core/site_measurement.js"></script>
   <script>
     const logList = document.getElementById("log-list");
     function logEvent(name, data) {

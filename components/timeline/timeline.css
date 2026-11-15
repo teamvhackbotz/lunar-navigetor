@@ -29,6 +29,8 @@
   flex-direction: column;
   z-index: 100;
   box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+  padding-bottom: var(--safe-bottom, 0px);
+  box-sizing: border-box;
 }
 
 /* --------------------------------------------------------------------------
@@ -222,25 +224,39 @@
   background: rgba(237, 232, 225, 0.28);
 }
 .full-width-slider::-webkit-slider-thumb {
-  width: 2px;
-  height: 12px;
+  width: 6px;
+  height: 16px;
   box-sizing: border-box;
-  margin-top: -5px;
+  margin-top: -7px;
   appearance: none;
   -webkit-appearance: none;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 2px;
   background: var(--accent-terracotta, #c87d55);
-  box-shadow: none;
+  box-shadow: 0 0 6px rgba(200, 125, 85, 0.6);
+  cursor: grab;
+  transition: transform 0.1s ease, filter 0.15s ease;
 }
 .full-width-slider::-moz-range-thumb {
-  width: 2px;
-  height: 12px;
+  width: 6px;
+  height: 16px;
   box-sizing: border-box;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 2px;
   background: var(--accent-terracotta, #c87d55);
-  box-shadow: none;
+  box-shadow: 0 0 6px rgba(200, 125, 85, 0.6);
+  cursor: grab;
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+.full-width-slider:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.15);
+  filter: brightness(1.2);
+}
+.full-width-slider:active::-moz-range-thumb {
+  cursor: grabbing;
+  transform: scale(1.15);
+  filter: brightness(1.2);
 }
 
 /* --------------------------------------------------------------------------
@@ -470,11 +486,11 @@
 }
 
 @media (max-width: 900px) {
-  :root { --height-bottom-cockpit: 116px; }
+  :root { --height-bottom-cockpit: calc(116px + var(--safe-bottom, 0px)); }
 
   #mount-timeline {
-    height: 116px !important;
-    min-height: 116px !important;
+    height: calc(116px + var(--safe-bottom, 0px)) !important;
+    min-height: calc(116px + var(--safe-bottom, 0px)) !important;
   }
 
   .mission-toolbar {
@@ -531,15 +547,16 @@
     height: 48px;
     min-height: 48px;
     padding: 0 8px 4px;
+    flex-shrink: 0;
   }
 }
 
 @media (max-width: 600px) {
-  :root { --height-bottom-cockpit: 122px; }
+  :root { --height-bottom-cockpit: calc(122px + var(--safe-bottom, 0px)); }
 
   #mount-timeline {
-    height: 122px !important;
-    min-height: 122px !important;
+    height: calc(122px + var(--safe-bottom, 0px)) !important;
+    min-height: calc(122px + var(--safe-bottom, 0px)) !important;
   }
 
   .mission-toolbar {

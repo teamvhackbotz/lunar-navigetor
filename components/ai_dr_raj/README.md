@@ -27,12 +27,12 @@ Teammate F
   - `settings:gemini_key_changed`: Refreshes the API-key status indicator.
 - **Emits:**
   - `site:select`: `{ id: string }` dispatched when an operator clicks an embedded site recommendation link within a chat message.
-  - `algorithm:find_best_site`: `{ startDate, endDate, criteria }` for algorithm-backed landing site recommendations; Dr. Raj listens for `algorithm:result` and marks the returned site.
+  - `algorithm:find_best_site`: `{ startDate, endDate, criteria }` requests a date-window recommendation when a scoring handler is registered. Without a handler, Dr. Raj reports that scoring is unavailable instead of waiting for a timeout.
   - `site:marked`: Used for named locations and algorithm recommendations.
   - `timeline:jump`: `{ isoString }` when moving the timeline.
   - `cards:compare`: `{ siteA, siteB }` requests a side-by-side card comparison.
 
-The `show_landing_site` tool resolves canonical Artemis, CLPS, international, and Apollo sites, then emits `site:marked` with camera-focus and detail-tab instructions. `compare_sites` resolves two sites and requests their comparison cards. Dynamic card telemetry is application profile data and should not be represented as validated live mission telemetry.
+The `show_landing_site` tool resolves canonical Artemis, CLPS, international, and Apollo sites, then emits `site:marked` with camera-focus and detail-tab instructions. `compare_sites` resolves named canonical sites or currently marked cards and requests their comparison cards. `compare_marked_sites` presses the existing Compare action, waits for its selected-window ranking, and returns the ranked results and criteria limits, including for manually placed custom pins. `dismiss_candidate_card` removes one named or numbered candidate through the existing undoable dismiss action; closing the comparison-card drawer only hides the deck. `dismiss_candidate_card` removes one named or numbered candidate through the existing undoable dismiss action; closing the comparison-card drawer only hides the deck.
 
 ## Gemini API Key
 Open `test.html` to enter a Gemini API key, save it in `localStorage` as `dr_raj_gemini_key`, and test connectivity to `gemini-2.5-flash-lite` with `gemini-3.5-flash-lite` as the availability fallback. Saving broadcasts `settings:gemini_key_changed` so an open Dr. Raj instance refreshes its status indicator.

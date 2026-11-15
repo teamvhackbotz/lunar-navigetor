@@ -77,10 +77,30 @@ const ComponentLoader = (function() {
   }
 
   /**
+   * Detects if the page is running under local file:// protocol where modern browsers
+   * block async template fetching due to CORS security rules.
+   */
+  function checkProtocol() {
+    if (typeof window !== "undefined" && window.location && window.location.protocol === "file:") {
+      console.warn(
+        "[Loader] ⚠️ Local file:// protocol detected. Modern browsers block component template fetching under file:// CORS rules. Please launch via local server (`node scripts/serve.js` or `python -m http.server 8000`)."
+      );
+      if (document.body && !document.getElementById("file-protocol-warning")) {
+        const banner = document.createElement("div");
+        banner.id = "file-protocol-warning";
+        banner.style.cssText = "position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(184,84,79,0.96);color:#fff;padding:8px 16px;border-radius:6px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:500;z-index:10000;box-shadow:0 4px 16px rgba(0,0,0,0.5);display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);";
+        banner.innerHTML = "<span>⚠️ <strong>Local file:// protocol detected:</strong> Browser security blocks component templates. Run <code>node scripts/serve.js</code> or <code>python -m http.server</code> to view Lunar Navigator.</span><button type=\"button\" style=\"background:transparent;border:none;color:#fff;font-size:16px;cursor:pointer;line-height:1;margin-left:8px;\" onclick=\"this.parentElement.remove()\">✕</button>";
+        document.body.appendChild(banner);
+      }
+    }
+  }
+
+  /**
    * Iterates through all registered components in order, sequentially loading their
    * markup, styles, and logic. Broadcasts 'app:ready' across EventBus upon completion.
    */
   async function loadAll() {
+    checkProtocol();
     console.log("[Loader] Initializing component assembly...");
     for (const comp of COMPONENTS) {
       await loadComponent(comp.name, comp.mountId);

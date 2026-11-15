@@ -418,6 +418,17 @@ if (cursorX_at_20 !== cursorX_at_80 && parseFloat(cursorX_at_80) > parseFloat(cu
   process.exit(1);
 }
 
+// Test Slope View Tab
+global.window.SiteInspector.openInspector("malapert", "slope");
+const stageEl = document.getElementById("inspector-stage");
+const slopeHtml = stageEl._innerHTML || "";
+if (slopeHtml.includes('viewBox="0 0 520 200"') && slopeHtml.includes('cx="242.7"') && slopeHtml.includes('cy="70"')) {
+  console.log("  ✓ Slope Tab rendered with high-res viewBox 520x200 and dynamic Malapert touchdown reticle (242.7, 70)");
+} else {
+  console.error("  ✗ Slope Tab SVG geometry or touchdown target reticle mismatch!", slopeHtml);
+  process.exit(1);
+}
+
 // Test Comms View Tab
 global.window.SiteInspector.openInspector("shackleton", "comms");
 const commsEarthEl = document.getElementById("inspector-comms-earth-el");
